@@ -8,3 +8,5 @@ dist/
 in-detail.log
 assets/*.iconset/
 data/
+_legacy/
+service.sh

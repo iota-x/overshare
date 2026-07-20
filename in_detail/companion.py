@@ -33,20 +33,26 @@ def dropped() -> bool:
 
 _LOVE_PHRASES = ("i love you", "love you", "love u", "ily", "luv u", "luv you")
 
-_HELP_EMBED = {
-    "title": "💬 in-detail — what you can do",
-    "color": 0x8B5CF6,
-    "description": "type any of these in the channel (or just talk to me 💛)",
-    "fields": [
-        {"name": "👀 check on him", "value": "`!wyd` — what he's doing right now\n`!song` — what he's listening to\n`!recap` — his day so far", "inline": False},
-        {"name": "💌 poke him", "value": "`!poke` — poke 👉\n`!miss` — tell him you miss him 🥺\n`!callme` — ask him to call 📞\n`!break` — tell him to rest\n`!food` — remind him to eat 🍜", "inline": False},
-        {"name": "🌙 sweet", "value": "`gm` / `gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
-        {"name": "📍 where your updates go", "value": "`!dm` — send them to your DMs\n`!channel` (or `!dm off`) — stop DMs, send here instead\n`!both` — both · `!where` — check current", "inline": False},
-        {"name": "🎨 style", "value": "`!tone cutesy` · `chill` · `detailed` · `default` — pick how he writes to you", "inline": False},
-        {"name": "✍️ just talk", "value": "anything else you type pops up on his screen 💛", "inline": False},
-    ],
-    "footer": {"text": "in detail · !help"},
-}
+def _prefix() -> str:
+    from . import settings
+    return settings.get("prefix") or config.BOT_PREFIX or "!"
+
+
+def _help_embed(p: str) -> dict:
+    return {
+        "title": "💬 overshare — what you can do",
+        "color": 0x8B5CF6,
+        "description": f"type these in the channel · prefix is `{p}` (change it with `{p}prefix >`)",
+        "fields": [
+            {"name": "👀 check on him", "value": f"`{p}wyd` — what he's doing now\n`{p}song` — what he's listening to\n`{p}recap` — his day so far", "inline": False},
+            {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜", "inline": False},
+            {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
+            {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
+            {"name": "🎨 style", "value": f"`{p}tone cutesy` · `chill` · `detailed` · `default`", "inline": False},
+            {"name": "✍️ just talk", "value": "anything else you type pops up on his screen 💛", "inline": False},
+        ],
+        "footer": {"text": f"overshare · {p}help"},
+    }
 
 
 def enabled() -> bool:
@@ -164,73 +170,85 @@ def _register(client, discord) -> None:
         low = text.lower()
         name = msg.author.display_name
         cid = msg.channel.id
+        prefix = _prefix()
 
-        if low in ("!help", "help", "!commands", "commands"):
+        # Not a command → normal message: notify him, and love-react.
+        if not low.startswith(prefix):
+            if text:
+                events.put(("message", (name, text)))
+            if any(p in low for p in _LOVE_PHRASES):
+                try:
+                    await msg.add_reaction("❤️")
+                except Exception:
+                    pass
+            return
+
+        cmd = low[len(prefix):].strip()          # command, prefix stripped
+        raw = text[len(prefix):].strip()         # same, original case
+
+        async def say(s):
             try:
-                await msg.channel.send(embed=discord.Embed.from_dict(_HELP_EMBED))
+                await msg.channel.send(s)
             except Exception:
                 pass
-            return
-        if low in ("!dm", "!dms", "!channel", "!chan", "!both", "!where",
-                   "!nodm", "!stopdm") or low.startswith("!dm "):
+
+        if cmd in ("help", "commands", "cmds", ""):
+            try:
+                await msg.channel.send(embed=discord.Embed.from_dict(_help_embed(prefix)))
+            except Exception:
+                pass
+        elif cmd.startswith("prefix"):
             from . import settings
-            if low in ("!channel", "!chan", "!nodm", "!stopdm", "!dm off", "!dms off"):
+            parts = raw.split()
+            if len(parts) >= 2:
+                newp = parts[1]
+                settings.set("prefix", newp)
+                await say(f"done — my prefix is now `{newp}` · try `{newp}help` 💛")
+            else:
+                await say(f"my prefix is `{prefix}`. change it with `{prefix}prefix >` (any symbol)")
+        elif (cmd in ("dm", "dms", "channel", "chan", "both", "where", "nodm", "stopdm")
+              or cmd.startswith("dm ") or cmd.startswith("dms ")):
+            from . import settings
+            if cmd in ("channel", "chan", "nodm", "stopdm", "dm off", "dms off"):
                 settings.set("card_destination", "channel")
-            elif low == "!both":
+            elif cmd == "both":
                 settings.set("card_destination", "both")
-            elif low in ("!dm", "!dms", "!dm on", "!dms on"):
+            elif cmd in ("dm", "dms", "dm on", "dms on"):
                 settings.set("card_destination", "dm")
             cur = settings.get("card_destination")
             label = {"dm": "your DMs 💌", "channel": "the channel", "both": "both DMs + the channel"}[cur]
-            lead = "here's where" if low == "!where" else "done —"
-            try:
-                await msg.channel.send(f"{lead} i send your updates: **{label}**")
-            except Exception:
-                pass
-            return
-        if low.startswith("!tone"):
+            await say(f"{'here’s where' if cmd == 'where' else 'done —'} i send your updates: **{label}**")
+        elif cmd.startswith("tone"):
             from . import settings
             opts = ("default", "cutesy", "chill", "detailed")
-            parts = low.split()
+            parts = cmd.split()
             if len(parts) >= 2 and parts[1] in opts:
                 settings.set("tone", parts[1])
-                reply = f"done — i'll write in a **{parts[1]}** tone 💛"
+                await say(f"done — i'll write in a **{parts[1]}** tone 💛")
             else:
-                reply = (f"my tone is **{settings.get('tone')}**. "
-                         "try `!tone cutesy` · `chill` · `detailed` · `default`")
-            try:
-                await msg.channel.send(reply)
-            except Exception:
-                pass
-            return
-        if low in ("!wyd", "!doing", "!status", "!what"):
+                await say(f"my tone is **{settings.get('tone')}**. "
+                          f"try `{prefix}tone cutesy` · `chill` · `detailed` · `default`")
+        elif cmd in ("wyd", "doing", "status", "what"):
             events.put(("cmd_activity", cid))
-        elif low in ("!recap", "recap"):
+        elif cmd == "recap":
             events.put(("cmd_recap", cid))
-        elif low in ("!song", "!music", "!listening", "!np"):
+        elif cmd in ("song", "music", "listening", "np"):
             events.put(("cmd_song", cid))
-        elif low in ("!poke", "!wave", "poke"):
+        elif cmd in ("poke", "wave"):
             events.put(("poke", name))
-        elif low in ("!miss", "!missu"):
+        elif cmd in ("miss", "missu"):
             events.put(("miss", name))
-        elif low in ("!callme", "!call", "call me"):
+        elif cmd in ("callme", "call", "call me"):
             events.put(("callme", name))
-        elif low in ("!break",):
+        elif cmd == "break":
             events.put(("break", name))
-        elif low in ("!food", "!eat"):
+        elif cmd in ("food", "eat"):
             events.put(("food", name))
-        elif low in ("!gm", "gm", "good morning"):
+        elif cmd in ("gm", "morning", "good morning"):
             events.put(("greet", ("gm", name)))
-        elif low in ("!gn", "gn", "goodnight", "good night"):
+        elif cmd in ("gn", "night", "goodnight", "good night"):
             events.put(("greet", ("gn", name)))
-        elif text:
-            events.put(("message", (name, text)))
-
-        if any(p in low for p in _LOVE_PHRASES):
-            try:
-                await msg.add_reaction("❤️")   # auto love-back
-            except Exception:
-                pass
+        # unknown command → silently ignore
 
     @client.event
     async def on_raw_reaction_add(payload):

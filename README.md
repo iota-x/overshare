@@ -1,118 +1,225 @@
 # overshare 👀
 
-A tiny macOS menu-bar app that keeps your partner **lovingly over-informed** about
-everything you're doing on your Mac — automatically, in real time, in detail.
+**the clingy-girlfriend starter pack 💅** — a tiny menu-bar / tray app that keeps
+your partner *lovingly over-informed* about everything you do on your computer,
+automatically, in real time, in detail. For the girlfriends who need to know
+where their man is at all times, and the boyfriends who have *nothing to hide* 😇
 
 > **Origin story:** my girlfriend said I don't give her enough *detail* about my
 > day. So instead of just... texting more like a normal person, I built an app
 > that broadcasts my entire screen life to her. This is that app. 💛
 
-Whenever you switch apps or tabs (and every few minutes as a heartbeat), it posts
-a warm, AI-written one-liner + a rich card to a Discord channel (or her DMs):
+Works on **macOS** and **Windows**. Whenever you switch apps or tabs (and every
+few minutes as a heartbeat), it posts a warm, AI-written one-liner + a rich card
+to a Discord channel (or her DMs):
 
 - **VS Code / terminal** → `coding in Cursor — app.py 💻`
-- **YouTube / Twitch / Netflix** → the actual video/stream, with a thumbnail + "▶️ watch along"
-- **Spotify** (even in the background) → the track, with a "🎧 play along" link
+- **YouTube / Twitch / Netflix** → the video/stream (+ thumbnail & "▶️ watch along" on macOS)
+- **Spotify** (even in the background) → the track (+ "🎧 play along" link on macOS)
 - **Discord** → which channel you're in
-- **Genshin, any game, any app** → caught by the generic layer
-- **Idle** → "stepped away 🙂"; late at night → "goodnight 🌙"
+- **Games / any app** → caught by the generic layer
+- **Idle** → "stepped away 🙂"; late night → "goodnight 🌙"
 
 ## What it does
 
-- **Sees everything** — frontmost app, window/file titles, browser tab + URL,
-  background music, idle time. Works for *every* app on your Mac.
-- **Per-site smarts** — known sites get their own emoji + brand color + phrasing
-  (📺 YouTube, 🟣 Twitch, 👽 Reddit, 🐙 GitHub, 🤖 ChatGPT, and ~20 more).
-- **Rich Discord cards** — clickable links, thumbnails, channel names, now-playing,
-  duration, color-coded by activity.
-- **Free AI** — writes the one-liners via **Groq** (free cloud) or **Ollama**
-  (free local), or **Claude** if you want. Or plain templates (no AI).
-- **Two-way** — with a Discord bot, she can reply, react, and run commands; you
-  get it all as Mac notifications.
-- **Recaps** — a daily summary card + a weekly "Wrapped" (hours, top apps, most
-  watched, soundtrack, late nights, streaks).
-- **Sweet touches** — listen/watch-along, morning/night bookends, "all yours now"
-  when you finish work, mood/status, tone presets she picks.
-- **Featherweight & resilient** — ~84 MB RAM, near-0% CPU, auto-reconnects, and a
-  menu-bar ⚠️ if anything ever breaks.
-- **An off-switch** — one click to Pause (😴). Because *sometimes* you want privacy.
-  (Or not — see below. 😏)
+- **Sees everything** — frontmost app, window/file titles, browser tab, background
+  music, idle time.
+- **Per-site smarts** — 📺 YouTube, 🟣 Twitch, 👽 Reddit, 🐙 GitHub, 🤖 ChatGPT… own
+  emoji + brand color + phrasing.
+- **Rich Discord cards** — links, thumbnails, channel names, now-playing, duration.
+- **Free AI** — [Groq](https://console.groq.com) (free cloud) / Ollama (free local)
+  / Claude, or plain templates.
+- **Two-way** — with a Discord bot she can reply, react, and run commands.
+- **Recaps** — a daily summary + a weekly "Wrapped" (top apps, watches, soundtrack,
+  streaks, late nights).
+- **Sweet touches** — listen/watch-along, morning/night bookends, "all yours now",
+  mood/status, tone presets she picks.
+- **Featherweight & resilient** — tiny footprint, auto-reconnects, ⚠️ if anything breaks.
+- **An off-switch** — one click to Pause. Because *sometimes* you want privacy. (Or not. 😏)
 
-## Two-way commands (she types these in Discord)
+---
+
+## Requirements
+
+- **macOS** (Apple Silicon/Intel) **or Windows 10/11**
+- **Python 3.10+** — [python.org](https://www.python.org/downloads/) (on Windows,
+  tick **"Add Python to PATH"** during install)
+- A **Discord** account + a server you control
+- *(only for local AI on macOS)* Homebrew
+
+```bash
+git clone https://github.com/iota-x/overshare.git
+cd overshare
+```
+
+Then follow **[macOS](#-macos-setup)** or **[Windows](#-windows-setup)** below.
+
+---
+
+## 🍎 macOS setup
+
+**1. First run** (makes a virtualenv, installs deps, creates `.env`):
+```bash
+./run.sh
+```
+**2. Edit `.env`** — set `DISCORD_WEBHOOK_URL` and pick an AI provider (see
+[AI providers](#ai-providers)).
+
+**3. Test:** `./run.sh` again → a 👀 appears in your menu bar. `Ctrl-C` to stop.
+
+**4. Build the app:**
+```bash
+./.venv/bin/python setup.py py2app -A
+mv "dist/Overshare.app" /Applications/
+open "/Applications/Overshare.app"
+```
+
+**5. Grant two permissions** (System Settings → Privacy & Security):
+- **Accessibility** → turn on **Overshare** (window/file titles + Discord channel)
+- **Automation** → allow **Overshare** to control your **browser** + **Spotify**
+  (browser tab URLs + background music)
+
+After granting Accessibility, quit Overshare (menu bar → Quit) and reopen it.
+
+**6. Auto-start:** System Settings → General → Login Items → **+** → add Overshare.
+
+---
+
+## 🪟 Windows setup
+
+**1. First run** — double-click **`run.bat`** (or run it in a terminal). It makes a
+virtualenv, installs deps, and creates `.env`, then exits.
+
+**2. Edit `.env`** — set `DISCORD_WEBHOOK_URL` and pick an AI provider (see
+[AI providers](#ai-providers)). `AI_PROVIDER=groq` with a free key is ideal.
+
+**3. Test:** run **`run.bat`** again → a 👀 tray icon appears near the clock
+(click the ▲ if it's hidden). Right-click it for the menu.
+
+**4. Build a standalone `.exe`** (optional, so you don't need a terminal):
+```bat
+.venv\Scripts\pip install pyinstaller
+.venv\Scripts\pyinstaller --noconsole --name Overshare --add-data "assets\icon.png;assets" run_app.py
+```
+The app is then `dist\Overshare\Overshare.exe`.
+
+**5. Permissions:** none needed — Windows doesn't gate this like macOS does. 🎉
+
+**6. Auto-start:** press `Win+R`, type `shell:startup`, Enter, and drop a shortcut
+to `run.bat` (or `Overshare.exe`) in that folder.
+
+> **Windows notes:** it reads the active window title (which for browsers already
+> includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify
+> from its window title. Clickable URLs / thumbnails / per-site colors are macOS-only
+> for now (Windows has no clean cross-browser URL API) — everything else works.
+
+---
+
+## AI providers
+
+Set `AI_PROVIDER` in `.env`:
+
+| Provider | Cost | Setup |
+|---|---|---|
+| **`groq`** ⭐ | free | free key at [console.groq.com](https://console.groq.com) → `GROQ_API_KEY=gsk_...`. Cloud, fast, no card, nothing runs on your machine. |
+| **`ollama`** | free | `brew install ollama && ollama pull llama3.2` (macOS) → `AI_PROVIDER=ollama`. Local, ~2 GB RAM. |
+| **`anthropic`** | paid | key at [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY=sk-ant-...`. Best writing. |
+| *(none)* | free | `AI_ENABLED=false` — plain templates. |
+
+---
+
+## Two-way bot (optional) 💌
+
+Lets her reply, react, and run commands — you get it all as notifications.
+
+1. [discord.com/developers](https://discord.com/developers/applications) → **New
+   Application** → **Bot** → **Reset Token** → copy → `.env`: `DISCORD_BOT_TOKEN=...`
+2. Enable **MESSAGE CONTENT INTENT** on the Bot page → Save.
+3. **OAuth2 → URL Generator** → scopes `bot`; permissions: View Channels, Read
+   Message History, Add Reactions → open the URL → add to your server.
+4. Optional in `.env`: `DISCORD_CHANNEL_ID` (comma-sep), `DISCORD_HOME_CHANNEL_ID`,
+   `HER_USER_ID` (respond only to her), `HER_NAME`, `BOT_PREFIX`.
+5. Restart the app.
+
+### Commands she types
+
+The prefix defaults to `!` and is **changeable** — she can run `!prefix >` to switch
+to any symbol, or set `BOT_PREFIX` in `.env`.
 
 | Command | Does |
 |---|---|
 | `!help` | posts the full command list |
 | `!wyd` | bot replies with your live activity |
-| `!song` · `!recap` | now-playing / today's recap |
-| `!poke` `!miss` `!callme` `!break` `!food` | pings your Mac |
-| `gm` / `gn` · say **i love you** | greetings · auto ❤️ react |
+| `!song` · `!recap` | now-playing · today's recap |
+| `!poke` `!miss` `!callme` `!break` `!food` | pings you |
+| `!gm` / `!gn` · say **i love you** | greetings · auto ❤️ react |
 | `!dm` / `!channel` / `!both` | where her updates go |
 | `!tone cutesy` / `chill` / `detailed` | how you write to her |
-| react ❤️ to any card | 💛 flashes your menu bar |
+| `!prefix <x>` | change the command prefix |
+| react ❤️ to any card | 💛 flashes your tray/menu bar |
 
-## Setup
+---
 
-1. **Discord webhook** — make a channel, `Edit Channel → Integrations → Webhooks
-   → New Webhook → Copy URL`.
-2. **Configure** — `cp .env.example .env`, set `DISCORD_WEBHOOK_URL`, pick an AI
-   provider (`AI_PROVIDER=groq` + a free key from console.groq.com is the sweet
-   spot — free *and* nothing runs on your Mac).
-3. **Build the app** — `./run.sh` once, then `python setup.py py2app -A` and move
-   `dist/In Detail.app` to `/Applications`. It auto-starts on login.
-4. **Grant permissions** — Accessibility (window titles) + Automation (browser
-   tabs & Spotify) for **In Detail** in System Settings → Privacy & Security.
-5. *(Optional)* **Two-way bot** — create a bot at discord.com/developers, enable
-   Message Content Intent, invite it, and set `DISCORD_BOT_TOKEN` in `.env`.
+## Config reference (`.env`)
 
-Full details for each step live in the comments of `.env.example`.
+| Key | What |
+|---|---|
+| `DISCORD_WEBHOOK_URL` | **required** — where cards are posted |
+| `AI_PROVIDER` / `AI_ENABLED` | `groq` / `ollama` / `anthropic`; `false` = templates |
+| `GROQ_API_KEY`, `OLLAMA_MODEL`, `ANTHROPIC_API_KEY` | provider keys/models |
+| `DISCORD_BOT_TOKEN`, `BOT_PREFIX` | two-way bot + command prefix |
+| `DISCORD_CHANNEL_ID`, `DISCORD_HOME_CHANNEL_ID`, `HER_USER_ID`, `HER_NAME` | bot scoping |
+| `POLL_INTERVAL`, `STABILIZE`, `MIN_GAP`, `HEARTBEAT`, `IDLE_THRESHOLD` | timing (s) |
+| `REPORT_MEDIA`, `RECAP_TIME`, `WEEKLY_DAY/TIME`, `GM_TIME`, `START_PAUSED` | features |
+
+Every key has an inline comment in `.env.example`.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| macOS: only app names (no file/tab detail) | Grant **Accessibility**, then Quit + reopen |
+| macOS: no browser URL / background Spotify | Grant **Automation** (browser + Spotify) |
+| ⚠️ indicator | Bot disconnected or webhook failing — check token/webhook/internet |
+| Her DM updates don't arrive | Her Discord DMs must be open to the bot |
+| Bot shows offline | Check token, Message Content Intent, and that it's invited |
+| Messages are plain/templated | AI provider/key not set — it falls back to templates |
 
 ## Stack
 
-Python + [`rumps`](https://github.com/jaredks/rumps) menu-bar app · `pyobjc`
-(AppKit/Quartz/Accessibility) for macOS reads · `osascript` for browser/Spotify ·
-[`discord.py`](https://github.com/Rapptz/discord.py) for the two-way bot ·
-packaged with `py2app`. AI is pluggable: Groq / Ollama / Anthropic / templates.
+Python · [`rumps`](https://github.com/jaredks/rumps) (macOS menu bar) /
+[`pystray`](https://github.com/moses-palmer/pystray) (Windows tray) · `pyobjc` +
+`osascript` (macOS) / `pywin32` + `psutil` (Windows) ·
+[`discord.py`](https://github.com/Rapptz/discord.py) for the bot. Pluggable AI:
+Groq / Ollama / Anthropic / templates.
 
 ## Privacy
 
-With Groq or Ollama, your activity text never leaves your control (Ollama is fully
-local; Groq is a free cloud call). Nothing is stored or sent anywhere except the
-Discord channel you configure. There's a Pause button for the moments that
-shouldn't be a live feed.
+With Groq or Ollama your activity text stays private. Nothing is stored or sent
+anywhere except the Discord channel you configure. There's a Pause button for the
+moments that shouldn't be a live feed.
 
 ---
 
 ## Potential improvements (intentionally *not* added 😅)
 
-These are real, useful features — I just didn't build them, because **I share
-everything with my girl. Like, everything.** But if you're a more private person,
-you'll probably want some of these:
+Real, useful features I skipped — because **I share everything with my girl. Like,
+everything.** If you're more private, you'll want some of these:
 
 - **🔒 Privacy blocklist / incognito guard** — the big one. Auto-hide banking,
-  passwords, 1Password, and *private/incognito windows* behind a vague "busy 🔒"
-  instead of the real app/site. I left this out on purpose — she can see my
-  banking, my passwords, my incognito tabs, all of it. No secrets here. But most
-  people should absolutely add this before going live.
-- **🌙 Quiet hours** — auto-pause overnight (e.g. 1am–9am) so it isn't broadcasting
-  while you sleep. (I don't mind her seeing my 3am doomscrolling.)
-- **😴 Snooze options** — "pause 1 hour" / "pause till tomorrow" instead of only an
-  indefinite pause.
-- **👥 Multiple recipients / group** — post to more than one person or a shared feed.
-- **📸 Screenshot / selfie on request** — she asks, and (with a per-request tap to
-  approve) gets a screen peek or a webcam wave. Fun but a little much.
-- **📊 Web dashboard** — a live private web page of your day instead of / alongside
-  Discord.
-- **📍 Away context** — "stepped out" vs "at desk" using more than just idle time.
-- **🪟 Windows / Linux agents** — right now it's macOS-only (it leans on
-  NSWorkspace + AppleScript).
-- **🧠 Smarter batching** — coalesce a burst of rapid tab-switches into one update
-  instead of several.
-- **🎚️ Setup UI** — a real settings window instead of editing `.env`.
+  passwords, 1Password, and *private/incognito windows* behind a vague "busy 🔒".
+  I left this out on purpose (she can see my banking, my passwords, my incognito
+  tabs — no secrets here). **Most people should add this before going live.**
+- **🌙 Quiet hours** — auto-pause overnight so it isn't broadcasting while you sleep.
+- **😴 Snooze** — "pause 1 hour / till tomorrow" instead of only an indefinite pause.
+- **🔗 Windows browser URLs** — thumbnails / clickable links / per-site colors on
+  Windows (needs UI-Automation address-bar reading).
+- **👥 Multiple recipients** · **📸 screenshot on request** · **📊 web dashboard**
+  · **🎚️ a real settings window** instead of editing `.env`.
 
-PRs welcome. Or, you know, just trust your partner completely and skip half of
-these like I did. 💛
+PRs welcome. Or just trust your partner completely and skip half of these like I did. 💛
 
 ---
 
-*Built with a lot of love (and slightly concerning transparency).*
+*Built with a lot of love (and slightly concerning transparency). MIT — do
+whatever you want with it.*

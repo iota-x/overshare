@@ -13,7 +13,8 @@ from . import config
 # card_destination: "channel" | "dm" | "both"
 # tone: "default" | "cutesy" | "chill" | "detailed"
 # mood: free text (his current status), "" = none
-_DEFAULTS = {"card_destination": "channel", "tone": "default", "mood": ""}
+# prefix: bot command prefix override ("" = use config.BOT_PREFIX)
+_DEFAULTS = {"card_destination": "channel", "tone": "default", "mood": "", "prefix": ""}
 _cache: dict | None = None
 
 

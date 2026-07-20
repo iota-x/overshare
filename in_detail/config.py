@@ -38,6 +38,8 @@ WEBHOOK_AVATAR_URL = os.environ.get("WEBHOOK_AVATAR_URL", "").strip()
 # A bot token lets her replies + reactions reach your Mac as notifications.
 # Leave blank to stay send-only. Setup steps are in the README.
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+# Command prefix for the bot (she can also change it live with "<prefix>prefix >").
+BOT_PREFIX = os.environ.get("BOT_PREFIX", "!")
 # Restrict listening to specific channel(s) — comma-separated IDs. Best to set
 # this to the channel your update cards post to (so her reactions are caught).
 # Blank = listen everywhere the bot can see.

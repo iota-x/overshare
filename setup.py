@@ -14,15 +14,15 @@ APP = ["run_app.py"]
 OPTIONS = {
     "iconfile": "assets/icon.icns",
     "plist": {
-        "CFBundleName": "In Detail",
-        "CFBundleDisplayName": "In Detail",
-        "CFBundleIdentifier": "com.iota.in-detail",
+        "CFBundleName": "Overshare",
+        "CFBundleDisplayName": "Overshare",
+        "CFBundleIdentifier": "com.iota.overshare",
         "CFBundleShortVersionString": "0.1.0",
         "CFBundleVersion": "0.1.0",
         # Menubar app — no Dock icon.
         "LSUIElement": True,
         "NSAppleEventsUsageDescription": (
-            "in-detail reads your active browser tab and now-playing media so it "
+            "Overshare reads your active browser tab and now-playing media so it "
             "can describe what you're doing."
         ),
     },
@@ -30,7 +30,7 @@ OPTIONS = {
 
 setup(
     app=APP,
-    name="In Detail",
+    name="Overshare",
     options={"py2app": OPTIONS},
     setup_requires=["py2app"],
 )
