@@ -1,4 +1,4 @@
-# overshare 👀
+# overshare 💌
 
 **the clingy-girlfriend starter pack 💅** — a tiny menu-bar / tray app that keeps
 your partner *lovingly over-informed* about everything you do on your computer,
