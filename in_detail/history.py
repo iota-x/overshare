@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import os
 import re
 from dataclasses import asdict, dataclass, field, fields
 
@@ -95,10 +96,19 @@ def load(date: str | None = None) -> DailyLog:
 
 
 def save(log: DailyLog) -> None:
+    # Write to a sibling temp file then atomically rename over the real one. A
+    # plain write_text truncates in place, so a crash/kill mid-write (e.g. during
+    # a live burst or the midnight rollover) leaves a 0-byte file that load()
+    # then silently reads as an empty day — losing everything. os.replace is
+    # atomic on the same filesystem, so the day file is always whole or untouched.
     try:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        _path(log.date).write_text(
-            json.dumps(asdict(log), ensure_ascii=False, indent=2)
-        )
+        dest = _path(log.date)
+        tmp = dest.with_name(dest.name + f".tmp-{os.getpid()}")
+        tmp.write_text(json.dumps(asdict(log), ensure_ascii=False, indent=2))
+        os.replace(tmp, dest)
     except Exception:
-        pass
+        try:
+            tmp.unlink()
+        except Exception:
+            pass
