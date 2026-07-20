@@ -45,6 +45,7 @@ def _help_embed(p: str) -> dict:
         "description": f"type these in the channel · prefix is `{p}` (change it with `{p}prefix >`)",
         "fields": [
             {"name": "👀 check on him", "value": f"`{p}wyd` — what he's doing now\n`{p}song` — what he's listening to\n`{p}recap` — his day so far", "inline": False},
+            {"name": "📸 see him", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — his screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
             {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜", "inline": False},
             {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
             {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
@@ -110,6 +111,76 @@ async def _dm(user_id, content=None, embed=None) -> None:
         pass
 
 
+async def _send_file(channel_id, path, content=None, filename=None) -> None:
+    import os
+    import discord
+    try:
+        ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
+        await ch.send(content=content or None,
+                      file=discord.File(path, filename=filename or os.path.basename(path)))
+    finally:
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+
+
+async def _live_feed(channel_id, source, seconds, interval) -> None:
+    """Post one message and keep swapping its image — feels like a live view.
+
+    `source` is a zero-arg callable returning a fresh file path (or None). It's
+    run in a thread so the capture subprocess never blocks the bot's loop.
+    """
+    import os
+    import asyncio
+    import discord
+    loop = asyncio.get_event_loop()
+
+    async def grab():
+        return await loop.run_in_executor(None, source)
+
+    def cleanup(p):
+        if p:
+            try:
+                os.remove(p)
+            except Exception:
+                pass
+
+    first = await grab()
+    if not first:
+        try:
+            ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
+            await ch.send("couldn’t open the feed 😔 (permission or camera busy)")
+        except Exception:
+            pass
+        return
+    try:
+        ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
+        msg = await ch.send(content="🔴 live · updating…",
+                            file=discord.File(first, filename="live.jpg"))
+    except Exception:
+        cleanup(first)
+        return
+    cleanup(first)
+
+    deadline = loop.time() + seconds
+    while loop.time() < deadline:
+        await asyncio.sleep(interval)
+        frame = await grab()
+        if not frame:
+            continue
+        try:
+            await msg.edit(content="🔴 live · updating…",
+                           attachments=[discord.File(frame, filename="live.jpg")])
+        except Exception:
+            pass
+        cleanup(frame)
+    try:
+        await msg.edit(content="⚫ live ended")
+    except Exception:
+        pass
+
+
 async def _presence(label) -> None:
     import discord
     try:
@@ -133,6 +204,17 @@ def reply_embed(channel_id, embed: dict, content: str = "") -> None:
 def dm_user(user_id, content: str = "", embed: dict | None = None) -> None:
     if user_id and (content or embed):
         _schedule(_dm(user_id, content or None, embed))
+
+
+def reply_file(channel_id, path: str, content: str = "", filename: str = "") -> None:
+    if channel_id and path:
+        _schedule(_send_file(channel_id, path, content or None, filename or None))
+
+
+def live_feed(channel_id, source, seconds: int = 20, interval: float = 2.5) -> None:
+    """`source` is a zero-arg callable returning a fresh file path (or None)."""
+    if channel_id and callable(source):
+        _schedule(_live_feed(channel_id, source, seconds, interval))
 
 
 def set_presence(label: str) -> None:
@@ -234,6 +316,13 @@ def _register(client, discord) -> None:
             events.put(("cmd_recap", cid))
         elif cmd in ("song", "music", "listening", "np"):
             events.put(("cmd_song", cid))
+        elif cmd in ("peek", "cam", "camera", "see", "selfie"):
+            events.put(("cmd_peek", cid))
+        elif cmd in ("screen", "screenshot", "ss", "desktop"):
+            events.put(("cmd_screen", cid))
+        elif cmd == "live" or cmd.startswith("live") or cmd in ("livecam", "livescreen"):
+            src = "screen" if ("screen" in cmd) else "cam"
+            events.put(("cmd_live", (cid, src)))
         elif cmd in ("poke", "wave"):
             events.put(("poke", name))
         elif cmd in ("miss", "missu"):

@@ -15,6 +15,7 @@ import rumps
 import random
 
 from . import config
+from . import capture
 from . import collectors
 from . import companion
 from . import history
@@ -237,6 +238,46 @@ class InDetailApp(rumps.App):
             t = "not listening to anything right now 🤍"
         companion.reply_text(channel_id, t)
 
+    def _peek_ping(self, what: str) -> None:
+        """Let him know she's looking (unless he turned notices off)."""
+        if config.PEEK_NOTIFY:
+            self._notify("📸 she's peeking", "", what)
+            self._flash()
+
+    def _answer_peek(self, channel_id, source: str) -> None:
+        if not config.PEEK_ENABLED:
+            companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if source == "cam":
+            if not capture.webcam_available():
+                companion.reply_text(channel_id, "no camera tool set up on his end 😔")
+                return
+            self._peek_ping("she asked for a webcam photo")
+            path = capture.snap_webcam()
+            caption = "📸 caught him 🤳"
+        else:
+            self._peek_ping("she asked for a screenshot")
+            path = capture.snap_screen()
+            caption = "🖥️ his screen right now"
+        if path:
+            companion.reply_file(channel_id, path, content=caption)
+        else:
+            companion.reply_text(
+                channel_id,
+                "couldn’t grab that 😔 (needs Camera / Screen Recording permission for the app)",
+            )
+
+    def _answer_live(self, channel_id, source: str) -> None:
+        if not config.PEEK_ENABLED:
+            companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if source == "cam" and not capture.webcam_available():
+            companion.reply_text(channel_id, "no camera tool set up on his end 😔")
+            return
+        grab = capture.snap_webcam if source == "cam" else capture.snap_screen
+        self._peek_ping(f"she started a live {'camera' if source == 'cam' else 'screen'} view")
+        companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
+
     def _maybe_good_morning(self) -> None:
         if not (config.GM_ENABLED and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
             return
@@ -334,6 +375,13 @@ class InDetailApp(rumps.App):
                 threading.Thread(target=self._answer_recap, args=(payload,), daemon=True).start()
             elif kind == "cmd_song":
                 threading.Thread(target=self._answer_song, args=(payload,), daemon=True).start()
+            elif kind == "cmd_peek":
+                threading.Thread(target=self._answer_peek, args=(payload, "cam"), daemon=True).start()
+            elif kind == "cmd_screen":
+                threading.Thread(target=self._answer_peek, args=(payload, "screen"), daemon=True).start()
+            elif kind == "cmd_live":
+                cid, src = payload
+                self._answer_live(cid, src)
             elif kind == "request_update" and not self.paused:
                 self.send_now(None)
 

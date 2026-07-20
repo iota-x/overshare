@@ -25,6 +25,12 @@ OPTIONS = {
             "Overshare reads your active browser tab and now-playing media so it "
             "can describe what you're doing."
         ),
+        # Required for the webcam peek (!peek / !live) — macOS hard-denies camera
+        # access to an app bundle without this key. Screen Recording (!screen)
+        # has no plist key; macOS prompts for it on first use.
+        "NSCameraUsageDescription": (
+            "Overshare can send a webcam photo to your partner when they ask."
+        ),
     },
 }
 

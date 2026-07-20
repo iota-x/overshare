@@ -64,6 +64,20 @@ GM_ENABLED = _get_bool("GM_ENABLED", True)
 GM_TIME = os.environ.get("GM_TIME", "08:30").strip()  # HH:MM local
 HER_NAME = os.environ.get("HER_NAME", "").strip()     # for the good-morning line
 
+# --- Peek (camera / screen on demand) ---------------------------------------
+# Let her grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
+# live-ish view (`!live`). She still has to be an allowed user (HER_USER_IDS).
+# Set false to disable all of it. Camera + Screen Recording permission for the
+# app are requested by macOS the first time each is used.
+PEEK_ENABLED = _get_bool("PEEK_ENABLED", True)
+# Notify you on the Mac (card + flash) every time she peeks, so it's never
+# silent. Off = she can look without you being pinged (the green camera light
+# still shows for the webcam regardless).
+PEEK_NOTIFY = _get_bool("PEEK_NOTIFY", True)
+# Live-view (`!live`) burst length and how often the frame refreshes.
+LIVE_SECONDS = int(_get_float("LIVE_SECONDS", 20))
+LIVE_INTERVAL = _get_float("LIVE_INTERVAL", 2.5)
+
 # --- AI ---------------------------------------------------------------------
 # Set AI_ENABLED=false to fall back to plain templated messages (no AI at all).
 AI_ENABLED = _get_bool("AI_ENABLED", True)
