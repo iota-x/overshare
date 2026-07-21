@@ -1,5 +1,6 @@
-"""Generates assets/icon.icns — a warm rounded-square with a heart that's
-broadcasting little signal waves: lovingly *oversharing*, not a creepy eye.
+"""Generates assets/icon.icns — a love letter: an envelope with a heart wax
+seal. Ties directly to the app's own 💌 menu-bar glyph and its "overshare via
+message" premise, instead of a generic heart-with-signal-waves mark.
 
 Run: ../.venv/bin/python make_icon.py   (from the assets/ dir)
 """
@@ -9,7 +10,7 @@ import os
 import shutil
 import subprocess
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 SIZE = 1024
 SS = 4  # supersample factor for crisp, anti-aliased edges
@@ -21,9 +22,8 @@ def _lerp(a, b, t):
 
 
 def _heart_points(cx, cy, scale):
-    """A smooth heart via the classic parametric curve."""
     pts = []
-    for deg in range(0, 361, 2):
+    for deg in range(0, 361, 3):
         t = math.radians(deg)
         x = 16 * math.sin(t) ** 3
         y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
@@ -35,7 +35,7 @@ def render(size: int = SIZE) -> Image.Image:
     s = size * SS
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
 
-    # Warm diagonal gradient: pink (top-left) -> violet (bottom-right).
+    # Warm diagonal gradient background: pink (top-left) -> violet (bottom-right).
     c1, c2 = (0xFF, 0x6F, 0xB0), (0x7C, 0x4D, 0xF0)
     grad = Image.new("RGB", (s, s))
     gpx = grad.load()
@@ -47,31 +47,51 @@ def render(size: int = SIZE) -> Image.Image:
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, s - 1, s - 1], radius=int(s * 0.225), fill=255)
     img.paste(grad, (0, 0), mask)
 
+    # A soft shadow layer, drawn first so the envelope reads as lifted off the bg.
+    shadow = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+
+    # Envelope geometry.
+    ew, eh = s * 0.60, s * 0.40
+    ex0, ey0 = (s - ew) / 2, (s - eh) / 2 + s * 0.045
+    ex1, ey1 = ex0 + ew, ey0 + eh
+    radius = s * 0.028
+
+    sd.rounded_rectangle([ex0 + s * 0.01, ey0 + s * 0.018, ex1 + s * 0.01, ey1 + s * 0.018],
+                         radius=radius, fill=(40, 10, 60, 110))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(s * 0.012))
+    img.alpha_composite(shadow)
+
     draw = ImageDraw.Draw(img)
 
-    # Heart, centred and slightly left so the broadcast waves have room.
-    hx, hy = s * 0.44, s * 0.52
-    hscale = s * 0.019
-    heart = _heart_points(hx, hy, hscale)
+    # Envelope body — warm white so it sits forward of the gradient.
+    draw.rounded_rectangle([ex0, ey0, ex1, ey1], radius=radius, fill=(255, 250, 248, 255))
 
-    # Broadcast waves radiating from the heart's upper-right — "sharing".
-    # Drawn first (behind), concentric arcs fading outward.
-    ox, oy = s * 0.58, s * 0.40
-    for i, r in enumerate((0.15, 0.225, 0.30)):
-        rr = s * r
-        alpha = int(235 - i * 55)
-        draw.arc([ox - rr, oy - rr, ox + rr, oy + rr],
-                 start=-72, end=6, fill=(255, 255, 255, alpha), width=int(s * 0.022))
+    # Back flap fold-lines (the "V" and the two side diagonals), in a soft warm
+    # grey so the envelope doesn't read as a flat blank card.
+    cx = (ex0 + ex1) / 2
+    tip_y = ey0 + eh * 0.52
+    fold = (0xE9, 0xDD, 0xDD, 255)
+    lw = max(2, int(s * 0.006))
+    draw.line([(ex0, ey0), (cx, tip_y)], fill=fold, width=lw)
+    draw.line([(ex1, ey0), (cx, tip_y)], fill=fold, width=lw)
+    draw.line([(ex0, ey1), (cx, tip_y - eh * 0.06)], fill=fold, width=lw)
+    draw.line([(ex1, ey1), (cx, tip_y - eh * 0.06)], fill=fold, width=lw)
 
-    # A soft drop shadow under the heart, then the heart itself.
-    shadow = [(x + s * 0.008, y + s * 0.012) for (x, y) in heart]
-    draw.polygon(shadow, fill=(60, 20, 80, 70))
-    draw.polygon(heart, fill=(255, 255, 255, 255))
-
-    # Tiny highlight on the left lobe for a bit of life.
-    hlr = s * 0.05
-    draw.ellipse([hx - s * 0.14 - hlr, hy - s * 0.10 - hlr,
-                  hx - s * 0.14 + hlr, hy - s * 0.10 + hlr],
+    # Heart wax seal, centered where the flap's point lands.
+    seal_r = s * 0.105
+    scx, scy = cx, tip_y - s * 0.006
+    draw.ellipse([scx - seal_r, scy - seal_r, scx + seal_r, scy + seal_r],
+                 fill=(0xE3, 0x1B, 0x6B, 255))
+    # A subtle darker ring for wax depth, then the embossed heart on top.
+    draw.ellipse([scx - seal_r, scy - seal_r, scx + seal_r, scy + seal_r],
+                 outline=(0xB8, 0x12, 0x54, 255), width=max(2, int(s * 0.006)))
+    heart = _heart_points(scx, scy, seal_r * 0.052)
+    draw.polygon(heart, fill=(0xFF, 0xB4, 0xD3, 255))
+    # Gloss highlight on the seal.
+    hl_r = seal_r * 0.28
+    draw.ellipse([scx - seal_r * 0.55 - hl_r, scy - seal_r * 0.55 - hl_r,
+                  scx - seal_r * 0.55 + hl_r, scy - seal_r * 0.55 + hl_r],
                  fill=(255, 255, 255, 90))
 
     return img.resize((size, size), Image.LANCZOS)
