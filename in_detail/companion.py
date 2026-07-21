@@ -17,6 +17,10 @@ from . import config
 # (kind, payload) events for the app to drain on the main thread.
 events: "queue.Queue[tuple[str, object]]" = queue.Queue()
 
+# Open permission requests: her-facing card message_id -> what he asked for. She
+# resolves one by reacting ✅/❌ on the card (or `!yes` / `!no` for the latest).
+_pending_perms: "dict[int, str]" = {}
+
 _thread: threading.Thread | None = None
 _client = None   # discord.Client, set once connected
 _loop = None     # its asyncio event loop
@@ -49,6 +53,7 @@ def _help_embed(p: str) -> dict:
             {"name": "📸 see him", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — his screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
             {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜", "inline": False},
             {"name": "🔊 reach him", "value": f"`{p}say <text>` — speak it aloud on his Mac\n`{p}remind 30m <text>` — nudge him later (s/m/h)", "inline": False},
+            {"name": "🙏 permission", "value": f"when he asks to do something, a card pops up — react ✅ / ❌ on it, or `{p}yes` / `{p}no`", "inline": False},
             {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
             {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
             {"name": "🎨 style", "value": f"`{p}tone cutesy` · `chill` · `detailed` · `default`", "inline": False},
@@ -231,6 +236,42 @@ def dm_user(user_id, content: str = "", embed: dict | None = None) -> None:
         _schedule(_dm(user_id, content or None, embed))
 
 
+async def _ask_permission(channel_id, text: str) -> None:
+    """Post a request card she can approve/deny, and remember it for matching."""
+    import discord
+    try:
+        ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
+        embed = discord.Embed.from_dict({
+            "title": "🙏 permission request",
+            "description": (f"he's asking:\n\n**{text}**\n\n"
+                            f"react ✅ to allow · ❌ to say no  ·  or `{_prefix()}yes` / `{_prefix()}no`"),
+            "color": 0xF5A9C0,
+        })
+        msg = await ch.send(embed=embed)
+        _pending_perms[msg.id] = text
+        for e in ("✅", "❌"):
+            try:
+                await msg.add_reaction(e)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def ask_permission(channel_id, text: str) -> None:
+    """He asks her for permission to do something (from the menu bar)."""
+    if channel_id and text:
+        _schedule(_ask_permission(channel_id, text))
+
+
+def _pop_latest_perm() -> "str | None":
+    """The most recent unresolved request, for `!yes` / `!no`."""
+    if not _pending_perms:
+        return None
+    mid = next(reversed(_pending_perms))
+    return _pending_perms.pop(mid)
+
+
 def reply_file(channel_id, path: str, content: str = "", filename: str = "") -> None:
     if channel_id and path:
         _schedule(_send_file(channel_id, path, content or None, filename or None))
@@ -379,6 +420,20 @@ def _register(client, discord) -> None:
                 await say(f"⏰ okay — i'll nudge him in {_fmt_duration(secs)}: “{message}” 💛")
             else:
                 await say(f"try `{prefix}remind 30m drink water` (use s/m/h) 💛")
+        elif cmd in ("yes", "allow", "y", "approve"):
+            asked = _pop_latest_perm()
+            if asked:
+                events.put(("permission_result", (True, asked)))
+                await say(f"✅ okay — told him yes to “{asked}” 💛")
+            else:
+                await say("nothing pending to approve rn 🤍")
+        elif cmd in ("no", "deny", "n", "nope"):
+            asked = _pop_latest_perm()
+            if asked:
+                events.put(("permission_result", (False, asked)))
+                await say(f"❌ okay — told him no to “{asked}”")
+            else:
+                await say("nothing pending to say no to 🤍")
         # unknown command → silently ignore
 
     @client.event
@@ -387,7 +442,13 @@ def _register(client, discord) -> None:
             return
         if not _is_her(payload.user_id):
             return
-        events.put(("reaction", str(payload.emoji)))
+        emoji = str(payload.emoji)
+        # ✅/❌ on a pending request card resolves that request (not a love-react).
+        if payload.message_id in _pending_perms and emoji in ("✅", "❌"):
+            asked = _pending_perms.pop(payload.message_id)
+            events.put(("permission_result", (emoji == "✅", asked)))
+            return
+        events.put(("reaction", emoji))
 
 
 def _run() -> None:

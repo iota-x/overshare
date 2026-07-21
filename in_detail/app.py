@@ -67,6 +67,7 @@ class InDetailApp(rumps.App):
         self.send_item = rumps.MenuItem("Send update now", callback=self.send_now)
         self.reply_item = rumps.MenuItem("Reply to her…", callback=self.reply_to_her)
         self.mood_item = rumps.MenuItem("Set mood…", callback=self.set_mood)
+        self.ask_item = rumps.MenuItem("Ask permission…", callback=self.ask_her_permission)
         self.recap_item = rumps.MenuItem("Send daily recap now", callback=self.recap_now)
         self.weekly_item = rumps.MenuItem("Send weekly wrap now", callback=self.weekly_now)
         # Live privacy switches: whether she can pull a camera / screen view.
@@ -89,6 +90,7 @@ class InDetailApp(rumps.App):
             None,
             self.reply_item,
             self.mood_item,
+            self.ask_item,
             self.pause_item,
             self.send_item,
             self.recap_item,
@@ -258,6 +260,25 @@ class InDetailApp(rumps.App):
         resp = win.run()
         if resp.clicked and resp.text.strip():
             companion.reply_text(config.DISCORD_HOME_CHANNEL_ID, resp.text.strip())
+
+    def ask_her_permission(self, _sender) -> None:
+        if not companion.enabled() or not config.DISCORD_HOME_CHANNEL_ID:
+            self._notify("Two-way not set up", "", "Add DISCORD_BOT_TOKEN in .env.")
+            return
+        try:  # bring the app forward so the dialog is visible (menubar-only app)
+            from AppKit import NSApplication
+            NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+        except Exception:
+            pass
+        win = rumps.Window(message="What do you want to ask her permission for?",
+                           title="Ask permission", ok="Ask", cancel="Cancel",
+                           dimensions=(320, 90))
+        resp = win.run()
+        if resp.clicked and resp.text.strip():
+            asked = resp.text.strip()
+            companion.ask_permission(config.DISCORD_HOME_CHANNEL_ID, asked)
+            self._notify("🙏 asked her", "", asked)
+            self._flash()
 
     def set_mood(self, _sender) -> None:
         from . import settings
@@ -461,6 +482,11 @@ class InDetailApp(rumps.App):
             elif kind == "remind":
                 _cid, secs, message = payload
                 self._schedule_reminder(secs, message)
+            elif kind == "permission_result":
+                approved, asked = payload
+                title = "✅ she said yes" if approved else "❌ she said no"
+                self._notify(title, "", asked)
+                self._flash()
             elif kind == "cmd_activity":
                 threading.Thread(target=self._answer_activity, args=(payload,), daemon=True).start()
             elif kind == "cmd_recap":
