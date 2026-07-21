@@ -18,6 +18,12 @@ from . import config
 #   `!live` (toggled from the menu bar). config.PEEK_ENABLED is the master off.
 # mirror_capture: flip webcam photos left-to-right so they read like a mirror
 #   (the natural selfie view) instead of imagesnap's reversed-feeling raw frame.
+# pet_name: what she wants the bot to call her (set with !petname), overrides
+#   config.HER_NAME in good-morning/goodnight lines when set.
+# mood_emoji: replaces the menu-bar glyph when set (blank = default 💌).
+# selfie_enabled/selfie_time: a once-daily automatic webcam check-in photo.
+# daily_question_enabled/daily_question_time: a once-daily "question of the day".
+# her_timezone: IANA name (e.g. "America/New_York") to show her local time.
 _DEFAULTS = {
     "card_destination": "channel",
     "tone": "default",
@@ -28,6 +34,13 @@ _DEFAULTS = {
     "mirror_capture": True,
     "say_voice": "",       # macOS voice name for !say; "" = system default
     "exact_status": False, # send exactly-what's-detected, skip AI phrasing
+    "pet_name": "",
+    "mood_emoji": "",
+    "selfie_enabled": False,
+    "selfie_time": "09:00",
+    "daily_question_enabled": False,
+    "daily_question_time": "12:00",
+    "her_timezone": "",
 }
 _cache: dict | None = None
 

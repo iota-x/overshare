@@ -58,6 +58,8 @@ def _aggregate(logs: list[DailyLog]) -> dict:
     agg = {
         "active": 0.0, "by_app": {}, "youtube": {}, "sites": {}, "tracks": {},
         "days_active": 0, "late_nights": 0,
+        "pokes": 0, "messages_from_her": 0, "peeks": 0,
+        "permissions_asked": 0, "permissions_approved": 0,
     }
     for log in logs:
         if log.active_seconds < config.RECAP_MIN_MINUTES * 60:
@@ -68,6 +70,11 @@ def _aggregate(logs: list[DailyLog]) -> dict:
         _merge(agg["youtube"], log.youtube)
         _merge(agg["sites"], log.sites)
         _merge(agg["tracks"], log.tracks)
+        agg["pokes"] += log.pokes
+        agg["messages_from_her"] += log.messages_from_her
+        agg["peeks"] += log.peeks
+        agg["permissions_asked"] += log.permissions_asked
+        agg["permissions_approved"] += log.permissions_approved
         try:
             last_h = _dt.datetime.fromisoformat(log.last_active).hour
             if last_h >= 23 or last_h < 4:
@@ -77,11 +84,17 @@ def _aggregate(logs: list[DailyLog]) -> dict:
     return agg
 
 
+def _love_score(agg: dict) -> int:
+    return agg["pokes"] * 2 + agg["messages_from_her"] * 3 + agg["peeks"] + agg["permissions_approved"] * 2
+
+
 def _stats_text(agg: dict) -> str:
     parts = [
         f"active this week: {_hms(agg['active'])} across {agg['days_active']} days",
         f"late nights: {agg['late_nights']}",
     ]
+    if _love_score(agg):
+        parts.append(f"she reached out {agg['pokes'] + agg['messages_from_her'] + agg['peeks']} times this week")
     apps = _top(agg["by_app"], 3)
     if apps:
         parts.append("top apps: " + ", ".join(f"{k} {_hms(v)}" for k, v in apps))
@@ -107,8 +120,19 @@ def build_message(logs: list[DailyLog]) -> tuple[str, dict]:
         {"name": "⏱ total", "value": _hms(agg["active"]), "inline": True},
         {"name": "📅 days on", "value": str(agg["days_active"]), "inline": True},
         {"name": "🌙 late nights", "value": str(agg["late_nights"]), "inline": True},
-        {"name": "🖥️ most time in", "value": _lines(_top(agg["by_app"], 5), lambda k, v: f"**{k}** · {_hms(v)}"), "inline": False},
     ]
+    if _love_score(agg):
+        love_bits = []
+        if agg["messages_from_her"]:
+            love_bits.append(f"{agg['messages_from_her']} messages")
+        if agg["pokes"]:
+            love_bits.append(f"{agg['pokes']} pokes")
+        if agg["peeks"]:
+            love_bits.append(f"{agg['peeks']} peeks")
+        if agg["permissions_asked"]:
+            love_bits.append(f"{agg['permissions_approved']}/{agg['permissions_asked']} asks approved")
+        fields.append({"name": "💛 love-o-meter", "value": f"{', '.join(love_bits)} · score {_love_score(agg)}", "inline": True})
+    fields.append({"name": "🖥️ most time in", "value": _lines(_top(agg["by_app"], 5), lambda k, v: f"**{k}** · {_hms(v)}"), "inline": False})
     if agg["youtube"]:
         fields.append({"name": "📺 top watches", "value": _lines(
             _top(agg["youtube"], 4),

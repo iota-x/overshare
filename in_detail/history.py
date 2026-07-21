@@ -55,6 +55,22 @@ class DailyLog:
     last_active: str = ""
     recap_posted: bool = False
 
+    # --- love-o-meter: how much she reached out today -----------------------
+    pokes: int = 0                  # !poke / !miss / !callme / !break / !food
+    messages_from_her: int = 0      # anything she just typed (not a command)
+    peeks: int = 0                  # !peek / !screen / !live
+    permissions_asked: int = 0      # times he asked her permission for something
+    permissions_approved: int = 0   # of those, how many she said yes to
+
+    def love_score(self) -> int:
+        """A small, made-up score so the recap has something fun to show off."""
+        return (
+            self.pokes * 2
+            + self.messages_from_her * 3
+            + self.peeks
+            + self.permissions_approved * 2
+        )
+
     def record(self, snap: Snapshot, seconds: float) -> None:
         self.active_seconds += seconds
         _add(self.by_app, snap.app, seconds)

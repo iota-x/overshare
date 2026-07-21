@@ -51,10 +51,10 @@ def _help_embed(p: str) -> dict:
         "fields": [
             {"name": "👀 check on him", "value": f"`{p}wyd` — what he's doing now\n`{p}song` — what he's listening to\n`{p}recap` — his day so far", "inline": False},
             {"name": "📸 see him", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — his screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
-            {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜", "inline": False},
-            {"name": "🔊 reach him", "value": f"`{p}say <text>` — speak it aloud on his Mac\n`{p}remind 30m <text>` — nudge him later (s/m/h)", "inline": False},
+            {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜\n`{p}kiss` 😘 · `{p}hug` 🫂 · `{p}boop`", "inline": False},
+            {"name": "🔊 reach him", "value": f"`{p}say <text>` — speak it aloud on his Mac\n`{p}remind 30m <text>` — nudge him later (s/m/h)\n`{p}sound kiss` — play a chime on his Mac", "inline": False},
             {"name": "🙏 permission", "value": f"when he asks to do something, a card pops up — react ✅ / ❌ on it, or `{p}yes` / `{p}no`", "inline": False},
-            {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
+            {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac\n`{p}petname <name>` — what he calls you", "inline": False},
             {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
             {"name": "🎨 style", "value": f"`{p}tone cutesy` · `chill` · `detailed` · `default`", "inline": False},
             {"name": "✍️ just talk", "value": "anything else you type pops up on his screen 💛", "inline": False},
@@ -399,6 +399,30 @@ def _register(client, discord) -> None:
             events.put(("break", name))
         elif cmd in ("food", "eat"):
             events.put(("food", name))
+        elif cmd in ("kiss", "muah"):
+            events.put(("kiss", name))
+        elif cmd == "hug":
+            events.put(("hug", name))
+        elif cmd == "boop":
+            events.put(("boop", name))
+        elif cmd.startswith("sound"):
+            from . import sound
+            parts = cmd.split()
+            which = parts[1] if len(parts) >= 2 else ""
+            if which in sound.NAMES:
+                events.put(("sound", which))
+            else:
+                await say(f"sounds: {', '.join(sound.NAMES)} — try `{prefix}sound kiss` 🔊")
+        elif cmd.startswith("petname"):
+            from . import settings
+            parts = raw.split(None, 1)
+            newname = parts[1].strip() if len(parts) > 1 else ""
+            if newname:
+                settings.set("pet_name", newname)
+                await say(f"okay — he'll call you **{newname}** from now on 💛")
+            else:
+                cur = settings.get("pet_name")
+                await say(f"your pet name is **{cur}**" if cur else f"no pet name set. try `{prefix}petname babygirl`")
         elif cmd in ("gm", "morning", "good morning"):
             events.put(("greet", ("gm", name)))
         elif cmd in ("gn", "night", "goodnight", "good night"):

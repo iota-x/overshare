@@ -60,7 +60,22 @@ def _stats_text(log: DailyLog) -> str:
         parts.append("watched: " + ", ".join(k for k, _ in vids))
     if log.tracks:
         parts.append(f"had music on for a while ({len(log.tracks)} tracks)")
+    if log.love_score():
+        parts.append(f"she reached out {log.pokes + log.messages_from_her + log.peeks} times today")
     return "\n".join(parts)
+
+
+def _love_line(log: DailyLog) -> str:
+    bits = []
+    if log.messages_from_her:
+        bits.append(f"{log.messages_from_her} msg" + ("s" if log.messages_from_her != 1 else ""))
+    if log.pokes:
+        bits.append(f"{log.pokes} poke" + ("s" if log.pokes != 1 else ""))
+    if log.peeks:
+        bits.append(f"{log.peeks} peek" + ("s" if log.peeks != 1 else ""))
+    if log.permissions_asked:
+        bits.append(f"{log.permissions_approved}/{log.permissions_asked} asks approved")
+    return (", ".join(bits) + f" · score {log.love_score()}") if bits else "quiet day 🤍"
 
 
 def build_message(log: DailyLog) -> tuple[str, dict]:
@@ -76,6 +91,8 @@ def build_message(log: DailyLog) -> tuple[str, dict]:
     streak = _streak()
     if streak >= 2:
         fields.append({"name": "🔥 streak", "value": f"{streak} days", "inline": True})
+    if log.love_score():
+        fields.append({"name": "💛 love-o-meter", "value": _love_line(log), "inline": True})
 
     fields.append({"name": "🖥️ where the time went", "value": _lines(_top(log.by_app, 5)), "inline": False})
     if log.youtube:

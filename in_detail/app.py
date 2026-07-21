@@ -20,8 +20,10 @@ from . import collectors
 from . import companion
 from . import history
 from . import notifier
+from . import questions
 from . import recap
 from . import sites
+from . import sound
 from . import weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
@@ -30,7 +32,8 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    her = config.HER_NAME or "love"
+    from . import settings
+    her = settings.get("pet_name") or config.HER_NAME or "love"
     return random.choice([
         f"good morning {her} ☀️ hope you slept well",
         f"morning {her} 🌅 thinking of you already",
@@ -54,6 +57,8 @@ class InDetailApp(rumps.App):
         self._weekly_posting = False
         self._flash_ticks = 0  # menu-bar 💛 flash countdown
         self._gm_date = ""
+        self._selfie_date = ""    # last date the daily auto-selfie was sent
+        self._question_date = ""  # last date the daily couple question was sent
         # Latest activity snapshot, produced by a background thread so slow
         # osascript reads can never stall the menu bar.
         try:
@@ -63,6 +68,10 @@ class InDetailApp(rumps.App):
 
         self.status_item = rumps.MenuItem("Starting…")
         self.status_item.set_callback(None)  # display-only
+        self.screentime_item = rumps.MenuItem("📊 Today: —")
+        self.screentime_item.set_callback(None)
+        self.hertime_item = rumps.MenuItem("🕐 Her time: —")
+        self.hertime_item.set_callback(None)
         self.pause_item = rumps.MenuItem("Pause", callback=self.toggle_pause)
         self.send_item = rumps.MenuItem("Send update now", callback=self.send_now)
         self.reply_item = rumps.MenuItem("Reply to her…", callback=self.reply_to_her)
@@ -87,6 +96,8 @@ class InDetailApp(rumps.App):
 
         self.menu = [
             self.status_item,
+            self.screentime_item,
+            self.hertime_item,
             None,
             self.reply_item,
             self.mood_item,
@@ -133,6 +144,8 @@ class InDetailApp(rumps.App):
 
     # --- UI helpers ---------------------------------------------------------
     def _refresh_icon(self) -> None:
+        from . import settings
+        active_icon = settings.get("mood_emoji") or _ACTIVE_ICON
         if self._flash_ticks > 0:
             self.title = "💛"
             self._flash_ticks -= 1
@@ -141,7 +154,7 @@ class InDetailApp(rumps.App):
         elif not self._healthy():
             self.title = "⚠️"
         else:
-            self.title = _ACTIVE_ICON
+            self.title = active_icon
 
     def _healthy(self) -> bool:
         if not notifier.healthy():
@@ -277,6 +290,7 @@ class InDetailApp(rumps.App):
         if resp.clicked and resp.text.strip():
             asked = resp.text.strip()
             companion.ask_permission(config.DISCORD_HOME_CHANNEL_ID, asked)
+            self.day.permissions_asked += 1
             self._notify("🙏 asked her", "", asked)
             self._flash()
 
@@ -397,6 +411,71 @@ class InDetailApp(rumps.App):
             companion.reply_text(config.DISCORD_HOME_CHANNEL_ID, _good_morning_line())
             self._gm_date = today
 
+    def _due_at(self, hhmm: str, default: tuple[int, int]) -> bool:
+        """Has today passed HH:MM yet? Used for the once-daily extras below."""
+        try:
+            hh, mm = (int(x) for x in str(hhmm).split(":"))
+        except Exception:
+            hh, mm = default
+        now = _dt.datetime.now()
+        return (now.hour, now.minute) >= (hh, mm)
+
+    def _maybe_auto_selfie(self) -> None:
+        from . import settings
+        if not (settings.get("selfie_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
+            return
+        today = _dt.date.today().isoformat()
+        if self._selfie_date == today:
+            return
+        if self._due_at(settings.get("selfie_time"), (9, 0)):
+            self._selfie_date = today
+            threading.Thread(target=self._send_auto_selfie, daemon=True).start()
+
+    def _send_auto_selfie(self) -> None:
+        from . import settings
+        if not (config.PEEK_ENABLED and settings.peek_source_enabled("cam") and capture.webcam_available()):
+            return
+        path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
+        if path:
+            companion.reply_file(
+                config.DISCORD_HOME_CHANNEL_ID, path,
+                content="📸 good morning check-in — thinking of you 💛",
+            )
+
+    def _maybe_daily_question(self) -> None:
+        from . import settings
+        if not (settings.get("daily_question_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
+            return
+        today = _dt.date.today().isoformat()
+        if self._question_date == today:
+            return
+        if self._due_at(settings.get("daily_question_time"), (12, 0)):
+            self._question_date = today
+            companion.reply_text(
+                config.DISCORD_HOME_CHANNEL_ID, f"❓ question of the day: {questions.pick()}"
+            )
+
+    def _update_screentime(self) -> None:
+        apps = recap._top(self.day.by_app, 3)
+        if not apps:
+            self.screentime_item.title = "📊 Today: just getting started"
+            return
+        parts = [f"{k} {recap._hms(v)}" for k, v in apps]
+        self.screentime_item.title = ("📊 Today: " + " · ".join(parts))[:80]
+
+    def _update_her_time(self) -> None:
+        from . import settings
+        tz = settings.get("her_timezone")
+        if not tz:
+            self.hertime_item.title = "🕐 Her time: not set"
+            return
+        try:
+            from zoneinfo import ZoneInfo
+            now = _dt.datetime.now(ZoneInfo(tz))
+            self.hertime_item.title = f"🕐 Her time: {now.strftime('%-I:%M %p').lower()}"
+        except Exception:
+            self.hertime_item.title = "🕐 Her time: invalid timezone"
+
     # --- daily recap --------------------------------------------------------
     def _rollover_if_new_day(self) -> None:
         today = _dt.date.today().isoformat()
@@ -448,26 +527,46 @@ class InDetailApp(rumps.App):
                 break
             if kind == "message":
                 name, text = payload
+                self.day.messages_from_her += 1
                 self._notify(f"💌 {name}", "", text)
                 self._flash()
             elif kind == "reaction":
                 self._notify("💛 she reacted", "", str(payload))
                 self._flash()
             elif kind == "poke":
+                self.day.pokes += 1
                 self._notify("👉 poke!", "", f"{payload} is thinking of you")
                 self._flash()
             elif kind == "miss":
+                self.day.pokes += 1
                 self._notify("🥺 she misses you", "", f"{payload} misses you")
                 self._flash()
             elif kind == "callme":
+                self.day.pokes += 1
                 self._notify("📞 call me", "", f"{payload} wants you to call")
                 self._flash()
             elif kind == "break":
+                self.day.pokes += 1
                 self._notify("☕ take a break", "", f"{payload} says step away for a bit")
                 self._flash()
             elif kind == "food":
+                self.day.pokes += 1
                 self._notify("🍜 did you eat?", "", f"{payload} is checking you ate")
                 self._flash()
+            elif kind == "kiss":
+                self.day.pokes += 1
+                self._notify("😘 kiss!", "", f"{payload} sent you a kiss")
+                self._flash()
+            elif kind == "hug":
+                self.day.pokes += 1
+                self._notify("🫂 hug!", "", f"{payload} is hugging you")
+                self._flash()
+            elif kind == "boop":
+                self.day.pokes += 1
+                self._notify("👉 boop!", "", f"{payload} booped you")
+                self._flash()
+            elif kind == "sound":
+                threading.Thread(target=sound.play, args=(payload,), daemon=True).start()
             elif kind == "greet":
                 which, nm = payload
                 title = "☀️ good morning" if which == "gm" else "🌙 goodnight"
@@ -484,6 +583,8 @@ class InDetailApp(rumps.App):
                 self._schedule_reminder(secs, message)
             elif kind == "permission_result":
                 approved, asked = payload
+                if approved:
+                    self.day.permissions_approved += 1
                 title = "✅ she said yes" if approved else "❌ she said no"
                 self._notify(title, "", asked)
                 self._flash()
@@ -494,10 +595,13 @@ class InDetailApp(rumps.App):
             elif kind == "cmd_song":
                 threading.Thread(target=self._answer_song, args=(payload,), daemon=True).start()
             elif kind == "cmd_peek":
+                self.day.peeks += 1
                 threading.Thread(target=self._answer_peek, args=(payload, "cam"), daemon=True).start()
             elif kind == "cmd_screen":
+                self.day.peeks += 1
                 threading.Thread(target=self._answer_peek, args=(payload, "screen"), daemon=True).start()
             elif kind == "cmd_live":
+                self.day.peeks += 1
                 cid, src = payload
                 self._answer_live(cid, src)
             elif kind == "request_update" and not self.paused:
@@ -521,12 +625,16 @@ class InDetailApp(rumps.App):
         self._ticks += 1
         if self._ticks % 15 == 0:  # persist ~every 30s
             history.save(self.day)
+            self._update_screentime()
+            self._update_her_time()
 
         # Bot presence (throttled) + scheduled good-morning to her.
         if companion.enabled():
             if self._ticks % 10 == 0 and snap.idle_seconds < config.IDLE_THRESHOLD:
                 companion.set_presence(self._presence_label(snap))
             self._maybe_good_morning()
+            self._maybe_auto_selfie()
+            self._maybe_daily_question()
 
         if recap.due(self.day):
             self._post_recap()

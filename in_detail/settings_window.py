@@ -50,6 +50,11 @@ class SettingsController(NSObject):
         self._prefix_field = None
         self._mood_field = None
         self._voice_field = None
+        self._petname_field = None
+        self._emoji_field = None
+        self._selfie_time_field = None
+        self._question_time_field = None
+        self._her_tz_field = None
         self._y = 0                  # layout cursor (top-down)
         return self
 
@@ -65,8 +70,8 @@ class SettingsController(NSObject):
     @objc.python_method
     def _build(self):
         # Height is derived from the rows we add, so it's easy to extend later.
-        rows = 5 + 1 + 3      # 5 delivery + 1 status + 3 camera switches
-        headers = 3
+        rows = 7 + 1 + 3 + 4 + 1   # delivery + status + camera + fun + long-distance
+        headers = 5
         height = _MARGIN * 2 + 40 + rows * (_ROW_H + _GAP) + headers * 30
         win = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
             NSMakeRect(0, 0, _W, height),
@@ -87,6 +92,8 @@ class SettingsController(NSObject):
         self._prefix_field = self._text("Command prefix", "prefix", placeholder="! (default)")
         self._mood_field = self._text("Your mood / status", "mood", placeholder="blank = none")
         self._voice_field = self._text("Voice for !say", "say_voice", placeholder="blank = system default")
+        self._petname_field = self._text("Pet name (what he calls her)", "pet_name", placeholder="blank = her name")
+        self._emoji_field = self._text("Menu-bar icon", "mood_emoji", placeholder="blank = 💌")
 
         self._header("Status accuracy 📡")
         self._check("Exact mode — send what's detected, no AI wording", "exact_status", "toggleExact:")
@@ -95,6 +102,15 @@ class SettingsController(NSObject):
         self._check("Allow camera peeks", "camera_enabled", "toggleCamera:")
         self._check("Allow screen peeks", "screen_enabled", "toggleScreen:")
         self._check("Mirror camera photos (selfie view)", "mirror_capture", "toggleMirror:")
+
+        self._header("Fun 🎉")
+        self._check("Daily auto-selfie check-in", "selfie_enabled", "toggleSelfie:")
+        self._selfie_time_field = self._text("  ↳ at (HH:MM, 24h)", "selfie_time", placeholder="09:00")
+        self._check("Daily couple question", "daily_question_enabled", "toggleQuestion:")
+        self._question_time_field = self._text("  ↳ at (HH:MM, 24h)", "daily_question_time", placeholder="12:00")
+
+        self._header("Long distance 🌍")
+        self._her_tz_field = self._text("Her timezone", "her_timezone", placeholder="e.g. America/New_York")
 
     # --- layout helpers -----------------------------------------------------
     @objc.python_method
@@ -188,6 +204,12 @@ class SettingsController(NSObject):
         settings.set("mirror_capture", bool(sender.state()))
         self._notify()
 
+    def toggleSelfie_(self, sender):
+        settings.set("selfie_enabled", bool(sender.state()))
+
+    def toggleQuestion_(self, sender):
+        settings.set("daily_question_enabled", bool(sender.state()))
+
     # Text fields commit when the window closes (covers edits without Enter).
     def windowWillClose_(self, _notification):
         if self._prefix_field is not None:
@@ -196,4 +218,14 @@ class SettingsController(NSObject):
             settings.set("mood", self._mood_field.stringValue().strip())
         if self._voice_field is not None:
             settings.set("say_voice", self._voice_field.stringValue().strip())
+        if self._petname_field is not None:
+            settings.set("pet_name", self._petname_field.stringValue().strip())
+        if self._emoji_field is not None:
+            settings.set("mood_emoji", self._emoji_field.stringValue().strip())
+        if self._selfie_time_field is not None:
+            settings.set("selfie_time", self._selfie_time_field.stringValue().strip() or "09:00")
+        if self._question_time_field is not None:
+            settings.set("daily_question_time", self._question_time_field.stringValue().strip() or "12:00")
+        if self._her_tz_field is not None:
+            settings.set("her_timezone", self._her_tz_field.stringValue().strip())
         self._notify()
