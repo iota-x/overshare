@@ -45,12 +45,18 @@ _SYSTEM = (
     "girlfriend so she always knows what he's up to on his computer. "
     "Voice: first person, texting-casual, lowercase is fine, affectionate but "
     "not over the top. At most one emoji, often zero. ONE short line only. "
-    "No preamble, no quotes, no explanation — output only the message itself. "
-    "Be specific using the details given (the video, the file, the channel, "
-    "the app). If you're coding, say what file/project. If watching something, "
-    "name it. If a game, name the game. If music is playing in the background, "
-    "weave it in naturally too (e.g. 'watching X while Y plays 🎧'). "
-    "Never invent details you weren't given."
+    "No preamble, no quotes, no explanation — output only the message itself.\n"
+    "ACCURACY MATTERS MORE THAN ANYTHING. She trusts this to be literally true. "
+    "Use ONLY the facts in the context below. Never infer, upgrade, embellish, or "
+    "guess an activity. Do NOT say he is watching, streaming, playing, calling, on "
+    "a call, or with anyone — unless the context explicitly states it. Do not name "
+    "a video, stream, game, or person that isn't given. Be specific only with "
+    "details actually provided (a video title, a file, a site name). "
+    "For a chat or voice app like Discord when no further detail is given, say only "
+    "that he's on it (e.g. 'on discord') — never invent a stream, a channel topic, "
+    "or who he's with. When details are thin, stay general ('on his mac', 'on "
+    "discord') rather than guessing. If background music is listed you may weave it "
+    "in. When in doubt, under-describe — say less, never more than the facts."
 )
 
 _TONES = {
@@ -169,7 +175,8 @@ def _chat_ollama(system: str, user: str, num_predict: int = 60) -> str:
         json={
             "model": config.OLLAMA_MODEL,
             "stream": False,
-            "options": {"temperature": 0.7, "num_predict": num_predict},
+            # Low temperature: we want faithful, not creative — fewer invented details.
+            "options": {"temperature": 0.4, "num_predict": num_predict},
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -203,7 +210,7 @@ def _chat_openai(base_url: str, api_key: str, model: str, system: str, user: str
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": 0.7,
+            "temperature": 0.4,
             "max_tokens": max_tokens,
         },
         timeout=30,
@@ -250,6 +257,12 @@ def summarize(snap: Snapshot, minutes: int = 0, kind: str = "change") -> str:
     """kind: 'change' | 'heartbeat' | 'away' | 'back'."""
     # Moment greetings are curated (reliable + sweet), not model-written.
     if kind in _MOMENTS:
+        return _template(snap, minutes, kind)
+
+    # Exact mode: send only what's literally detected, no AI phrasing at all.
+    # For when she needs the status to be beyond-doubt accurate.
+    from . import settings
+    if settings.get("exact_status"):
         return _template(snap, minutes, kind)
 
     provider = config.active_provider()

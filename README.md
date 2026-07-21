@@ -180,6 +180,7 @@ open a real live *stream*, so this is fast snapshot-on-demand.
   bundled `.app` with a minimal `PATH`.)
 - First use, macOS asks for **Camera** and **Screen Recording** permission for the app (System Settings → Privacy). The green camera light shows whenever the webcam fires.
 - Only allowed users (`HER_USER_IDS`) can trigger it, and **you get a card + flash every time she peeks** (`PEEK_NOTIFY=false` to silence, `PEEK_ENABLED=false` to disable the whole feature).
+- **Per-source toggles in the menu bar** — **Allow camera peeks** and **Allow screen peeks** flip camera and screen independently, live (checkmark = allowed). Turn the camera off and `!peek` politely bounces while `!screen` still works — no restart, and it sticks across launches.
 
 ---
 

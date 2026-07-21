@@ -49,8 +49,13 @@ def webcam_available() -> bool:
     return _resolve("imagesnap") is not None
 
 
-def snap_webcam(warmup: float = 0.6) -> str | None:
-    """One photo from the default camera. `warmup` lets the sensor expose."""
+def snap_webcam(warmup: float = 0.6, mirror: bool = False) -> str | None:
+    """One photo from the default camera. `warmup` lets the sensor expose.
+
+    `mirror` flips the shot left-to-right so it reads like a mirror/selfie — the
+    view we're used to seeing of ourselves — instead of imagesnap's raw sensor
+    frame, which feels reversed (text backwards, part in the "wrong" place).
+    """
     imagesnap = _resolve("imagesnap")
     if not imagesnap:
         return None
@@ -64,7 +69,26 @@ def snap_webcam(warmup: float = 0.6) -> str | None:
     except Exception:
         _rm(path)
         return None
-    return path if os.path.getsize(path) > 0 else _rm(path)
+    if os.path.getsize(path) <= 0:
+        return _rm(path)
+    if mirror:
+        _flip_horizontal(path)  # best-effort; keep the un-flipped shot if it fails
+    return path
+
+
+def _flip_horizontal(path: str) -> bool:
+    """Mirror a still in place. Uses `sips` (built into macOS — no extra deps)."""
+    sips = _resolve("sips")
+    if not sips:
+        return False
+    try:
+        subprocess.run(
+            [sips, "--flip", "horizontal", path],
+            check=True, capture_output=True, timeout=20,
+        )
+        return True
+    except Exception:
+        return False
 
 
 def snap_screen() -> str | None:

@@ -9,6 +9,7 @@ which are scheduled onto the bot's asyncio loop from any thread.
 from __future__ import annotations
 
 import queue
+import re
 import threading
 
 from . import config
@@ -47,6 +48,7 @@ def _help_embed(p: str) -> dict:
             {"name": "👀 check on him", "value": f"`{p}wyd` — what he's doing now\n`{p}song` — what he's listening to\n`{p}recap` — his day so far", "inline": False},
             {"name": "📸 see him", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — his screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
             {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜", "inline": False},
+            {"name": "🔊 reach him", "value": f"`{p}say <text>` — speak it aloud on his Mac\n`{p}remind 30m <text>` — nudge him later (s/m/h)", "inline": False},
             {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac", "inline": False},
             {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
             {"name": "🎨 style", "value": f"`{p}tone cutesy` · `chill` · `detailed` · `default`", "inline": False},
@@ -54,6 +56,29 @@ def _help_embed(p: str) -> dict:
         ],
         "footer": {"text": f"overshare · {p}help"},
     }
+
+
+def _parse_duration(tok: str) -> int | None:
+    """'30m' '1h' '45s' '1h30m' '90'(=minutes) -> seconds, capped at 24h."""
+    tok = (tok or "").strip().lower()
+    if not tok:
+        return None
+    if tok.isdigit():
+        secs = int(tok) * 60
+    else:
+        m = re.fullmatch(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?", tok)
+        if not m or not any(m.groups()):
+            return None
+        h, mi, s = (int(x) if x else 0 for x in m.groups())
+        secs = h * 3600 + mi * 60 + s
+    return min(secs, 24 * 3600) if secs > 0 else None
+
+
+def _fmt_duration(secs: int) -> str:
+    h, r = divmod(secs, 3600)
+    mi, s = divmod(r, 60)
+    parts = [f"{h}h" for _ in (1,) if h] + [f"{mi}m" for _ in (1,) if mi] + [f"{s}s" for _ in (1,) if s]
+    return " ".join(parts) or "0s"
 
 
 def enabled() -> bool:
@@ -337,6 +362,23 @@ def _register(client, discord) -> None:
             events.put(("greet", ("gm", name)))
         elif cmd in ("gn", "night", "goodnight", "good night"):
             events.put(("greet", ("gn", name)))
+        elif cmd.startswith("say"):
+            bits = raw.split(None, 1)
+            spoken = bits[1].strip() if len(bits) > 1 else ""
+            if spoken:
+                events.put(("say", (cid, spoken)))
+                await say("🔊 saying that out loud on his mac 💛")
+            else:
+                await say(f"say what? try `{prefix}say i love you` 💛")
+        elif cmd.startswith("remind"):
+            bits = raw.split(None, 2)  # ['remind', '<when>', '<message>']
+            secs = _parse_duration(bits[1]) if len(bits) >= 2 else None
+            message = bits[2].strip() if len(bits) >= 3 else ""
+            if secs and message:
+                events.put(("remind", (cid, secs, message)))
+                await say(f"⏰ okay — i'll nudge him in {_fmt_duration(secs)}: “{message}” 💛")
+            else:
+                await say(f"try `{prefix}remind 30m drink water` (use s/m/h) 💛")
         # unknown command → silently ignore
 
     @client.event

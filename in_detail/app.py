@@ -69,6 +69,20 @@ class InDetailApp(rumps.App):
         self.mood_item = rumps.MenuItem("Set mood…", callback=self.set_mood)
         self.recap_item = rumps.MenuItem("Send daily recap now", callback=self.recap_now)
         self.weekly_item = rumps.MenuItem("Send weekly wrap now", callback=self.weekly_now)
+        # Live privacy switches: whether she can pull a camera / screen view.
+        # Checkmark = allowed. config.PEEK_ENABLED is the master off-switch.
+        from . import settings
+        self.camera_item = rumps.MenuItem("Allow camera peeks", callback=self.toggle_camera)
+        self.screen_item = rumps.MenuItem("Allow screen peeks", callback=self.toggle_screen)
+        # Mirror webcam photos so they look like a selfie rather than reversed.
+        self.mirror_item = rumps.MenuItem("Mirror camera photos", callback=self.toggle_mirror)
+        self.camera_item.state = 1 if settings.get("camera_enabled") else 0
+        self.screen_item.state = 1 if settings.get("screen_enabled") else 0
+        self.mirror_item.state = 1 if settings.get("mirror_capture") else 0
+        # Full settings panel (everything the menu bar covers, in one window).
+        self.settings_item = rumps.MenuItem("Settings…", callback=self.open_settings)
+        self._settings_ctrl = None
+        self._reminders = set()   # live rumps.Timers for pending !remind nudges
 
         self.menu = [
             self.status_item,
@@ -79,6 +93,11 @@ class InDetailApp(rumps.App):
             self.send_item,
             self.recap_item,
             self.weekly_item,
+            None,
+            self.settings_item,
+            self.camera_item,
+            self.screen_item,
+            self.mirror_item,
             None,
             rumps.MenuItem("Quit", callback=self.quit_app),
         ]
@@ -163,6 +182,56 @@ class InDetailApp(rumps.App):
         self.paused = not self.paused
         self._apply_paused_ui()
 
+    def toggle_camera(self, _sender) -> None:
+        from . import settings
+        new = not bool(settings.get("camera_enabled"))
+        settings.set("camera_enabled", new)
+        self.camera_item.state = 1 if new else 0
+
+    def toggle_screen(self, _sender) -> None:
+        from . import settings
+        new = not bool(settings.get("screen_enabled"))
+        settings.set("screen_enabled", new)
+        self.screen_item.state = 1 if new else 0
+
+    def toggle_mirror(self, _sender) -> None:
+        from . import settings
+        new = not bool(settings.get("mirror_capture"))
+        settings.set("mirror_capture", new)
+        self.mirror_item.state = 1 if new else 0
+
+    def open_settings(self, _sender) -> None:
+        try:
+            from .settings_window import SettingsController
+            if self._settings_ctrl is None:
+                self._settings_ctrl = SettingsController.alloc().init()
+            self._settings_ctrl.show(self._sync_menu_states)
+        except Exception as e:
+            rumps.notification("overshare", "Settings", f"couldn’t open settings ({e})")
+
+    def _sync_menu_states(self) -> None:
+        # Keep the menu-bar checkmarks in step with edits made in the panel.
+        from . import settings
+        self.camera_item.state = 1 if settings.get("camera_enabled") else 0
+        self.screen_item.state = 1 if settings.get("screen_enabled") else 0
+        self.mirror_item.state = 1 if settings.get("mirror_capture") else 0
+
+    def _say_aloud(self, text: str) -> None:
+        from . import voice, settings
+        voice.speak(text, settings.get("say_voice") or None)
+
+    def _schedule_reminder(self, seconds: int, message: str) -> None:
+        # rumps.Timer fires on the main run loop, so the notification is safe.
+        def fire(timer) -> None:
+            timer.stop()
+            self._reminders.discard(timer)
+            self._notify("💛 from her", "", message)
+            self._flash()
+
+        timer = rumps.Timer(fire, seconds)
+        self._reminders.add(timer)
+        timer.start()
+
     def send_now(self, _sender) -> None:
         decision = self.tracker.force(self._latest)
         self._dispatch(decision)
@@ -245,15 +314,20 @@ class InDetailApp(rumps.App):
             self._flash()
 
     def _answer_peek(self, channel_id, source: str) -> None:
+        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if not settings.peek_source_enabled(source):
+            off = "his camera is" if source == "cam" else "screen sharing is"
+            companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam":
             if not capture.webcam_available():
                 companion.reply_text(channel_id, "no camera tool set up on his end 😔")
                 return
             self._peek_ping("she asked for a webcam photo")
-            path = capture.snap_webcam()
+            path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
             caption = "📸 caught him 🤳"
         else:
             self._peek_ping("she asked for a screenshot")
@@ -268,13 +342,22 @@ class InDetailApp(rumps.App):
             )
 
     def _answer_live(self, channel_id, source: str) -> None:
+        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if not settings.peek_source_enabled(source):
+            off = "his camera is" if source == "cam" else "screen sharing is"
+            companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam" and not capture.webcam_available():
             companion.reply_text(channel_id, "no camera tool set up on his end 😔")
             return
-        grab = capture.snap_webcam if source == "cam" else capture.snap_screen
+        if source == "cam":
+            _mirror = bool(settings.get("mirror_capture"))
+            grab = lambda: capture.snap_webcam(mirror=_mirror)
+        else:
+            grab = capture.snap_screen
         self._peek_ping(f"she started a live {'camera' if source == 'cam' else 'screen'} view")
         companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
 
@@ -369,6 +452,15 @@ class InDetailApp(rumps.App):
                 title = "☀️ good morning" if which == "gm" else "🌙 goodnight"
                 self._notify(title, "", f"from {nm}")
                 self._flash()
+            elif kind == "say":
+                _cid, spoken = payload
+                self._notify("🔊 she said", "", spoken)
+                self._flash()
+                # Speaking blocks until done, so keep it off the main loop.
+                threading.Thread(target=self._say_aloud, args=(spoken,), daemon=True).start()
+            elif kind == "remind":
+                _cid, secs, message = payload
+                self._schedule_reminder(secs, message)
             elif kind == "cmd_activity":
                 threading.Thread(target=self._answer_activity, args=(payload,), daemon=True).start()
             elif kind == "cmd_recap":
