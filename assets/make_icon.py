@@ -1,4 +1,5 @@
-"""Generates assets/icon.icns — a rounded-square gradient with a watching eye.
+"""Generates assets/icon.icns — a warm rounded-square with a heart that's
+broadcasting little signal waves: lovingly *oversharing*, not a creepy eye.
 
 Run: ../.venv/bin/python make_icon.py   (from the assets/ dir)
 """
@@ -11,6 +12,7 @@ import subprocess
 from PIL import Image, ImageDraw
 
 SIZE = 1024
+SS = 4  # supersample factor for crisp, anti-aliased edges
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -18,38 +20,61 @@ def _lerp(a, b, t):
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
+def _heart_points(cx, cy, scale):
+    """A smooth heart via the classic parametric curve."""
+    pts = []
+    for deg in range(0, 361, 2):
+        t = math.radians(deg)
+        x = 16 * math.sin(t) ** 3
+        y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((cx + x * scale, cy - y * scale))
+    return pts
+
+
 def render(size: int = SIZE) -> Image.Image:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
+    s = size * SS
+    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
 
-    # Diagonal gradient: purple (top-left) -> blue (bottom-right).
-    c1, c2 = (0x6D, 0x5F, 0xF6), (0x36, 0x8E, 0xF7)
-    grad = Image.new("RGB", (size, size))
+    # Warm diagonal gradient: pink (top-left) -> violet (bottom-right).
+    c1, c2 = (0xFF, 0x6F, 0xB0), (0x7C, 0x4D, 0xF0)
+    grad = Image.new("RGB", (s, s))
     gpx = grad.load()
-    for y in range(size):
-        for x in range(size):
-            t = (x + y) / (2 * size)
-            gpx[x, y] = _lerp(c1, c2, t)
+    for y in range(s):
+        for x in range(s):
+            gpx[x, y] = _lerp(c1, c2, (x + y) / (2 * s))
 
-    # Rounded-square mask.
-    mask = Image.new("L", (size, size), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(
-        [0, 0, size - 1, size - 1], radius=int(size * 0.225), fill=255
-    )
+    mask = Image.new("L", (s, s), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, s - 1, s - 1], radius=int(s * 0.225), fill=255)
     img.paste(grad, (0, 0), mask)
 
-    # The eye: white almond + dark pupil + highlight.
-    cx, cy = size / 2, size / 2
-    ew, eh = size * 0.62, size * 0.40
-    draw.ellipse([cx - ew / 2, cy - eh / 2, cx + ew / 2, cy + eh / 2],
-                 fill=(255, 255, 255, 255))
-    pr = size * 0.145
-    draw.ellipse([cx - pr, cy - pr, cx + pr, cy + pr], fill=(0x1E, 0x29, 0x54, 255))
-    hr = size * 0.045
-    draw.ellipse([cx - pr * 0.35 - hr, cy - pr * 0.35 - hr,
-                  cx - pr * 0.35 + hr, cy - pr * 0.35 + hr],
-                 fill=(255, 255, 255, 235))
-    return img
+    draw = ImageDraw.Draw(img)
+
+    # Heart, centred and slightly left so the broadcast waves have room.
+    hx, hy = s * 0.44, s * 0.52
+    hscale = s * 0.019
+    heart = _heart_points(hx, hy, hscale)
+
+    # Broadcast waves radiating from the heart's upper-right — "sharing".
+    # Drawn first (behind), concentric arcs fading outward.
+    ox, oy = s * 0.58, s * 0.40
+    for i, r in enumerate((0.15, 0.225, 0.30)):
+        rr = s * r
+        alpha = int(235 - i * 55)
+        draw.arc([ox - rr, oy - rr, ox + rr, oy + rr],
+                 start=-72, end=6, fill=(255, 255, 255, alpha), width=int(s * 0.022))
+
+    # A soft drop shadow under the heart, then the heart itself.
+    shadow = [(x + s * 0.008, y + s * 0.012) for (x, y) in heart]
+    draw.polygon(shadow, fill=(60, 20, 80, 70))
+    draw.polygon(heart, fill=(255, 255, 255, 255))
+
+    # Tiny highlight on the left lobe for a bit of life.
+    hlr = s * 0.05
+    draw.ellipse([hx - s * 0.14 - hlr, hy - s * 0.10 - hlr,
+                  hx - s * 0.14 + hlr, hy - s * 0.10 + hlr],
+                 fill=(255, 255, 255, 90))
+
+    return img.resize((size, size), Image.LANCZOS)
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 """The menubar app — the thing you actually run.
 
-Shows a little 👀 in your menu bar. Click it to Pause (go dark instantly),
+Shows a little 💌 in your menu bar. Click it to Pause (go dark instantly),
 Send an update now, or Quit. In the background it checks what you're doing
 every few seconds and posts to Discord per the rules in state.py.
 """
@@ -38,7 +38,7 @@ def _good_morning_line() -> str:
         f"good morning {her} 💛 miss you",
     ])
 
-_ACTIVE_ICON = "👀"
+_ACTIVE_ICON = "💌"
 _PAUSED_ICON = "😴"
 
 
