@@ -17,3 +17,7 @@ pillow>=10.0; sys_platform == "win32"
 # Windows ships no IANA timezone database — zoneinfo (used for "her timezone")
 # needs this to resolve names like "America/New_York".
 tzdata>=2024.1; sys_platform == "win32"
+# Windows has no CLI equivalent to macOS's imagesnap for a webcam still, so
+# !peek/!screen/!live use this for the camera (screen capture uses Pillow's
+# ImageGrab instead — already a dependency above, no extra install for that).
+opencv-python-headless>=4.8; sys_platform == "win32"

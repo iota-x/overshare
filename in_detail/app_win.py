@@ -21,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import config, collectors, companion, history, notifier, questions, recap, sites, sound, weekly
+from . import capture, config, collectors, companion, history, notifier, questions, recap, sites, sound, weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -61,6 +61,7 @@ class WinApp:
         self._all_yours_date = ""
         self._weekly_posting = False
         self._gm_date = ""
+        self._selfie_date = ""    # last date the daily auto-selfie was sent
         self._question_date = ""  # last date the daily couple question was sent
         self._running = True
         self._screentime_text = "just getting started"
@@ -292,6 +293,81 @@ class WinApp:
             t = "not listening to anything right now 🤍"
         companion.reply_text(cid, t)
 
+    def _peek_ping(self, what: str) -> None:
+        """Let him know she's looking (unless he turned notices off)."""
+        if config.PEEK_NOTIFY:
+            self._notify("📸 she's peeking", what)
+
+    def _answer_peek(self, channel_id, source: str) -> None:
+        from . import settings
+        if not config.PEEK_ENABLED:
+            companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if not settings.peek_source_enabled(source):
+            off = "his camera is" if source == "cam" else "screen sharing is"
+            companion.reply_text(channel_id, f"{off} turned off right now 🤍")
+            return
+        if source == "cam":
+            if not capture.webcam_available():
+                companion.reply_text(channel_id, "no camera set up on his end 😔")
+                return
+            self._peek_ping("she asked for a webcam photo")
+            path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
+            caption = "📸 caught him 🤳"
+        else:
+            self._peek_ping("she asked for a screenshot")
+            path = capture.snap_screen()
+            caption = "🖥️ his screen right now"
+        if path:
+            companion.reply_file(channel_id, path, content=caption)
+        else:
+            companion.reply_text(
+                channel_id,
+                "couldn't grab that 😔 (camera might be in use, or blocked by Windows camera privacy settings)",
+            )
+
+    def _answer_live(self, channel_id, source: str) -> None:
+        from . import settings
+        if not config.PEEK_ENABLED:
+            companion.reply_text(channel_id, "peeking is turned off right now 🤍")
+            return
+        if not settings.peek_source_enabled(source):
+            off = "his camera is" if source == "cam" else "screen sharing is"
+            companion.reply_text(channel_id, f"{off} turned off right now 🤍")
+            return
+        if source == "cam" and not capture.webcam_available():
+            companion.reply_text(channel_id, "no camera set up on his end 😔")
+            return
+        if source == "cam":
+            _mirror = bool(settings.get("mirror_capture"))
+            grab = lambda: capture.snap_webcam(mirror=_mirror)
+        else:
+            grab = capture.snap_screen
+        self._peek_ping(f"she started a live {'camera' if source == 'cam' else 'screen'} view")
+        companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
+
+    def _maybe_auto_selfie(self) -> None:
+        from . import settings
+        if not (settings.get("selfie_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
+            return
+        today = _dt.date.today().isoformat()
+        if self._selfie_date == today:
+            return
+        if self._due_at(settings.get("selfie_time"), (9, 0)):
+            self._selfie_date = today
+            threading.Thread(target=self._send_auto_selfie, daemon=True).start()
+
+    def _send_auto_selfie(self) -> None:
+        from . import settings
+        if not (config.PEEK_ENABLED and settings.peek_source_enabled("cam") and capture.webcam_available()):
+            return
+        path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
+        if path:
+            companion.reply_file(
+                config.DISCORD_HOME_CHANNEL_ID, path,
+                content="📸 good morning check-in — thinking of you 💛",
+            )
+
     def _speak(self, text: str) -> None:
         from . import settings, voice
         voice.speak(text, settings.get("say_voice") or None)
@@ -365,13 +441,16 @@ class WinApp:
                 threading.Thread(target=self._answer_recap, args=(payload,), daemon=True).start()
             elif kind == "cmd_song":
                 threading.Thread(target=self._answer_song, args=(payload,), daemon=True).start()
-            elif kind in ("cmd_peek", "cmd_screen"):
-                # No Windows capture backend yet — tell her plainly instead of
-                # silently doing nothing (see README's Windows notes).
-                companion.reply_text(payload, "camera/screen peeks aren't available on his OS yet 🤍")
+            elif kind == "cmd_peek":
+                self.day.peeks += 1
+                threading.Thread(target=self._answer_peek, args=(payload, "cam"), daemon=True).start()
+            elif kind == "cmd_screen":
+                self.day.peeks += 1
+                threading.Thread(target=self._answer_peek, args=(payload, "screen"), daemon=True).start()
             elif kind == "cmd_live":
-                cid, _src = payload
-                companion.reply_text(cid, "live view isn't available on his OS yet 🤍")
+                self.day.peeks += 1
+                cid, src = payload
+                self._answer_live(cid, src)
             elif kind == "request_update" and not self.paused:
                 self._dispatch(self.tracker.force(self._latest))
 
@@ -404,6 +483,7 @@ class WinApp:
                 companion.set_presence(self._presence_label(snap))
             self._maybe_good_morning()
             self._maybe_daily_question()
+            self._maybe_auto_selfie()
         if recap.due(self.day):
             self.day.recap_posted = True
             history.save(self.day)

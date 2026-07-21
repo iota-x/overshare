@@ -111,21 +111,25 @@ virtualenv, installs deps, and creates `.env`, then exits.
 ```
 The app is then `dist\Overshare\Overshare.exe`.
 
-**5. Permissions:** none needed — Windows doesn't gate this like macOS does. 🎉
+**5. Permissions:** mostly none — Windows doesn't gate activity-reading like macOS
+does. The one exception is the webcam: the first time `!peek`/`!live` grabs a
+photo, Windows may prompt you (or silently block it) under **Settings → Privacy
+& security → Camera → Let desktop apps access your camera** — turn that on if
+`!peek` comes back empty.
 
 **6. Auto-start:** press `Win+R`, type `shell:startup`, Enter, and drop a shortcut
 to `run.bat` (or `Overshare.exe`) in that folder.
 
 > **Windows notes:** it reads the active window title (which for browsers already
 > includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify
-> from its window title. Clickable URLs / thumbnails / per-site colors and the
-> `!peek` / `!screen` / `!live` camera/screen commands are macOS-only for now
-> (Windows has no clean cross-browser URL API or capture backend yet) — she gets
-> a clear "not available on his OS" reply instead of silence if she asks.
-> Everything else has full Windows parity: `!say` (PowerShell TTS), `!sound`,
-> `!kiss`/`!hug`/`!boop`, `!remind`, `!petname`, permission requests, the daily
-> couple question, the love-o-meter, and a native Settings window from the tray
-> menu all work the same as on macOS.
+> from its window title. Clickable URLs / thumbnails / per-site colors are
+> macOS-only for now (Windows has no clean cross-browser URL API).
+> Everything else has full Windows parity: `!peek`/`!screen`/`!live` (webcam via
+> `opencv-python-headless`, screen via Pillow's `ImageGrab` — both pulled in
+> automatically by `requirements.txt` on Windows), the daily auto-selfie, `!say`
+> (PowerShell TTS), `!sound`, `!kiss`/`!hug`/`!boop`, `!remind`, `!petname`,
+> permission requests, the daily couple question, the love-o-meter, and a native
+> Settings window from the tray menu all work the same as on macOS.
 
 ---
 

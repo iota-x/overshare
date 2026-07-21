@@ -1,9 +1,8 @@
 """A real settings panel for Windows — a tkinter window, not just tray dialogs.
 
-Mirrors settings_window.py (the macOS AppKit panel) field-for-field, minus the
-camera/screen/mirror/selfie controls — `!peek`/`!screen`/`!live` and the daily
-auto-selfie all depend on the macOS-only capture backend, so there's nothing
-for those toggles to do on Windows (see README's Windows notes).
+Mirrors settings_window.py (the macOS AppKit panel) field-for-field, including
+the camera/screen/mirror/selfie controls — `!peek`/`!screen`/`!live` and the
+daily auto-selfie both work on Windows too (see capture.py).
 """
 
 from __future__ import annotations
@@ -74,7 +73,14 @@ def open_settings_window(on_change=None) -> None:
     header("Status accuracy 📡")
     exact_var = check_row("Exact mode — send what's detected, no AI wording", "exact_status")
 
+    header("Camera & screen 🔒")
+    camera_var = check_row("Allow camera peeks", "camera_enabled")
+    screen_var = check_row("Allow screen peeks", "screen_enabled")
+    mirror_var = check_row("Mirror camera photos (selfie view)", "mirror_capture")
+
     header("Fun 🎉")
+    selfie_var = check_row("Daily auto-selfie check-in", "selfie_enabled")
+    selfie_time_var = text_row("  ↳ at (HH:MM, 24h)", "selfie_time")
     question_var = check_row("Daily couple question", "daily_question_enabled")
     question_time_var = text_row("  ↳ at (HH:MM, 24h)", "daily_question_time")
 
@@ -90,6 +96,11 @@ def open_settings_window(on_change=None) -> None:
         settings.set("pet_name", petname_var.get().strip())
         settings.set("mood_emoji", emoji_var.get().strip())
         settings.set("exact_status", bool(exact_var.get()))
+        settings.set("camera_enabled", bool(camera_var.get()))
+        settings.set("screen_enabled", bool(screen_var.get()))
+        settings.set("mirror_capture", bool(mirror_var.get()))
+        settings.set("selfie_enabled", bool(selfie_var.get()))
+        settings.set("selfie_time", selfie_time_var.get().strip() or "09:00")
         settings.set("daily_question_enabled", bool(question_var.get()))
         settings.set("daily_question_time", question_time_var.get().strip() or "12:00")
         settings.set("her_timezone", tz_var.get().strip())
