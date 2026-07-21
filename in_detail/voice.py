@@ -1,7 +1,7 @@
-"""Speak text aloud on his Mac — the muscle behind `!say`.
+"""Speak text aloud on his machine — the muscle behind `!say`.
 
-Uses the built-in `say` command (no dependency, always present on macOS). The
-caller runs this off the main thread so a long sentence never stalls the app.
+macOS: the built-in `say` command. Windows: PowerShell's System.Speech (built
+into every Windows 10/11 box, nothing to install). No third-party TTS deps.
 """
 
 from __future__ import annotations
@@ -9,10 +9,15 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 
 
-def _resolve() -> str | None:
+def _resolve_mac() -> str | None:
     return shutil.which("say") or ("/usr/bin/say" if _ok("/usr/bin/say") else None)
+
+
+def _resolve_win() -> str | None:
+    return shutil.which("powershell") or shutil.which("powershell.exe")
 
 
 def _ok(path: str) -> bool:
@@ -20,22 +25,57 @@ def _ok(path: str) -> bool:
 
 
 def available() -> bool:
-    return _resolve() is not None
+    if sys.platform == "darwin":
+        return _resolve_mac() is not None
+    if sys.platform.startswith("win"):
+        return _resolve_win() is not None
+    return False
 
 
-def speak(text: str, voice: str | None = None) -> bool:
-    """Say `text` out loud. `voice` is an optional macOS voice name (e.g.
-    "Samantha"); blank/None uses the system default. Text is passed as an argv
-    element, never a shell string, so there's nothing to inject."""
-    say = _resolve()
-    if not say or not text.strip():
+def _speak_mac(text: str, voice: str | None) -> bool:
+    say = _resolve_mac()
+    if not say:
         return False
     cmd = [say]
     if voice:
         cmd += ["-v", voice]
     cmd.append(text)
+    subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+    return True
+
+
+def _speak_win(text: str, voice: str | None) -> bool:
+    powershell = _resolve_win()
+    if not powershell:
+        return False
+    # The text/voice are passed as trailing process arguments, bound to $args
+    # inside the script — never string-interpolated into the script itself, so
+    # there's no way for her message to be parsed as PowerShell code.
+    script = (
+        "Add-Type -AssemblyName System.Speech; "
+        "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+        "if ($args[0]) { try { $s.SelectVoice($args[0]) } catch {} }; "
+        "$s.Speak($args[1])"
+    )
+    cmd = [powershell, "-NoProfile", "-NonInteractive", "-Command", script,
+           "--", voice or "", text]
+    subprocess.run(cmd, check=True, capture_output=True, timeout=60,
+                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    return True
+
+
+def speak(text: str, voice: str | None = None) -> bool:
+    """Say `text` out loud. `voice` is an optional platform voice name (macOS:
+    e.g. "Samantha"; Windows: e.g. "Microsoft Zira Desktop") — blank/None uses
+    the system default. Returns False (never raises) if TTS isn't available."""
+    text = (text or "").strip()
+    if not text:
+        return False
     try:
-        subprocess.run(cmd, check=True, capture_output=True, timeout=60)
-        return True
+        if sys.platform == "darwin":
+            return _speak_mac(text, voice)
+        if sys.platform.startswith("win"):
+            return _speak_win(text, voice)
+        return False
     except Exception:
         return False

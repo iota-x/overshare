@@ -119,8 +119,13 @@ to `run.bat` (or `Overshare.exe`) in that folder.
 > **Windows notes:** it reads the active window title (which for browsers already
 > includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify
 > from its window title. Clickable URLs / thumbnails / per-site colors and the
-> `!peek` / `!screen` / `!live` peek commands are macOS-only for now (Windows has
-> no clean cross-browser URL API) — everything else works.
+> `!peek` / `!screen` / `!live` camera/screen commands are macOS-only for now
+> (Windows has no clean cross-browser URL API or capture backend yet) — she gets
+> a clear "not available on his OS" reply instead of silence if she asks.
+> Everything else has full Windows parity: `!say` (PowerShell TTS), `!sound`,
+> `!kiss`/`!hug`/`!boop`, `!remind`, `!petname`, permission requests, the daily
+> couple question, the love-o-meter, and a native Settings window from the tray
+> menu all work the same as on macOS.
 
 ---
 

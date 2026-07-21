@@ -2,7 +2,12 @@
 
 Everything platform-specific (reading activity, notifications, the tray UI) is
 here or in `_win.py`; the state machine, sender, recaps, and Discord bot are the
-shared modules used on both OSes.
+shared modules used on both OSes. Camera/screen peeks (`!peek`/`!screen`/`!live`)
+and the daily auto-selfie are macOS-only (no Windows capture backend yet) — she
+gets a clear message instead of silence if she asks for one. Everything else
+introduced alongside the macOS app (reactions, sound board, !say, !remind, pet
+names, permission requests, the love-o-meter, screen-time/her-time in the tray,
+and Settings) has a Windows equivalent here.
 """
 
 from __future__ import annotations
@@ -16,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import config, collectors, companion, history, notifier, recap, sites, weekly
+from . import config, collectors, companion, history, notifier, questions, recap, sites, sound, weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -24,7 +29,8 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    her = config.HER_NAME or "love"
+    from . import settings
+    her = settings.get("pet_name") or config.HER_NAME or "love"
     return random.choice([
         f"good morning {her} ☀️ hope you slept well",
         f"morning {her} 🌅 thinking of you already",
@@ -55,16 +61,25 @@ class WinApp:
         self._all_yours_date = ""
         self._weekly_posting = False
         self._gm_date = ""
+        self._question_date = ""  # last date the daily couple question was sent
         self._running = True
+        self._screentime_text = "just getting started"
+        self._hertime_text = "not set"
+        self._reminders: set = set()  # live threading.Timers for pending !remind nudges
         try:
             self._latest = collectors.collect()
         except Exception:
             self._latest = collectors.Snapshot()
 
         menu = pystray.Menu(
+            pystray.MenuItem(lambda i: f"📊 Today: {self._screentime_text}", None, enabled=False),
+            pystray.MenuItem(lambda i: f"🕐 Her time: {self._hertime_text}", None, enabled=False),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem(lambda i: "Resume" if self.paused else "Pause", self._toggle_pause),
             pystray.MenuItem("Set mood…", self._set_mood),
             pystray.MenuItem("Reply to her…", self._reply),
+            pystray.MenuItem("Ask permission…", self._ask_permission),
+            pystray.MenuItem("Settings…", self._open_settings),
             pystray.MenuItem("Send daily recap now", self._recap_now),
             pystray.MenuItem("Send weekly wrap now", self._weekly_now),
             pystray.MenuItem("Quit", self._quit),
@@ -76,11 +91,13 @@ class WinApp:
 
     # --- UI helpers ---------------------------------------------------------
     def _tooltip(self) -> str:
+        from . import settings
+        accent = settings.get("mood_emoji") or "💌"
         if self.paused:
-            return "overshare — paused"
+            return f"overshare — paused ({accent})"
         if not self._healthy():
             return "overshare — ⚠️ check connection"
-        return "overshare 👀"
+        return f"overshare {accent}"
 
     def _refresh(self) -> None:
         try:
@@ -132,6 +149,26 @@ class WinApp:
         if val and val.strip():
             companion.reply_text(config.DISCORD_HOME_CHANNEL_ID, val.strip())
 
+    def _ask_permission(self, _icon, _item) -> None:
+        if not companion.enabled() or not config.DISCORD_HOME_CHANNEL_ID:
+            self._notify("Two-way not set up", "Add DISCORD_BOT_TOKEN in .env.")
+            return
+        val = self._ask("Ask permission", "What do you want to ask her permission for?")
+        if val and val.strip():
+            asked = val.strip()
+            companion.ask_permission(config.DISCORD_HOME_CHANNEL_ID, asked)
+            self.day.permissions_asked += 1
+            self._notify("🙏 asked her", asked)
+
+    def _open_settings(self, _icon, _item) -> None:
+        def run():
+            try:
+                from .settings_win import open_settings_window
+                open_settings_window(on_change=self._refresh)
+            except Exception as e:
+                self._notify("Settings", f"couldn't open settings ({e})")
+        threading.Thread(target=run, daemon=True).start()
+
     def _recap_now(self, _icon, _item) -> None:
         threading.Thread(target=recap.post, args=(self.day,), daemon=True).start()
 
@@ -140,6 +177,11 @@ class WinApp:
 
     def _quit(self, _icon, _item) -> None:
         self._running = False
+        for t in list(self._reminders):
+            try:
+                t.cancel()
+            except Exception:
+                pass
         history.save(self.day)
         try:
             self.icon.stop()
@@ -185,6 +227,47 @@ class WinApp:
             companion.reply_text(config.DISCORD_HOME_CHANNEL_ID, _good_morning_line())
             self._gm_date = today
 
+    def _due_at(self, hhmm: str, default: tuple[int, int]) -> bool:
+        try:
+            hh, mm = (int(x) for x in str(hhmm).split(":"))
+        except Exception:
+            hh, mm = default
+        now = _dt.datetime.now()
+        return (now.hour, now.minute) >= (hh, mm)
+
+    def _maybe_daily_question(self) -> None:
+        from . import settings
+        if not (settings.get("daily_question_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
+            return
+        today = _dt.date.today().isoformat()
+        if self._question_date == today:
+            return
+        if self._due_at(settings.get("daily_question_time"), (12, 0)):
+            self._question_date = today
+            companion.reply_text(
+                config.DISCORD_HOME_CHANNEL_ID, f"❓ question of the day: {questions.pick()}"
+            )
+
+    def _update_screentime(self) -> None:
+        apps = recap._top(self.day.by_app, 3)
+        if not apps:
+            self._screentime_text = "just getting started"
+            return
+        self._screentime_text = (" · ".join(f"{k} {recap._hms(v)}" for k, v in apps))[:70]
+
+    def _update_her_time(self) -> None:
+        from . import settings
+        tz = settings.get("her_timezone")
+        if not tz:
+            self._hertime_text = "not set"
+            return
+        try:
+            from zoneinfo import ZoneInfo
+            now = _dt.datetime.now(ZoneInfo(tz))
+            self._hertime_text = now.strftime("%-I:%M %p").lower()
+        except Exception:
+            self._hertime_text = "invalid timezone"
+
     def _presence_label(self, snap) -> str:
         if snap.url:
             site = sites.lookup(snap.url)
@@ -209,6 +292,20 @@ class WinApp:
             t = "not listening to anything right now 🤍"
         companion.reply_text(cid, t)
 
+    def _speak(self, text: str) -> None:
+        from . import settings, voice
+        voice.speak(text, settings.get("say_voice") or None)
+
+    def _schedule_reminder(self, seconds: int, message: str) -> None:
+        def fire():
+            self._reminders.discard(timer)
+            self._notify("💛 from her", message)
+
+        timer = threading.Timer(seconds, fire)
+        timer.daemon = True
+        self._reminders.add(timer)
+        timer.start()
+
     def _drain_companion(self) -> None:
         while True:
             try:
@@ -217,19 +314,48 @@ class WinApp:
                 break
             if kind == "message":
                 name, text = payload
+                self.day.messages_from_her += 1
                 self._notify(f"💌 {name}", text)
             elif kind == "reaction":
                 self._notify("💛 she reacted", str(payload))
             elif kind == "poke":
+                self.day.pokes += 1
                 self._notify("👉 poke!", f"{payload} is thinking of you")
             elif kind == "miss":
+                self.day.pokes += 1
                 self._notify("🥺 she misses you", f"{payload} misses you")
             elif kind == "callme":
+                self.day.pokes += 1
                 self._notify("📞 call me", f"{payload} wants you to call")
             elif kind == "break":
+                self.day.pokes += 1
                 self._notify("☕ take a break", f"{payload} says step away")
             elif kind == "food":
+                self.day.pokes += 1
                 self._notify("🍜 did you eat?", f"{payload} is checking you ate")
+            elif kind == "kiss":
+                self.day.pokes += 1
+                self._notify("😘 kiss!", f"{payload} sent you a kiss")
+            elif kind == "hug":
+                self.day.pokes += 1
+                self._notify("🫂 hug!", f"{payload} is hugging you")
+            elif kind == "boop":
+                self.day.pokes += 1
+                self._notify("👉 boop!", f"{payload} booped you")
+            elif kind == "sound":
+                threading.Thread(target=sound.play, args=(payload,), daemon=True).start()
+            elif kind == "say":
+                _cid, spoken = payload
+                self._notify("🔊 she said", spoken)
+                threading.Thread(target=self._speak, args=(spoken,), daemon=True).start()
+            elif kind == "remind":
+                _cid, secs, message = payload
+                self._schedule_reminder(secs, message)
+            elif kind == "permission_result":
+                approved, asked = payload
+                if approved:
+                    self.day.permissions_approved += 1
+                self._notify("✅ she said yes" if approved else "❌ she said no", asked)
             elif kind == "greet":
                 which, nm = payload
                 self._notify("☀️ good morning" if which == "gm" else "🌙 goodnight", f"from {nm}")
@@ -239,6 +365,13 @@ class WinApp:
                 threading.Thread(target=self._answer_recap, args=(payload,), daemon=True).start()
             elif kind == "cmd_song":
                 threading.Thread(target=self._answer_song, args=(payload,), daemon=True).start()
+            elif kind in ("cmd_peek", "cmd_screen"):
+                # No Windows capture backend yet — tell her plainly instead of
+                # silently doing nothing (see README's Windows notes).
+                companion.reply_text(payload, "camera/screen peeks aren't available on his OS yet 🤍")
+            elif kind == "cmd_live":
+                cid, _src = payload
+                companion.reply_text(cid, "live view isn't available on his OS yet 🤍")
             elif kind == "request_update" and not self.paused:
                 self._dispatch(self.tracker.force(self._latest))
 
@@ -264,10 +397,13 @@ class WinApp:
         self._ticks += 1
         if self._ticks % 15 == 0:
             history.save(self.day)
+            self._update_screentime()
+            self._update_her_time()
         if companion.enabled():
             if self._ticks % 10 == 0 and snap.idle_seconds < config.IDLE_THRESHOLD:
                 companion.set_presence(self._presence_label(snap))
             self._maybe_good_morning()
+            self._maybe_daily_question()
         if recap.due(self.day):
             self.day.recap_posted = True
             history.save(self.day)
