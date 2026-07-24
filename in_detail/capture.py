@@ -30,6 +30,12 @@ _TMP = os.path.join(tempfile.gettempdir(), "in_detail_peek")
 # absolute path so the subprocess doesn't depend on PATH either.
 _EXTRA_BINS = ("/opt/homebrew/bin", "/usr/local/bin")
 
+# Virtual cameras (OBS, etc.) register as capture devices and often become the
+# *default* imagesnap grabs — so a peek meant for the real Mac camera comes out
+# as OBS's canvas. Skip anything whose name looks virtual unless she's explicitly
+# pinned it via the `camera_device` setting.
+_VIRTUAL_HINTS = ("obs", "virtual", "camtwist", "snap camera", "mmhmm", "e2esoft")
+
 
 def _resolve(name: str) -> str | None:
     found = shutil.which(name)
@@ -98,17 +104,76 @@ def snap_screen() -> str | None:
 # --- macOS --------------------------------------------------------------
 
 
+def list_cameras_mac() -> list[str]:
+    """Names of the Mac's video capture devices, in imagesnap's order. Empty on
+    any failure (old imagesnap, no camera tool, permission denied)."""
+    imagesnap = _resolve("imagesnap")
+    if not imagesnap:
+        return []
+    try:
+        out = subprocess.run(
+            [imagesnap, "-l"], capture_output=True, text=True, timeout=20,
+        ).stdout
+    except Exception:
+        return []
+    names: list[str] = []
+    for line in out.splitlines():
+        line = line.strip()
+        # Skip the "Video Devices:" header and blanks; strip imagesnap's "=> "
+        # bullet and any trailing "[unique-id]" some versions append.
+        if not line or line.endswith(":"):
+            continue
+        if line.startswith("=>"):
+            line = line[2:].strip()
+        if " [" in line:
+            line = line.split(" [", 1)[0].strip()
+        if line:
+            names.append(line)
+    return names
+
+
+def _preferred_camera() -> str:
+    """The camera name she's pinned via settings, or "" for auto-pick."""
+    try:
+        from . import settings
+        return (settings.get("camera_device") or "").strip()
+    except Exception:
+        return ""
+
+
+def _pick_camera_mac() -> str | None:
+    """Which device `-d` should target: the pinned one if present, else the first
+    real (non-virtual) camera. None means "let imagesnap use its default"."""
+    cams = list_cameras_mac()
+    if not cams:
+        return None
+    pinned = _preferred_camera().lower()
+    if pinned:
+        for c in cams:
+            if pinned in c.lower():
+                return c
+        # Pinned name no longer present — fall through to auto-pick rather than
+        # forcing a device that would just error out.
+    for c in cams:
+        if not any(h in c.lower() for h in _VIRTUAL_HINTS):
+            return c
+    return None  # everything looks virtual; don't second-guess imagesnap
+
+
 def _snap_webcam_mac(warmup: float, mirror: bool) -> str | None:
     imagesnap = _resolve("imagesnap")
     if not imagesnap:
         return None
     path = _fresh(".jpg")
+    device = _pick_camera_mac()
     try:
-        # -q quiet, -w warmup seconds (helps avoid a black/greenish first frame)
-        subprocess.run(
-            [imagesnap, "-q", "-w", str(warmup), path],
-            check=True, capture_output=True, timeout=20,
-        )
+        # -q quiet, -w warmup seconds (helps avoid a black/greenish first frame),
+        # -d picks a specific device so a virtual cam (OBS) doesn't hijack the peek.
+        cmd = [imagesnap, "-q", "-w", str(warmup)]
+        if device:
+            cmd += ["-d", device]
+        cmd.append(path)
+        subprocess.run(cmd, check=True, capture_output=True, timeout=20)
     except Exception:
         _rm(path)
         return None

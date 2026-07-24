@@ -18,6 +18,9 @@ from . import config
 #   `!live` (toggled from the menu bar). config.PEEK_ENABLED is the master off.
 # mirror_capture: flip webcam photos left-to-right so they read like a mirror
 #   (the natural selfie view) instead of imagesnap's reversed-feeling raw frame.
+# camera_device: pin a specific macOS camera by name (substring match, e.g.
+#   "FaceTime") so a virtual cam like OBS can't hijack `!peek`. "" = auto-pick
+#   the first non-virtual camera.
 # pet_name: what she wants the bot to call her (set with !petname), overrides
 #   config.HER_NAME in good-morning/goodnight lines when set.
 # mood_emoji: replaces the menu-bar glyph when set (blank = default 💌).
@@ -32,6 +35,7 @@ _DEFAULTS = {
     "camera_enabled": True,
     "screen_enabled": True,
     "mirror_capture": True,
+    "camera_device": "",   # pin macOS camera by name; "" = auto-skip virtual cams
     "say_voice": "",       # macOS voice name for !say; "" = system default
     "exact_status": False, # send exactly-what's-detected, skip AI phrasing
     "pet_name": "",
