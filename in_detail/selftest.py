@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 
 from . import collectors, config, history, notifier
 from .collectors import Snapshot
@@ -118,11 +119,16 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\nsending {len(embeds)} card(s)…")
     sent = 0
-    for label, embed in embeds:
+    for i, (label, embed) in enumerate(embeds):
+        if i:
+            # Webhooks rate-limit at roughly 5 posts / 2s; a burst of cards would
+            # get 429'd and silently dropped, which is the opposite of a self-test.
+            time.sleep(1.5)
         if notifier.post_embed(embed, f"**self-test** · {label}"):
             sent += 1
+            print(f"  sent: {label}")
         else:
-            print(f"  failed: {label}")
+            print(f"  FAILED: {label}")
     print(f"sent {sent}/{len(embeds)}")
     return 0 if sent == len(embeds) else 1
 
