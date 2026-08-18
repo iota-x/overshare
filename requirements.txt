@@ -21,3 +21,7 @@ tzdata>=2024.1; sys_platform == "win32"
 # !peek/!screen/!live use this for the camera (screen capture uses Pillow's
 # ImageGrab instead — already a dependency above, no extra install for that).
 opencv-python-headless>=4.8; sys_platform == "win32"
+# Windows exposes no API for the active tab's URL. UI Automation can read it
+# out of the address bar, which is what unlocks per-site cards, clickable links
+# and YouTube thumbnails there. Optional — set READ_BROWSER_URL=false to skip.
+uiautomation>=2.0.18; sys_platform == "win32"

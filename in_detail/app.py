@@ -161,6 +161,8 @@ class InDetailApp(rumps.App):
             return False
         if companion.enabled() and companion.dropped():
             return False
+        if history.save_error:
+            return False  # the day's tally isn't persisting — recaps will lie
         return True
 
     def _collect_loop(self) -> None:
@@ -314,13 +316,7 @@ class InDetailApp(rumps.App):
 
     # --- bot answers & presence ---------------------------------------------
     def _presence_label(self, snap) -> str:
-        if snap.url:
-            site = sites.lookup(snap.url)
-            if site:
-                return site.name
-        if snap.category == "coding":
-            return "code"
-        return snap.app
+        return notifier.presence_label(snap)
 
     def _answer_activity(self, channel_id) -> None:
         snap = collectors.collect()

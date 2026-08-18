@@ -61,16 +61,62 @@ def _domain(url: str) -> str:
 
 
 def _discord_channel(title: str) -> tuple[str, str]:
-    """Pull '#channel' and 'Server' out of Discord's window title.
+    """Pull '#channel' and 'Server' out of Discord's window/tab title.
 
     Handles forms like '(3) #general | My Server', '#general | My Server -
-    Discord', '@friend | Direct Messages'. Returns (channel, server)."""
+    Discord', '@friend | Direct Messages', '@friend - Discord', and the web/DM
+    form '(1466) Discord | @friend' where the app name sits on the *left* and
+    the conversation on the right. Returns (channel, server)."""
     t = re.sub(r"^\(\d+\)\s*", "", title or "")          # drop unread count
     t = re.sub(r"\s*[-–—]\s*Discord\s*$", "", t).strip()  # drop trailing app name
+    if not t or t.lower() == "discord":
+        return "", ""                                     # home / friends list
     if "|" in t:
-        left, right = t.split("|", 1)
-        return left.strip(), right.strip()
-    return t.strip(), ""
+        left, right = (part.strip() for part in t.split("|", 1))
+        if left.lower() == "discord":
+            # '(1466) Discord | @her' — the conversation is the interesting half.
+            return right, ""
+        return left, right
+    return t, ""
+
+
+# Most apps title their window "<what> <sep> <where>": "notifier.py — in-detail",
+# "Roadmap – Acme", "report.pdf | Drive". Splitting on the first separator turns a
+# flat string into a headline plus context, which is what makes the card read rich.
+_TITLE_SEP = re.compile(r"\s+[—–|]\s+|\s+-\s+")
+
+# Trailing app-name noise Chromium/Electron windows append to their titles.
+_TITLE_NOISE = re.compile(
+    r"\s*[-–—]\s*(High memory usage[^-–—]*|\d+(\.\d+)?\s*[KMG]B)\s*", re.I)
+
+
+def _split_title(title: str) -> list[str]:
+    """Break a window title into its parts, minus the browser's own noise."""
+    t = _TITLE_NOISE.sub(" ", title or "").strip()
+    t = re.sub(r"^\(\d+\)\s*", "", t)          # unread/notification counter
+    return [s.strip() for s in _TITLE_SEP.split(t) if s.strip()]
+
+
+def _words(*names: str) -> set[str]:
+    return {w for n in names for w in re.split(r"\W+", (n or "").lower()) if w}
+
+
+def _context_of(title: str, *names: str) -> tuple[str, str]:
+    """Split a window title into a headline and the context it lives in.
+
+    Apps sign their own windows at the *end* — "notifier.py - in-detail - Visual
+    Studio Code", "iota-x/overshare - Brave - ankit". Everything from that
+    signature onwards is chrome, not context, so it gets cut; what sits between
+    it and the headline ("in-detail") is the part actually worth showing."""
+    segments = _split_title(title)
+    if not segments:
+        return "", ""
+    known = _words(*names)
+    for i in range(1, len(segments)):        # never cut the headline itself
+        if _words(segments[i]) & known:
+            segments = segments[:i]
+            break
+    return segments[0], " — ".join(segments[1:])
 
 
 _fail_streak = 0  # consecutive webhook post failures (for the health indicator)
@@ -136,37 +182,76 @@ def post_embed(embed: dict, content: str = "") -> bool:
     return _deliver(content, embed)
 
 
-def _build_embed(snap, minutes: int) -> dict:
+def describe(snap) -> tuple[str, str, str, str, int]:
+    """What this activity *is*, in card-ready pieces.
+
+    Returns (emoji, header, title, context, color) — e.g. ("💬", "Discord",
+    "#general", "Gooner hideout", 0x5865F2). The card and the bot's presence
+    both read from here so they can never disagree about what you're doing."""
     category = snap.category
     emoji = _CATEGORY_EMOJI.get(category, "🖥️")
     color = _CATEGORY_COLOR.get(category, _CATEGORY_COLOR["other"])
     header = snap.app
 
-    # Headline (embed title) + clickable link, tuned per activity.
     title = snap.tab_title or snap.window_title or snap.app
     url = snap.url or ""
-    description = ""
+    context = ""
 
     if category == "discord":
         channel, server = _discord_channel(snap.window_title)
         title = channel or "Discord"
-        description = f"in **{server}**" if server else ""
+        context = server
     elif category == "browsing":
-        # Per-site smarts: brand name, emoji, and colour for known sites.
-        site = sites.lookup(url)
+        # Per-site smarts: brand name, emoji, and colour for known sites. Windows
+        # can't read the URL, so fall back to recognising the site by its title.
+        site = sites.lookup(url) or sites.lookup_title(snap.tab_title or snap.window_title)
         if site:
             emoji, header, color = site.emoji, site.name, site.color
         else:
             header = _domain(url) or snap.app
+        if site and site.name == "Discord":
+            # Discord in a tab should read like Discord in the app, not like a URL.
+            channel, server = _discord_channel(snap.tab_title)
+            if channel:
+                title, context = channel, server
+        else:
+            head, tail = _context_of(title, snap.app, header)
+            if head:
+                title, context = head, tail
         if not title:
             title = _domain(url) or snap.app
-    elif category in ("coding", "terminal"):
-        # window titles are often "file — project"; keep as-is, it's informative
-        pass
+    else:
+        # Everything else — editors, terminals, notes, design, chat apps. Their
+        # window titles carry the real detail ("file — project", "doc – vault"),
+        # so lift the first half into the headline and show the rest as context
+        # instead of dumping the raw string or falling back to the bare app name.
+        head, tail = _context_of(title, snap.app)
+        if head:
+            title, context = head, tail
+
+    return emoji, header, title or snap.app, context, color
+
+
+def presence_label(snap) -> str:
+    """Short "playing …" line for the bot's Discord presence."""
+    _emoji, header, title, context, _color = describe(snap)
+    # Discord reads the same whether it's the app or a tab — the conversation is
+    # the whole point, so it stands alone rather than being prefixed by the app.
+    if snap.category == "discord" or header == "Discord":
+        return f"{title} · {context}" if context else title
+    if title and title.lower() != header.lower():
+        return f"{header}: {title}"
+    return header
+
+
+def _build_embed(snap, minutes: int) -> dict:
+    emoji, header, title, context, color = describe(snap)
+    url = snap.url or ""
+    description = f"in **{context}**" if context else ""
 
     embed: dict = {
         "author": {"name": f"{emoji} {header}"},
-        "title": (title or snap.app)[:250],
+        "title": title[:250],
         "color": color,
         "footer": {"text": "in detail"},
         "timestamp": _dt.datetime.now(_dt.timezone.utc).isoformat(),

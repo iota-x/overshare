@@ -20,7 +20,7 @@ def _marker_path():
 
 def _last_posted_week() -> str:
     try:
-        return json.loads(_marker_path().read_text()).get("last_week", "")
+        return json.loads(_marker_path().read_text(encoding="utf-8")).get("last_week", "")
     except Exception:
         return ""
 
@@ -28,7 +28,7 @@ def _last_posted_week() -> str:
 def _mark_posted(week_id: str) -> None:
     try:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        _marker_path().write_text(json.dumps({"last_week": week_id}))
+        _marker_path().write_text(json.dumps({"last_week": week_id}), encoding="utf-8")
     except Exception:
         pass
 
@@ -38,15 +38,22 @@ def _week_id(d: _dt.date) -> str:
     return f"{y}-W{w:02d}"
 
 
-def _last_7_logs() -> list[DailyLog]:
+def _last_7_logs() -> tuple[list[DailyLog], int]:
+    """The week's logs, plus how many days left no file at all.
+
+    A missing file is not a quiet day — it means the tally never reached disk.
+    Folding those in as zeros silently understates the week, so they're counted
+    separately and reported."""
     today = _dt.date.today()
-    logs = []
+    logs, missing = [], 0
     for i in range(7):
         day = (today - _dt.timedelta(days=i)).isoformat()
         p = config.DATA_DIR / f"day-{day}.json"
         if p.exists():
             logs.append(_load_day(day))
-    return logs
+        else:
+            missing += 1
+    return logs, missing
 
 
 def _merge(target: dict, src: dict) -> None:
@@ -88,11 +95,15 @@ def _love_score(agg: dict) -> int:
     return agg["pokes"] * 2 + agg["messages_from_her"] * 3 + agg["peeks"] + agg["permissions_approved"] * 2
 
 
-def _stats_text(agg: dict) -> str:
+def _stats_text(agg: dict, missing: int = 0) -> str:
     parts = [
         f"active this week: {_hms(agg['active'])} across {agg['days_active']} days",
         f"late nights: {agg['late_nights']}",
     ]
+    if missing:
+        parts.append(f"note: {missing} day(s) have no recorded data at all — the "
+                     f"totals below cover only the days that were logged, so don't "
+                     f"describe the week as quiet or lazy")
     if _love_score(agg):
         parts.append(f"she reached out {agg['pokes'] + agg['messages_from_her'] + agg['peeks']} times this week")
     apps = _top(agg["by_app"], 3)
@@ -105,9 +116,9 @@ def _stats_text(agg: dict) -> str:
     return "\n".join(parts)
 
 
-def build_message(logs: list[DailyLog]) -> tuple[str, dict]:
+def build_message(logs: list[DailyLog], missing: int = 0) -> tuple[str, dict]:
     agg = _aggregate(logs)
-    intro = summarizer.recap_intro(_stats_text(agg), period="week")
+    intro = summarizer.recap_intro(_stats_text(agg, missing), period="week")
 
     end = _dt.date.today()
     start = end - _dt.timedelta(days=6)
@@ -121,6 +132,9 @@ def build_message(logs: list[DailyLog]) -> tuple[str, dict]:
         {"name": "📅 days on", "value": str(agg["days_active"]), "inline": True},
         {"name": "🌙 late nights", "value": str(agg["late_nights"]), "inline": True},
     ]
+    if missing:
+        fields.append({"name": "⚠️ not recorded",
+                       "value": f"{missing} day(s) had no saved data", "inline": True})
     if _love_score(agg):
         love_bits = []
         if agg["messages_from_her"]:
@@ -171,10 +185,10 @@ def due() -> bool:
 
 
 def post(force: bool = False) -> bool:
-    logs = _last_7_logs()
+    logs, missing = _last_7_logs()
     if not force and not any(l.active_seconds >= config.RECAP_MIN_MINUTES * 60 for l in logs):
         return False
-    _content, embed = build_message(logs)
+    _content, embed = build_message(logs, missing)
     ok = notifier.post_embed(embed)
     if ok or not force:
         _mark_posted(_week_id(_dt.date.today()))

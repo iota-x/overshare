@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as _dt
 
-from . import config, notifier, sites, summarizer
+from . import config, history, notifier, sites, summarizer
 from .history import DailyLog, load as _load_day
 
 
@@ -52,6 +52,9 @@ def _lines(items: list[tuple[str, float]], trunc: int = 48) -> str:
 
 def _stats_text(log: DailyLog) -> str:
     parts = [f"active time: {_hms(log.active_seconds)}"]
+    if history.save_error:
+        parts.append("note: part of today's tally failed to save, so these "
+                     "numbers are incomplete — don't call the day quiet")
     apps = _top(log.by_app, 4)
     if apps:
         parts.append("top apps: " + ", ".join(f"{k} {_hms(v)}" for k, v in apps))
@@ -93,6 +96,9 @@ def build_message(log: DailyLog) -> tuple[str, dict]:
         fields.append({"name": "🔥 streak", "value": f"{streak} days", "inline": True})
     if log.love_score():
         fields.append({"name": "💛 love-o-meter", "value": _love_line(log), "inline": True})
+    if history.save_error:
+        fields.append({"name": "⚠️ incomplete",
+                       "value": "some of today's tally didn't save", "inline": True})
 
     fields.append({"name": "🖥️ where the time went", "value": _lines(_top(log.by_app, 5)), "inline": False})
     if log.youtube:

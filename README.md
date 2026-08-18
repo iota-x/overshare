@@ -122,8 +122,12 @@ to `run.bat` (or `Overshare.exe`) in that folder.
 
 > **Windows notes:** it reads the active window title (which for browsers already
 > includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify
-> from its window title. Clickable URLs / thumbnails / per-site colors are
-> macOS-only for now (Windows has no clean cross-browser URL API).
+> from its window title. Windows has no cross-browser URL API, so the active
+> tab's URL is read from the address bar via UI Automation (`uiautomation`,
+> installed automatically) — that's what gives Windows clickable links, YouTube
+> thumbnails and per-site brand colors. It's cached per tab change; set
+> `READ_BROWSER_URL=false` to turn it off. Even with it off, sites are still
+> recognised from the tab title, so brand names and colors keep working.
 > Everything else has full Windows parity: `!peek`/`!screen`/`!live` (webcam via
 > `opencv-python-headless`, screen via Pillow's `ImageGrab` — both pulled in
 > automatically by `requirements.txt` on Windows), the daily auto-selfie, `!say`
@@ -139,10 +143,31 @@ Set `AI_PROVIDER` in `.env`:
 
 | Provider | Cost | Setup |
 |---|---|---|
-| **`groq`** ⭐ | free | free key at [console.groq.com](https://console.groq.com) → `GROQ_API_KEY=gsk_...`. Cloud, fast, no card, nothing runs on your machine. |
+| **`groq`** ⭐ | free | free key at [console.groq.com](https://console.groq.com) → `GROQ_API_KEY=gsk_...`. Cloud, fast, no card, nothing runs on your machine. Defaults to `openai/gpt-oss-20b`. |
 | **`ollama`** | free | `brew install ollama && ollama pull llama3.2` (macOS) → `AI_PROVIDER=ollama`. Local, ~2 GB RAM. |
 | **`anthropic`** | paid | key at [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY=sk-ant-...`. Best writing. |
 | *(none)* | free | `AI_ENABLED=false` — plain templates. |
+
+> Groq retires models periodically. If updates suddenly go plain and templated,
+> that's the tell — the old model 404s and it silently falls back. Run
+> `python -m in_detail.selftest` to see it, and set `GROQ_MODEL` to a current
+> model from [console.groq.com/docs/models](https://console.groq.com/docs/models).
+> Reasoning models are handled (the thinking is hidden, not sent to her).
+
+---
+
+## Checking it works
+
+```bash
+python -m in_detail.selftest          # render one card of every kind, send nothing
+python -m in_detail.selftest --live   # a card for what you're doing right now
+python -m in_detail.selftest --post   # actually send them to her channel
+```
+
+Dry run by default. It leads with a health check — platform, AI provider and
+model, webhook, Accessibility, and whether the day's tally is saving — then
+prints every card shape, so formatting problems show up on demand instead of
+whenever the activity happens to occur.
 
 ---
 
@@ -205,6 +230,8 @@ open a real live *stream*, so this is fast snapshot-on-demand.
 | `PEEK_ENABLED`, `PEEK_NOTIFY`, `LIVE_SECONDS`, `LIVE_INTERVAL` | camera/screen peek |
 | `POLL_INTERVAL`, `STABILIZE`, `MIN_GAP`, `HEARTBEAT`, `IDLE_THRESHOLD` | timing (s) |
 | `REPORT_MEDIA`, `RECAP_TIME`, `WEEKLY_DAY/TIME`, `GM_TIME`, `START_PAUSED` | features |
+| `GROQ_MODEL` | Groq model id (default `openai/gpt-oss-20b`) |
+| `READ_BROWSER_URL` | Windows: read the tab URL from the address bar (default on) |
 
 Every key has an inline comment in `.env.example`.
 
@@ -219,7 +246,10 @@ Every key has an inline comment in `.env.example`.
 | ⚠️ indicator | Bot disconnected or webhook failing — check token/webhook/internet |
 | Her DM updates don't arrive | Her Discord DMs must be open to the bot |
 | Bot shows offline | Check token, Message Content Intent, and that it's invited |
-| Messages are plain/templated | AI provider/key not set — it falls back to templates |
+| Messages are plain/templated | AI provider/key not set, **or the model id is stale** — run `python -m in_detail.selftest` to see the real error |
+| Cards show only the app name ("Discord") | Window title wasn't readable — grant Accessibility (macOS); `selftest` reports this |
+| Daily/weekly recap looks too quiet | A day with no saved file isn't a quiet day — the card now flags "⚠️ not recorded". Check `~/Library/Logs/in-detail.log` |
+| ⚠️ indicator with everything else fine | The day's tally isn't saving; the reason is in `~/Library/Logs/in-detail.log` |
 
 ## Stack
 

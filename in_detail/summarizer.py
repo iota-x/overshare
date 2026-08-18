@@ -7,6 +7,7 @@ unkeyed, or unreachable — so the app never goes silent because of the network.
 from __future__ import annotations
 
 import random
+import re
 
 from . import config
 from . import sites
@@ -73,6 +74,17 @@ def _system() -> str:
     return _SYSTEM + ((" " + extra) if extra else "")
 
 
+def _conversation(snap: Snapshot) -> tuple[str, str]:
+    """The Discord channel/DM and server she'd actually care about, if any."""
+    from .notifier import _discord_channel
+    if snap.category == "discord":
+        return _discord_channel(snap.window_title)
+    site = sites.lookup(snap.url) or sites.lookup_title(snap.tab_title)
+    if site and site.name == "Discord":
+        return _discord_channel(snap.tab_title)
+    return "", ""
+
+
 def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     from . import settings
     lines = [
@@ -82,10 +94,19 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     mood = settings.get("mood")
     if mood:
         lines.append(f"his current mood/status: {mood}")
-    if snap.window_title:
-        lines.append(f"window/title: {snap.window_title}")
-    if snap.tab_title:
-        lines.append(f"browser tab: {snap.tab_title}")
+    # Where possible hand the model the *parsed* pieces and withhold the raw
+    # title: given the raw string it echoes it verbatim ("on discord #general |
+    # gooner hideout"), which reads like a log line, not something you'd text.
+    channel, server = _conversation(snap)
+    if channel:
+        lines.append(f"discord channel/dm: {channel}")
+        if server:
+            lines.append(f"discord server: {server}")
+    else:
+        if snap.window_title:
+            lines.append(f"window/title: {snap.window_title}")
+        if snap.tab_title:
+            lines.append(f"browser tab: {snap.tab_title}")
     if snap.url:
         lines.append(f"url: {snap.url}")
         site = sites.lookup(snap.url)
@@ -117,7 +138,14 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
 
     detail = snap.tab_title or snap.window_title
     where = snap.app
-    if snap.category == "browsing" and detail:
+    if detail.strip().lower() == where.strip().lower():
+        detail = ""  # "on Discord — Discord" tells her nothing
+    channel, server = _conversation(snap)
+    if channel:
+        base = f"on {where} in {channel}"
+        if server:
+            base += f" ({server})"
+    elif snap.category == "browsing" and detail:
         base = f"on {where}: {detail}"
     elif snap.category == "coding" and detail:
         base = f"coding in {where} — {detail}"
@@ -134,9 +162,19 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
 
 
 def _clean(text: str) -> str:
-    """Strip quotes / extra lines the model might wrap around the message."""
-    text = (text or "").strip().strip('"').strip()
-    return text.splitlines()[0] if text else ""
+    """Strip quotes / extra lines the model might wrap around the message.
+
+    Reasoning models (gpt-oss, qwen3, deepseek-r1) narrate inside <think> blocks
+    before answering. Taking the first line blindly would send her the model's
+    scratchpad, so drop those blocks before picking the line."""
+    text = re.sub(r"(?is)<(think|reasoning)>.*?</\1>", " ", text or "")
+    text = re.sub(r"(?is)^\s*<(think|reasoning)>.*$", " ", text)  # unclosed block
+    text = text.strip().strip('"').strip()
+    for line in text.splitlines():
+        line = line.strip().strip('"').strip()
+        if line:
+            return line
+    return ""
 
 
 def _user_prompt(snap: Snapshot, minutes: int, kind: str) -> str:
@@ -197,31 +235,45 @@ def _via_ollama(snap: Snapshot, minutes: int, kind: str) -> str:
 
 
 def _chat_openai(base_url: str, api_key: str, model: str, system: str, user: str,
-                 max_tokens: int = 80) -> str:
-    """OpenAI-compatible chat — works with Groq, Cerebras, OpenRouter, etc."""
+                 max_tokens: int = 300, extra: dict | None = None) -> str:
+    """OpenAI-compatible chat — works with Groq, Cerebras, OpenRouter, etc.
+
+    The budget is deliberately generous: the reasoning models these free hosts
+    now serve spend most of their tokens thinking, and a tight cap means the
+    visible answer never gets written and she gets an empty card."""
     import requests
 
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.4,
+        "max_tokens": max_tokens,
+    }
+    body.update(extra or {})
     resp = requests.post(
         f"{base_url}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
-        json={
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "temperature": 0.4,
-            "max_tokens": max_tokens,
-        },
+        json=body,
         timeout=30,
     )
+    if resp.status_code == 400 and extra:
+        # Host doesn't know the reasoning knobs — retry plain rather than go silent.
+        return _chat_openai(base_url, api_key, model, system, user, max_tokens)
     resp.raise_for_status()
-    return _clean(resp.json()["choices"][0]["message"]["content"])
+    return _clean(resp.json()["choices"][0]["message"].get("content") or "")
 
 
-def _chat_groq(system: str, user: str, max_tokens: int = 80) -> str:
+# Keep the thinking short and out of the reply — we want the one line, not the
+# reasoning that produced it. Ignored by hosts that don't serve reasoning models.
+_REASONING_OPTS = {"reasoning_effort": "low", "reasoning_format": "hidden"}
+
+
+def _chat_groq(system: str, user: str, max_tokens: int = 300) -> str:
     return _chat_openai(config.GROQ_BASE_URL, config.GROQ_API_KEY, config.GROQ_MODEL,
-                        system, user, max_tokens)
+                        system, user, max_tokens, _REASONING_OPTS)
 
 
 def _via_groq(snap: Snapshot, minutes: int, kind: str) -> str:
@@ -243,7 +295,7 @@ def recap_intro(stats: str, period: str = "day") -> str:
         if provider == "ollama":
             text = _chat_ollama(_RECAP_SYSTEM, user, num_predict=90)
         elif provider == "groq" and config.GROQ_API_KEY:
-            text = _chat_groq(_RECAP_SYSTEM, user, max_tokens=120)
+            text = _chat_groq(_RECAP_SYSTEM, user, max_tokens=400)
         elif provider == "anthropic" and config.ANTHROPIC_API_KEY:
             text = _chat_anthropic(_RECAP_SYSTEM, user, max_tokens=150)
         else:

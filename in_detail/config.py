@@ -102,8 +102,14 @@ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 # Get a free key at https://console.groq.com. OpenAI-compatible, so GROQ_BASE_URL
 # can also point at Cerebras / OpenRouter / any compatible free host.
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+
+# --- Windows: read the browser's address bar via UI Automation --------------
+# Windows exposes no API for the active tab's URL, so we ask the accessibility
+# tree for the address bar. It's the only way to get per-site cards, links and
+# YouTube thumbnails there — but it's slow, so set this false to turn it off.
+READ_BROWSER_URL = _get_bool("READ_BROWSER_URL", True)
 
 
 def active_provider() -> str:
