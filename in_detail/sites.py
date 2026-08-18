@@ -5,6 +5,7 @@ updates read richer than a generic "on Brave".
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -45,6 +46,59 @@ _TABLE: list[tuple[tuple[str, ...], Site]] = [
     (("google.com/search", "google.com/webhp", "bing.com/search"), Site("a search", "🔍", "searching", 0x4285F4)),
     (("discord.com", "discordapp.com"), Site("Discord", "💬", "on", 0x5865F2)),
 ]
+
+
+_BY_NAME = {site.name.lower(): site for _keys, site in _TABLE}
+
+# Windows has no clean cross-browser way to read the URL, so the tab title is
+# all we get. Browsers still sign the title with the site's own name, which is
+# enough to recover the brand, emoji and colour a URL would have given us.
+_TITLE_HINTS: tuple[tuple[str, str], ...] = (
+    ("youtube music", "YouTube Music"),
+    ("youtube", "YouTube"),
+    ("twitch", "Twitch"),
+    ("netflix", "Netflix"),
+    ("prime video", "Prime Video"),
+    ("hotstar", "Disney+ / Hotstar"),
+    ("disney+", "Disney+ / Hotstar"),
+    ("crunchyroll", "Crunchyroll"),
+    ("reddit", "Reddit"),
+    ("instagram", "Instagram"),
+    ("tiktok", "TikTok"),
+    ("facebook", "Facebook"),
+    ("github", "GitHub"),
+    ("stack overflow", "Stack Overflow"),
+    ("gmail", "email"),
+    ("outlook", "email"),
+    ("google docs", "Google Docs"),
+    ("notion", "Notion"),
+    ("chatgpt", "ChatGPT"),
+    ("soundcloud", "SoundCloud"),
+    ("spotify", "Spotify"),
+    ("wikipedia", "Wikipedia"),
+    ("linkedin", "LinkedIn"),
+    ("discord", "Discord"),
+)
+
+_SEGMENT = re.compile(r"\s+[—–|]\s+|\s+-\s+")
+
+
+def lookup_title(title: str) -> Site | None:
+    """Recognise the site from a tab title, for when there's no URL to go on.
+
+    Only the first and last segments count: a video *called* "I love Netflix"
+    is not Netflix, but "… - YouTube" and "Discord | @her" are."""
+    t = re.sub(r"^\(\d+\)\s*", "", (title or "").strip()).lower()
+    if not t:
+        return None
+    segments = [s.strip() for s in _SEGMENT.split(t) if s.strip()]
+    if not segments:
+        return None
+    edges = {segments[0], segments[-1]}
+    for hint, name in _TITLE_HINTS:
+        if any(hint in edge for edge in edges):
+            return _BY_NAME.get(name.lower())
+    return None
 
 
 def lookup(url: str) -> Site | None:

@@ -10,7 +10,9 @@ import datetime as _dt
 import json
 import os
 import re
+import traceback
 from dataclasses import asdict, dataclass, field, fields
+from pathlib import Path
 
 from . import config
 from .collectors import Snapshot
@@ -94,6 +96,24 @@ class DailyLog:
         return self.active_seconds / 60.0
 
 
+# Somewhere always writable, whatever the app bundle is allowed to touch.
+_PROBLEM_LOG = Path.home() / "Library" / "Logs" / "in-detail.log"
+
+save_error: str = ""  # last save failure, for the menu-bar health indicator
+
+
+def _note_failure(exc: Exception) -> None:
+    global save_error
+    save_error = f"{type(exc).__name__}: {exc}"
+    try:
+        _PROBLEM_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with _PROBLEM_LOG.open("a", encoding="utf-8") as fh:
+            fh.write(f"{_now_iso()} history.save failed: {save_error}\n")
+            traceback.print_exc(file=fh)
+    except Exception:
+        pass
+
+
 def _path(date: str):
     return config.DATA_DIR / f"day-{date}.json"
 
@@ -103,7 +123,7 @@ def load(date: str | None = None) -> DailyLog:
     p = _path(date)
     if p.exists():
         try:
-            data = json.loads(p.read_text())
+            data = json.loads(p.read_text(encoding="utf-8"))
             valid = {f.name for f in fields(DailyLog)}
             return DailyLog(**{k: v for k, v in data.items() if k in valid})
         except Exception:
@@ -117,14 +137,21 @@ def save(log: DailyLog) -> None:
     # a live burst or the midnight rollover) leaves a 0-byte file that load()
     # then silently reads as an empty day — losing everything. os.replace is
     # atomic on the same filesystem, so the day file is always whole or untouched.
+    tmp = None
     try:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         dest = _path(log.date)
         tmp = dest.with_name(dest.name + f".tmp-{os.getpid()}")
-        tmp.write_text(json.dumps(asdict(log), ensure_ascii=False, indent=2))
+        tmp.write_text(json.dumps(asdict(log), ensure_ascii=False, indent=2),
+                       encoding="utf-8")
         os.replace(tmp, dest)
-    except Exception:
+    except Exception as exc:
+        # Never crash the tick over a failed write — but never fail silently
+        # either. Swallowing this is how a whole day of history can go missing
+        # without anything looking wrong from the outside.
+        _note_failure(exc)
         try:
-            tmp.unlink()
+            if tmp is not None:
+                tmp.unlink()
         except Exception:
             pass

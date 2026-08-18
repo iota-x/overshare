@@ -116,6 +116,8 @@ class WinApp:
     def _healthy(self) -> bool:
         if not notifier.healthy():
             return False
+        if history.save_error:
+            return False  # the day's tally isn't persisting — recaps will lie
         return not (companion.enabled() and companion.dropped())
 
     def _ask(self, title: str, prompt: str, default: str = "") -> str | None:
@@ -270,11 +272,7 @@ class WinApp:
             self._hertime_text = "invalid timezone"
 
     def _presence_label(self, snap) -> str:
-        if snap.url:
-            site = sites.lookup(snap.url)
-            if site:
-                return site.name
-        return "code" if snap.category == "coding" else snap.app
+        return notifier.presence_label(snap)
 
     def _answer_activity(self, cid) -> None:
         snap = collectors.collect()

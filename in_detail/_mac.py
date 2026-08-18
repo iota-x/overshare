@@ -20,6 +20,8 @@ from . import config
 from .collectors import Snapshot
 
 _AX_FOCUSED_WINDOW = "AXFocusedWindow"
+_AX_MAIN_WINDOW = "AXMainWindow"
+_AX_WINDOWS = "AXWindows"
 _AX_TITLE = "AXTitle"
 
 _CHROMIUM_BROWSERS = {
@@ -59,18 +61,64 @@ def _idle_seconds() -> float:
         return 0.0
 
 
-def _frontmost_window_title(pid: int) -> str:
+def _ax_title(element) -> str:
     try:
-        ax_app = AXUIElementCreateApplication(pid)
-        err, window = AXUIElementCopyAttributeValue(ax_app, _AX_FOCUSED_WINDOW, None)
-        if err != 0 or window is None:
-            return ""
-        err, title = AXUIElementCopyAttributeValue(window, _AX_TITLE, None)
-        if err != 0 or title is None:
-            return ""
-        return str(title)
+        err, title = AXUIElementCopyAttributeValue(element, _AX_TITLE, None)
     except Exception:
         return ""
+    return str(title).strip() if err == 0 and title else ""
+
+
+def _cg_window_title(pid: int) -> str:
+    """Ask the window server for the title, as a last resort.
+
+    Independent of Accessibility, so this still answers for apps that hand AX an
+    untitled window — without it those updates collapse to a bare app name."""
+    try:
+        infos = Quartz.CGWindowListCopyWindowInfo(
+            Quartz.kCGWindowListOptionOnScreenOnly
+            | Quartz.kCGWindowListExcludeDesktopElements,
+            Quartz.kCGNullWindowID) or []
+    except Exception:
+        return ""
+    for info in infos:
+        try:
+            if int(info.get("kCGWindowOwnerPID", -1)) != pid:
+                continue
+            if int(info.get("kCGWindowLayer", 0)) != 0:
+                continue  # panels, menus and overlays aren't the real window
+            name = str(info.get("kCGWindowName") or "").strip()
+        except Exception:
+            continue
+        if name:
+            return name
+    return ""
+
+
+def _frontmost_window_title(pid: int) -> str:
+    """The frontmost window's title, trying every source before giving up.
+
+    Electron apps (Discord, Slack, VS Code) routinely leave AXFocusedWindow
+    empty while AXMainWindow is perfectly good, so one failed lookup is not an
+    answer — it's why a Discord update could arrive saying only "Discord"
+    instead of the channel or DM you were actually in."""
+    try:
+        ax_app = AXUIElementCreateApplication(pid)
+        for attr in (_AX_FOCUSED_WINDOW, _AX_MAIN_WINDOW):
+            err, window = AXUIElementCopyAttributeValue(ax_app, attr, None)
+            if err == 0 and window is not None:
+                title = _ax_title(window)
+                if title:
+                    return title
+        err, windows = AXUIElementCopyAttributeValue(ax_app, _AX_WINDOWS, None)
+        if err == 0 and windows:
+            for window in windows:
+                title = _ax_title(window)
+                if title:
+                    return title
+    except Exception:
+        pass
+    return _cg_window_title(pid)
 
 
 def _run_osascript(script: str, timeout: float = 3.0) -> str:

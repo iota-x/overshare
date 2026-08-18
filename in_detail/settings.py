@@ -57,7 +57,7 @@ def _load() -> dict:
     global _cache
     if _cache is None:
         try:
-            _cache = {**_DEFAULTS, **json.loads(_path().read_text())}
+            _cache = {**_DEFAULTS, **json.loads(_path().read_text(encoding="utf-8"))}
         except Exception:
             _cache = dict(_DEFAULTS)
     return _cache
@@ -78,6 +78,6 @@ def set(key: str, value) -> None:
     d[key] = value
     try:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        _path().write_text(json.dumps(d))
+        _path().write_text(json.dumps(d), encoding="utf-8")
     except Exception:
         pass
