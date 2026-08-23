@@ -12,6 +12,12 @@ rumps>=0.4.0; sys_platform == "darwin"
 pyobjc-framework-Cocoa>=10.0; sys_platform == "darwin"
 pyobjc-framework-Quartz>=10.0; sys_platform == "darwin"
 pyobjc-framework-ApplicationServices>=10.0; sys_platform == "darwin"
+# `imagesnap` is still the preferred camera on macOS, but it needs Homebrew —
+# which someone installing the .dmg won't have. Bundling OpenCV means `!peek`
+# works out of the box; capture.py falls back to it when imagesnap is missing.
+# It's most of the download size, so drop this line for a much smaller build
+# if you're happy to `brew install imagesnap` instead.
+opencv-python-headless>=4.8; sys_platform == "darwin"
 
 # Windows
 pywin32>=306; sys_platform == "win32"

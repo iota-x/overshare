@@ -117,7 +117,7 @@ nothing to install first, no Python, no terminal. Each release carries both:
 
 Both are self-contained: the Python runtime and every dependency are inside, so
 they run on a machine that has never had Python on it. That does make them large
-for what they are — the macOS `.dmg` is about 107 MB, most of it Qt.
+for what they are — around 100 MB each, most of it Qt and OpenCV.
 
 **The first launch needs one extra step**, because the app isn't signed by a
 paid developer account:
@@ -328,9 +328,11 @@ to any symbol, or you can set it under **Settings… → Setup → Command prefi
 auto-refreshing frame that feels live (add `screen` for the desktop). A bot can't
 open a real live *stream*, so this is fast snapshot-on-demand.
 
-- **Webcam** needs `brew install imagesnap`. The screen uses the built-in
-  `screencapture` — no install. (The app finds `imagesnap` even when launched as a
-  bundled `.app` with a minimal `PATH`.)
+- **Nothing to install.** The installed app bundles OpenCV for the webcam, and
+  the screen uses macOS's built-in `screencapture`. If you *do* have
+  `brew install imagesnap`, it's preferred — it's the only backend that can
+  target a specific camera by name (Privacy → *Pin a camera*). The app finds it
+  even when launched as a bundled `.app` with a minimal `PATH`.
 - First use, macOS asks for **Camera** and **Screen Recording** permission for the app (System Settings → Privacy). The green camera light shows whenever the webcam fires.
 - Only allowed users (`HER_USER_IDS`) can trigger it, and **you get a card + flash every time she peeks** (`PEEK_NOTIFY=false` to silence, `PEEK_ENABLED=false` to disable the whole feature).
 - **Per-source toggles in the menu bar** — **Allow camera peeks** and **Allow screen peeks** flip camera and screen independently, live (checkmark = allowed). Turn the camera off and `!peek` politely bounces while `!screen` still works — no restart, and it sticks across launches.
@@ -370,7 +372,7 @@ pages re-check as you open them and say what's actually wrong.
 | Nothing arrives at all | Settings… → Setup → check the dot under the webhook, then **Send a test message** |
 | macOS: only app names (no file/tab detail) | Grant **Accessibility**, then Quit + reopen |
 | macOS: no browser URL / background Spotify | Grant **Automation** (browser + Spotify) |
-| `!peek` says "no camera tool set up" | `brew install imagesnap`, then Quit + reopen the app |
+| `!peek` says "no camera tool set up" | Only happens when running from source without OpenCV — `pip install -r requirements.txt`, or `brew install imagesnap` |
 | `!peek` says "couldn't grab that" | Grant **Camera** (and **Screen Recording** for `!screen`) to the app, then retry |
 | ⚠️ indicator | Bot disconnected or webhook failing — check token/webhook/internet |
 | Her DM updates don't arrive | Her Discord DMs must be open to the bot |
@@ -387,7 +389,7 @@ Python · [`rumps`](https://github.com/jaredks/rumps) (macOS menu bar) /
 [`PySide6`](https://doc.qt.io/qtforpython-6/) for the settings window, in its own
 process · `pyobjc` + `osascript` (macOS) / `pywin32` + `psutil` (Windows) ·
 [`discord.py`](https://github.com/Rapptz/discord.py) for the bot ·
-`imagesnap` + `screencapture` (macOS peeks). Pluggable AI:
+OpenCV / `imagesnap` + `screencapture` (peeks). Pluggable AI:
 Groq / Ollama / Anthropic / templates. Packaged with
 [PyInstaller](https://pyinstaller.org) + `hdiutil` (`.dmg`) /
 [Inno Setup](https://jrsoftware.org/isinfo.php) (`.exe`).

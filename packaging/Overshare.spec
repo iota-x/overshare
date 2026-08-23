@@ -29,7 +29,9 @@ hiddenimports = [
     "dotenv",
 ]
 if MACOS:
-    hiddenimports += ["rumps", "AppKit", "Foundation", "Quartz"]
+    # cv2 is the camera fallback when imagesnap isn't installed (see capture.py),
+    # and it's imported lazily, so name it explicitly.
+    hiddenimports += ["rumps", "AppKit", "Foundation", "Quartz", "cv2"]
 if WINDOWS:
     hiddenimports += [
         "pystray._win32", "PIL.ImageGrab", "win32api", "win32gui",
