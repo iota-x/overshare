@@ -219,23 +219,10 @@ One spec covers both platforms. The Windows installer needs
 
 ### Signing
 
-Both installers ship **unsigned**, which is exactly what causes the first-launch
-warnings above. The workflow already contains the codesign + notarization steps;
-they're skipped while the secrets are absent, and switch on by themselves once
-these exist — no code change:
-
-| Secret | For |
-|---|---|
-| `APPLE_ID` | the Apple ID that owns the developer account |
-| `APPLE_TEAM_ID` | your 10-character Team ID |
-| `APPLE_APP_PASSWORD` | an app-specific password for notarization |
-| `APPLE_CERT_P12` | your Developer ID certificate, base64-encoded |
-| `APPLE_CERT_PASSWORD` | the password for that `.p12` |
-
-Apple's side needs a $99/yr developer account. Windows code-signing needs a
-separate OV/EV certificate (~$200–400/yr), and OV certificates still trip
-SmartScreen until they build reputation — so for a project like this, telling
-people to click *"More info → Run anyway"* is the honest trade.
+Both installers ship **unsigned** — that's what causes the first-launch warnings
+above. `release.yml` already has the codesign and notarization steps; they stay
+skipped until the `APPLE_*` secrets exist. The comments there spell out what's
+needed if you ever want to turn it on.
 
 > **Windows notes:** it reads the active window title (which for browsers already
 > includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify
