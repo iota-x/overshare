@@ -1,0 +1,70 @@
+name: CI
+
+# Runs on every pull request and on pushes to main. Deliberately does not build
+# installers — that's release.yml's job, and it takes minutes. This is the fast
+# check: does it import, does it still render every card, does the settings
+# window come up.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # A new push to the same PR cancels the run still going for the old one.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false      # one platform failing shouldn't hide the other
+      matrix:
+        os: [macos-14, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Byte-compile everything
+        # Catches syntax errors on the platform-specific modules too, which
+        # never get imported on the other OS.
+        run: python -m compileall -q in_detail run_app.py
+
+      - name: Render every card
+        # The selftest exits non-zero when the config is incomplete, so give it
+        # a dummy webhook. It's a dry run either way — nothing is sent.
+        env:
+          DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/000000/ci-dummy
+          AI_ENABLED: "false"
+        run: python -m in_detail.selftest
+
+      - name: Build the settings window
+        # Offscreen Qt, so this works on a headless runner. Walks every page,
+        # which is what catches a broken layout or a bad widget binding.
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python -c "
+          from PySide6.QtWidgets import QApplication
+          from in_detail.gui.main import SettingsWindow
+          from in_detail.gui import theme
+          app = QApplication([])
+          for dark in (False, True):
+              app.setStyleSheet(theme.qss(dark))
+              w = SettingsWindow(dark=dark)
+              for i in range(w._nav.count()):
+                  w._nav.setCurrentRow(i)
+                  assert w._stack.currentWidget() is not None
+              print(('dark' if dark else 'light'), '->', w._nav.count(), 'pages OK')
+          "
