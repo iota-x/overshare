@@ -1,0 +1,77 @@
+name: Bug report
+description: Something's broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The `selftest` output below answers most of what
+        I'd otherwise have to ask you, so please include it if you can.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+      placeholder: "She stopped getting updates after I switched to Groq…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How do I reproduce it?
+      placeholder: |
+        1. Open Settings… → AI
+        2. Pick Ollama
+        3. …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Which OS?
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows 11
+        - Windows 10
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: From the release you downloaded, or the commit if running from source.
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Downloaded the .dmg / .exe from Releases
+        - Running from source
+    validations:
+      required: true
+
+  - type: textarea
+    id: selftest
+    attributes:
+      label: selftest output
+      description: |
+        Run `python -m in_detail.selftest` if you have the source. It sends
+        nothing. Paste at least the `=== health ===` block at the top.
+      render: shell
+
+  - type: checkboxes
+    id: secrets
+    attributes:
+      label: Before you post
+      options:
+        - label: I've removed my webhook URL, bot token and API keys from anything I pasted above
+          required: true

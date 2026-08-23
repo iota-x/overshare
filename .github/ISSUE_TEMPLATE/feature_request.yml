@@ -1,0 +1,34 @@
+name: Feature request
+description: An idea for something it should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Worth checking the **Potential improvements** list at the bottom of the
+        README first — a few things are left out deliberately, and that section
+        says why.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What should it do?
+      validations:
+        required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What made you want it?
+      description: The situation you were in matters more than the solution — it often suggests a better one.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which platforms would it need to work on?
+      multiple: true
+      options:
+        - macOS
+        - Windows

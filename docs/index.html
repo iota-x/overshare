@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overshare — lovingly over-informed</title>
+<meta name="description" content="A tiny menu-bar app that keeps your partner lovingly over-informed about everything you do on your computer. Free, open source, macOS and Windows.">
+
+<meta property="og:title" content="Overshare 💌">
+<meta property="og:description" content="A tiny menu-bar app that keeps your partner lovingly over-informed about everything you do on your computer.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://iota-x.github.io/overshare/screenshots/settings-setup.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
+
+<style>
+  /* Same palette as the app itself. Light is the base; dark only redefines
+     tokens, so nothing is left with a colour defined in one mode only. */
+  :root {
+    --bg: #FDF8F7;  --surface: #FFFFFF;  --surface-alt: #F7EFEE;
+    --border: #ECDFDD;  --text: #2B2226;  --muted: #8A7B80;
+    --accent: #DB4F86;  --accent-hov: #C83F75;  --accent-soft: #FCEDF3;
+    --on-accent: #FFFFFF;
+    --font: ".AppleSystemUIFont", "Segoe UI Variable Text", "Segoe UI",
+            system-ui, "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17131A;  --surface: #211C26;  --surface-alt: #2A2430;
+      --border: #332B39;  --text: #F2EBEF;  --muted: #A2939F;
+      --accent: #FF7AAE;  --accent-hov: #FF95BF;  --accent-soft: #33212C;
+      --on-accent: #2B0F1C;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--accent); }
+
+  /* --- Hero ------------------------------------------------------------ */
+  header { text-align: center; padding: 90px 0 40px; }
+  h1 {
+    font-size: clamp(44px, 8vw, 76px); margin: 0 0 6px;
+    letter-spacing: -0.03em; font-weight: 800;
+  }
+  .tagline { font-size: clamp(17px, 2.6vw, 21px); color: var(--muted); margin: 0 0 8px; }
+  .sub {
+    color: var(--muted); max-width: 540px; margin: 0 auto 34px;
+    font-size: 15px;
+  }
+
+  .buttons {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 26px; border-radius: 11px;
+    font-size: 15.5px; font-weight: 650; text-decoration: none;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border);
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); background: var(--surface-alt); }
+  .btn.primary {
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  }
+  .btn.primary:hover { background: var(--accent-hov); border-color: var(--accent-hov); }
+  .btn svg { width: 19px; height: 19px; fill: currentColor; }
+
+  .meta { color: var(--muted); font-size: 13.5px; min-height: 20px; }
+  .meta a { color: var(--muted); }
+
+  /* --- Shot ------------------------------------------------------------- */
+  .shot { margin: 54px 0 20px; }
+  .shot img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 24px 60px -28px rgba(0,0,0,.4);
+  }
+  .caption { text-align: center; color: var(--muted); font-size: 13.5px; margin-top: 14px; }
+
+  /* --- Sections ---------------------------------------------------------- */
+  section { padding: 56px 0; }
+  h2 {
+    font-size: 27px; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 750;
+  }
+  .lede { color: var(--muted); margin: 0 0 30px; max-width: 620px; }
+
+  .steps { display: grid; gap: 18px; grid-template-columns: repeat(3, 1fr); }
+  .step {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 22px;
+  }
+  .step .ico { font-size: 26px; line-height: 1; }
+  .step h3 { margin: 12px 0 5px; font-size: 16.5px; }
+  .step p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+  .grid figure { margin: 0; }
+  .grid img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--border); border-radius: 11px;
+  }
+  .grid figcaption { color: var(--muted); font-size: 13px; margin-top: 9px; }
+
+  ul.features { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 34px; }
+  ul.features li { margin: 0 0 11px; break-inside: avoid; font-size: 14.5px; }
+  ul.features b { font-weight: 650; }
+
+  .note {
+    background: var(--accent-soft); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; font-size: 14px; color: var(--text);
+  }
+  .note b { font-weight: 700; }
+
+  footer {
+    border-top: 1px solid var(--border); margin-top: 40px;
+    padding: 30px 0 60px; text-align: center; color: var(--muted); font-size: 13.5px;
+  }
+
+  @media (max-width: 760px) {
+    header { padding-top: 60px; }
+    .steps, .grid { grid-template-columns: 1fr; }
+    ul.features { columns: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>overshare 💌</h1>
+    <p class="tagline">lovingly over-informed, automatically</p>
+    <p class="sub">
+      A tiny menu-bar app that tells your partner what you're up to on your
+      computer — in real time, in detail, so you don't have to.
+    </p>
+
+    <div class="buttons">
+      <a class="btn primary" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest">
+        <svg viewBox="0 0 384 512" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+        <span>Download for Mac</span>
+      </a>
+      <a class="btn" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest">
+        <svg viewBox="0 0 448 512" aria-hidden="true"><path d="M0 93.7l183.6-25.3v177.4H0V93.7zm0 324.6l183.6 25.3V268.4H0v149.9zm203.8 28L448 480V268.4H203.8v177.9zm0-380.6v180.1H448V32L203.8 65.7z"/></svg>
+        <span>Download for Windows</span>
+      </a>
+    </div>
+    <p class="meta" id="meta">free · open source · macOS &amp; Windows</p>
+  </header>
+
+  <div class="shot">
+    <img src="screenshots/settings-setup.png"
+         alt="Overshare's settings window on the Setup page, showing a Discord webhook link with a green Connected check and a Send a test message button.">
+    <p class="caption">Paste one Discord link. It checks it for you. That's the setup.</p>
+  </div>
+
+  <section>
+    <h2>How it works</h2>
+    <p class="lede">
+      It watches what's in front of you, writes a sentence about it, and sends
+      it to a Discord channel of your choosing.
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="ico">👀</div>
+        <h3>It notices</h3>
+        <p>The app you're in, the file you're editing, the tab you're reading,
+           the song playing behind it, and when you've wandered off.</p>
+      </div>
+      <div class="step">
+        <div class="ico">✨</div>
+        <h3>It writes</h3>
+        <p>A warm one-liner, not a log entry. Free AI via Groq or a local model —
+           or plain templates with no AI at all.</p>
+      </div>
+      <div class="step">
+        <div class="ico">💌</div>
+        <h3>She gets it</h3>
+        <p>A rich card in Discord, with links and thumbnails. She can reply,
+           react, and ask for a photo — and you're told every time.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>A real settings window</h2>
+    <p class="lede">
+      Seven pages, and it checks its own work — the webhook is verified as you
+      type, and each AI provider's models are listed from your own account.
+      Nothing to edit by hand.
+    </p>
+    <div class="grid">
+      <figure>
+        <img src="screenshots/settings-ai-dark.png"
+             alt="The AI page in dark mode, with provider options and a verified key.">
+        <figcaption><b>AI</b> — pick a brain, key checked live</figcaption>
+      </figure>
+      <figure>
+        <img src="screenshots/settings-privacy-dark.png"
+             alt="The Privacy page, with a master switch over the camera and screen.">
+        <figcaption><b>Privacy</b> — one master switch over camera and screen</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it does</h2>
+    <ul class="features">
+      <li><b>Per-site smarts</b> — YouTube, Twitch, Reddit, GitHub and friends get their own emoji, colour and phrasing.</li>
+      <li><b>Now playing</b> — “watching X while Y plays”, even when Spotify's in the background.</li>
+      <li><b>Peek on demand</b> — she can ask for a webcam photo or a screenshot, and you're pinged every time.</li>
+      <li><b>Recaps</b> — a nightly summary and a weekly Wrapped: top apps, what you watched, streaks, late nights.</li>
+      <li><b>Two-way</b> — with a bot, her replies and reactions come back to you as notifications.</li>
+      <li><b>An off-switch</b> — one click to pause. Because sometimes you want privacy.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="note">
+      <b>Heads up on first launch.</b> The app isn't signed by a paid developer
+      account, so macOS will say it “could not verify” it — right-click the app
+      and choose <b>Open</b>, once. On Windows, click <b>More info → Run
+      anyway</b>. Everything is
+      <a href="https://github.com/iota-x/overshare">open source</a> if you'd
+      rather read it first.
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      <a href="https://github.com/iota-x/overshare">GitHub</a> ·
+      <a href="https://github.com/iota-x/overshare/releases">All releases</a> ·
+      <a href="https://github.com/iota-x/overshare/issues">Report a bug</a> ·
+      <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">MIT</a>
+    </p>
+    <p>Built because someone said “you never tell me anything”. 💛</p>
+  </footer>
+</div>
+
+<script>
+  // Point the buttons at the actual files in the newest release, so tagging a
+  // version updates this page without anyone editing it. If the API is
+  // unreachable or rate-limited, the hrefs already point at /releases/latest.
+  (function () {
+    var mac = document.getElementById('dl-mac');
+    var win = document.getElementById('dl-win');
+    var meta = document.getElementById('meta');
+
+    // Lead with whichever platform the visitor is actually on.
+    if (/Windows/i.test(navigator.userAgent)) {
+      win.classList.add('primary');
+      mac.classList.remove('primary');
+    }
+
+    fetch('https://api.github.com/repos/iota-x/overshare/releases/latest')
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (rel) {
+        var mb = function (b) { return Math.round(b / 1048576) + ' MB'; };
+        var found = {};
+        (rel.assets || []).forEach(function (a) {
+          if (/\.dmg$/i.test(a.name)) { mac.href = a.browser_download_url; found.mac = mb(a.size); }
+          if (/\.exe$/i.test(a.name)) { win.href = a.browser_download_url; found.win = mb(a.size); }
+        });
+        var bits = [rel.tag_name, 'free', 'open source'];
+        if (found.mac || found.win) {
+          bits.push([found.mac && 'Mac ' + found.mac, found.win && 'Windows ' + found.win]
+                    .filter(Boolean).join(' · '));
+        }
+        meta.textContent = bits.join(' · ');
+      })
+      .catch(function () { /* keep the static fallback text and links */ });
+  })();
+</script>
+
+</body>
+</html>
