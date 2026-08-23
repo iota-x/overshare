@@ -1,115 +1,253 @@
-"""Configuration — loaded from environment / a local .env file.
+"""Configuration — a JSON overlay written by the settings app, layered over .env.
 
-Nothing secret is hard-coded here. Copy .env.example to .env and fill it in.
+Three sources, highest priority first:
+
+  1. ``<data>/config.json``  — what the settings GUI writes. Typed (real bools
+     and floats), and the only thing the GUI ever touches.
+  2. ``.env`` / the environment — how this app was configured before there was
+     a GUI. Still fully supported, so an existing checkout keeps working.
+  3. The defaults spelled out below.
+
+Every consumer reads these as attributes (``config.POLL_INTERVAL``), never via
+``from .config import POLL_INTERVAL`` — which is what lets :func:`reload` swap
+the whole module's values at runtime and have the running app pick them up on
+its next poll. Keep it that way.
 """
 
+from __future__ import annotations
+
+import json
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env sitting next to the project root (in-detail/.env)
-_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(_ENV_PATH)
+
+# --- Where user data lives ---------------------------------------------------
+# Running from a source checkout we keep the repo's data/ folder (so a dev's
+# history and settings survive). Frozen into an .app/.exe, the bundle is the
+# wrong place to write — go to the OS's per-user application data directory.
+def _default_data_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        if sys.platform == "darwin":
+            return Path.home() / "Library" / "Application Support" / "Overshare"
+        if sys.platform.startswith("win"):
+            base = os.environ.get("APPDATA") or str(Path.home())
+            return Path(base) / "Overshare"
+        return Path.home() / ".overshare"
+    return Path(__file__).resolve().parent.parent / "data"
+
+
+DATA_DIR = _default_data_dir()
+
+# The overlay the settings GUI writes. Lives beside the day tallies so backing
+# up one folder keeps everything.
+CONFIG_PATH = DATA_DIR / "config.json"
+
+_overlay: dict = {}
+
+
+def _load_overlay() -> None:
+    global _overlay
+    try:
+        loaded = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        _overlay = loaded if isinstance(loaded, dict) else {}
+    except Exception:
+        _overlay = {}
+
+
+def _load_env() -> None:
+    """Load .env from the checkout, and (when frozen) from the data dir too."""
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    if getattr(sys, "frozen", False):
+        load_dotenv(DATA_DIR / ".env")
+
+
+# --- Typed lookups across overlay → env → default ----------------------------
+# The overlay holds real types; the environment only ever holds strings. Each
+# helper accepts both, so a value reads the same whichever layer supplied it.
+def _get_str(name: str, default: str = "") -> str:
+    val = _overlay.get(name)
+    if val is None:
+        val = os.environ.get(name, default)
+    return str(val).strip()
 
 
 def _get_float(name: str, default: float) -> float:
+    val = _overlay.get(name)
+    if val is None:
+        val = os.environ.get(name, default)
     try:
-        return float(os.environ.get(name, default))
+        return float(val)
     except (TypeError, ValueError):
         return default
 
 
+def _get_int(name: str, default: int) -> int:
+    return int(_get_float(name, default))
+
+
 def _get_bool(name: str, default: bool) -> bool:
-    val = os.environ.get(name)
+    val = _overlay.get(name)
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        val = os.environ.get(name)
     if val is None:
         return default
-    return val.strip().lower() in {"1", "true", "yes", "on"}
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
 
 
-# --- Delivery ---------------------------------------------------------------
-# The Discord webhook she'll receive updates through.
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
-# Display name / avatar the webhook posts as.
-WEBHOOK_USERNAME = os.environ.get("WEBHOOK_USERNAME", "in detail 💬")
-WEBHOOK_AVATAR_URL = os.environ.get("WEBHOOK_AVATAR_URL", "").strip()
+def _apply() -> None:
+    """(Re)compute every setting from the current overlay + environment."""
+    g = globals()
 
-# --- Two-way (optional Discord bot) -----------------------------------------
-# A bot token lets her replies + reactions reach your Mac as notifications.
-# Leave blank to stay send-only. Setup steps are in the README.
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
-# Command prefix for the bot (she can also change it live with "<prefix>prefix >").
-BOT_PREFIX = os.environ.get("BOT_PREFIX", "!")
-# Restrict listening to specific channel(s) — comma-separated IDs. Best to set
-# this to the channel your update cards post to (so her reactions are caught).
-# Blank = listen everywhere the bot can see.
-DISCORD_CHANNEL_ID = os.environ.get("DISCORD_CHANNEL_ID", "").strip()
-DISCORD_CHANNEL_IDS = {c.strip() for c in DISCORD_CHANNEL_ID.split(",") if c.strip()}
-# Where the bot posts outbound messages (quick-reply, good-morning). Defaults to
-# the first channel above — set this to your main chat channel.
-DISCORD_HOME_CHANNEL_ID = os.environ.get("DISCORD_HOME_CHANNEL_ID", "").strip()
-if not DISCORD_HOME_CHANNEL_ID and DISCORD_CHANNEL_ID:
-    DISCORD_HOME_CHANNEL_ID = DISCORD_CHANNEL_ID.split(",")[0].strip()
+    # --- Delivery ------------------------------------------------------------
+    # The Discord webhook she'll receive updates through.
+    g["DISCORD_WEBHOOK_URL"] = _get_str("DISCORD_WEBHOOK_URL")
+    # Display name / avatar the webhook posts as.
+    g["WEBHOOK_USERNAME"] = _get_str("WEBHOOK_USERNAME", "in detail 💬")
+    g["WEBHOOK_AVATAR_URL"] = _get_str("WEBHOOK_AVATAR_URL")
 
-# Only react to HER (so other server members — or your own actions — don't
-# trigger anything). Comma-separated to allow more than one (e.g. add your own
-# id for testing). Blank = respond to anyone in the listened channels.
-HER_USER_ID = os.environ.get("HER_USER_ID", "").strip()
-HER_USER_IDS = {u.strip() for u in HER_USER_ID.split(",") if u.strip()}
-# The one to DM the cards to (first id above), when she picks DM delivery.
-HER_PRIMARY_ID = HER_USER_ID.split(",")[0].strip() if HER_USER_ID else ""
+    # --- Two-way (optional Discord bot) --------------------------------------
+    # A bot token lets her replies + reactions reach your machine as
+    # notifications. Leave blank to stay send-only.
+    g["DISCORD_BOT_TOKEN"] = _get_str("DISCORD_BOT_TOKEN")
+    # Command prefix for the bot (she can also change it live with "<prefix>prefix >").
+    g["BOT_PREFIX"] = _get_str("BOT_PREFIX", "!")
+    # Restrict listening to specific channel(s) — comma-separated IDs. Best set
+    # to the channel your update cards post to (so her reactions are caught).
+    # Blank = listen everywhere the bot can see.
+    channel_id = _get_str("DISCORD_CHANNEL_ID")
+    g["DISCORD_CHANNEL_ID"] = channel_id
+    g["DISCORD_CHANNEL_IDS"] = {c.strip() for c in channel_id.split(",") if c.strip()}
+    # Where the bot posts outbound messages (quick-reply, good-morning).
+    # Defaults to the first channel above.
+    home = _get_str("DISCORD_HOME_CHANNEL_ID")
+    if not home and channel_id:
+        home = channel_id.split(",")[0].strip()
+    g["DISCORD_HOME_CHANNEL_ID"] = home
 
-# Scheduled "good morning <her>" to the channel (even while you sleep).
-GM_ENABLED = _get_bool("GM_ENABLED", True)
-GM_TIME = os.environ.get("GM_TIME", "08:30").strip()  # HH:MM local
-HER_NAME = os.environ.get("HER_NAME", "").strip()     # for the good-morning line
+    # Only react to HER (so other server members — or your own actions — don't
+    # trigger anything). Comma-separated to allow more than one.
+    her_ids = _get_str("HER_USER_ID")
+    g["HER_USER_ID"] = her_ids
+    g["HER_USER_IDS"] = {u.strip() for u in her_ids.split(",") if u.strip()}
+    # The one to DM the cards to (first id above), when she picks DM delivery.
+    g["HER_PRIMARY_ID"] = her_ids.split(",")[0].strip() if her_ids else ""
 
-# --- Peek (camera / screen on demand) ---------------------------------------
-# Let her grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
-# live-ish view (`!live`). She still has to be an allowed user (HER_USER_IDS).
-# Set false to disable all of it. Camera + Screen Recording permission for the
-# app are requested by macOS the first time each is used.
-PEEK_ENABLED = _get_bool("PEEK_ENABLED", True)
-# Notify you on the Mac (card + flash) every time she peeks, so it's never
-# silent. Off = she can look without you being pinged (the green camera light
-# still shows for the webcam regardless).
-PEEK_NOTIFY = _get_bool("PEEK_NOTIFY", True)
-# Live-view (`!live`) burst length and how often the frame refreshes.
-LIVE_SECONDS = int(_get_float("LIVE_SECONDS", 20))
-LIVE_INTERVAL = _get_float("LIVE_INTERVAL", 2.5)
+    # Scheduled "good morning <her>" to the channel (even while you sleep).
+    g["GM_ENABLED"] = _get_bool("GM_ENABLED", True)
+    g["GM_TIME"] = _get_str("GM_TIME", "08:30")   # HH:MM local
+    g["HER_NAME"] = _get_str("HER_NAME")          # for the good-morning line
 
-# --- AI ---------------------------------------------------------------------
-# Set AI_ENABLED=false to fall back to plain templated messages (no AI at all).
-AI_ENABLED = _get_bool("AI_ENABLED", True)
+    # --- Peek (camera / screen on demand) ------------------------------------
+    # Let her grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
+    # live-ish view (`!live`). Set false to disable all of it.
+    g["PEEK_ENABLED"] = _get_bool("PEEK_ENABLED", True)
+    # Notify you every time she peeks, so it's never silent.
+    g["PEEK_NOTIFY"] = _get_bool("PEEK_NOTIFY", True)
+    # Live-view (`!live`) burst length and how often the frame refreshes.
+    g["LIVE_SECONDS"] = _get_int("LIVE_SECONDS", 20)
+    g["LIVE_INTERVAL"] = _get_float("LIVE_INTERVAL", 2.5)
 
-# Which brain writes the one-liners:
-#   "ollama"    -> FREE, runs a small model locally on your Mac (install Ollama)
-#   "anthropic" -> Claude (best writing, costs money — needs an API key)
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "ollama").strip().lower()
+    # --- AI ------------------------------------------------------------------
+    # Set AI_ENABLED=false to fall back to plain templated messages.
+    g["AI_ENABLED"] = _get_bool("AI_ENABLED", True)
+    #   "groq"      -> FREE cloud, nothing runs locally
+    #   "ollama"    -> FREE, runs a small model on your own machine
+    #   "anthropic" -> Claude (best writing, costs money — needs an API key)
+    g["AI_PROVIDER"] = _get_str("AI_PROVIDER", "ollama").lower()
 
-# --- Anthropic (only used if AI_PROVIDER=anthropic) ---
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-#   claude-opus-4-8   -> best writing, ~5x pricier for an always-on tool
-#   claude-haiku-4-5  -> plenty good for one-liners, far cheaper
-AI_MODEL = os.environ.get("AI_MODEL", "claude-opus-4-8")
+    g["ANTHROPIC_API_KEY"] = _get_str("ANTHROPIC_API_KEY")
+    g["AI_MODEL"] = _get_str("AI_MODEL", "claude-opus-4-8")
 
-# --- Ollama (only used if AI_PROVIDER=ollama) — free & local ---
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-# A small, fast model is plenty for one-liners. Pull it first: `ollama pull llama3.2`
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+    g["OLLAMA_HOST"] = _get_str("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+    g["OLLAMA_MODEL"] = _get_str("OLLAMA_MODEL", "llama3.2")
 
-# --- Groq (only if AI_PROVIDER=groq) — FREE cloud, nothing runs on your Mac ---
-# Get a free key at https://console.groq.com. OpenAI-compatible, so GROQ_BASE_URL
-# can also point at Cerebras / OpenRouter / any compatible free host.
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
-GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    g["GROQ_API_KEY"] = _get_str("GROQ_API_KEY")
+    g["GROQ_MODEL"] = _get_str("GROQ_MODEL", "openai/gpt-oss-20b")
+    g["GROQ_BASE_URL"] = _get_str(
+        "GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
 
-# --- Windows: read the browser's address bar via UI Automation --------------
-# Windows exposes no API for the active tab's URL, so we ask the accessibility
-# tree for the address bar. It's the only way to get per-site cards, links and
-# YouTube thumbnails there — but it's slow, so set this false to turn it off.
-READ_BROWSER_URL = _get_bool("READ_BROWSER_URL", True)
+    # --- Windows: read the browser's address bar via UI Automation -----------
+    # It's the only way to get per-site cards, links and YouTube thumbnails
+    # there — but it's slow, so this can be turned off.
+    g["READ_BROWSER_URL"] = _get_bool("READ_BROWSER_URL", True)
+
+    # --- Timing (all seconds) ------------------------------------------------
+    # How often we look at what you're doing.
+    g["POLL_INTERVAL"] = _get_float("POLL_INTERVAL", 2.0)
+    # A new activity must persist this long before we announce it.
+    g["STABILIZE"] = _get_float("STABILIZE", 2.0)
+    # Light throttle so a burst of switches doesn't flood.
+    g["MIN_GAP"] = _get_float("MIN_GAP", 4.0)
+    # Heartbeat: re-send with the running time if you stay on the same thing.
+    g["HEARTBEAT"] = _get_float("HEARTBEAT", 300.0)
+    # Consider you "away" after this much no keyboard/mouse activity.
+    g["IDLE_THRESHOLD"] = _get_float("IDLE_THRESHOLD", 300.0)
+
+    # --- Daily recap ---------------------------------------------------------
+    g["RECAP_ENABLED"] = _get_bool("RECAP_ENABLED", True)
+    g["RECAP_TIME"] = _get_str("RECAP_TIME", "23:00")           # HH:MM, local
+    g["RECAP_MIN_MINUTES"] = _get_float("RECAP_MIN_MINUTES", 5.0)
+
+    # --- Weekly "Wrapped" ----------------------------------------------------
+    g["WEEKLY_ENABLED"] = _get_bool("WEEKLY_ENABLED", True)
+    g["WEEKLY_DAY"] = _get_str("WEEKLY_DAY", "sun").lower()     # weekday name
+    g["WEEKLY_TIME"] = _get_str("WEEKLY_TIME", "20:00")         # HH:MM, local
+
+    # --- Sweet bookends ------------------------------------------------------
+    # A gap this long before returning reads as "just woke up".
+    g["LONG_AWAY_SECONDS"] = _get_float("LONG_AWAY_SECONDS", 4 * 3600)
+
+    # --- Behaviour -----------------------------------------------------------
+    # Also report background music, so a message can be "watching X while Y plays".
+    g["REPORT_MEDIA"] = _get_bool("REPORT_MEDIA", True)
+    # Start paused (menubar shows 😴 until you un-pause).
+    g["START_PAUSED"] = _get_bool("START_PAUSED", False)
+
+
+def reload() -> None:
+    """Re-read .env and the overlay, and republish every value.
+
+    The running app calls this when it notices config.json changed on disk, so
+    edits made in the settings window take effect without a restart.
+    """
+    _load_env()
+    _load_overlay()
+    _apply()
+
+
+def save(values: dict) -> None:
+    """Merge `values` into the overlay, persist it, and apply immediately."""
+    _load_overlay()
+    merged = {**_overlay, **values}
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = CONFIG_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+    tmp.replace(CONFIG_PATH)  # atomic, so a reader never sees a half-written file
+    reload()
+
+
+def overlay() -> dict:
+    """The raw overlay dict — what the GUI has explicitly set."""
+    _load_overlay()
+    return dict(_overlay)
+
+
+def config_mtime() -> float:
+    """Modification time of the overlay, or 0.0 if it doesn't exist yet."""
+    try:
+        return CONFIG_PATH.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+def is_configured() -> bool:
+    """Has this install been set up at all? Drives the first-run experience."""
+    return bool(DISCORD_WEBHOOK_URL)
 
 
 def active_provider() -> str:
@@ -119,48 +257,6 @@ def active_provider() -> str:
     if AI_PROVIDER in {"ollama", "groq", "anthropic"}:
         return AI_PROVIDER
     return "none"
-
-# --- Timing (all seconds) ---------------------------------------------------
-# How often we look at what you're doing (lower = snappier tab-switch updates).
-POLL_INTERVAL = _get_float("POLL_INTERVAL", 2.0)
-# A new activity must persist this long before we announce it — just enough to
-# skip quick flick-throughs, but still feels near-instant when you land on a tab.
-STABILIZE = _get_float("STABILIZE", 2.0)
-# Light throttle so a burst of switches doesn't flood; genuine switches still
-# update within a few seconds.
-MIN_GAP = _get_float("MIN_GAP", 4.0)
-# Heartbeat: if you stay on the same thing, re-send with the running time
-# ("still on X, ~12 min") every so often.
-HEARTBEAT = _get_float("HEARTBEAT", 300.0)  # 5 min
-# Consider you "away" after this much no keyboard/mouse activity.
-IDLE_THRESHOLD = _get_float("IDLE_THRESHOLD", 300.0)  # 5 min
-
-# --- Daily recap ------------------------------------------------------------
-# An end-of-day summary card: total active time, where it went, what you
-# watched, the soundtrack.
-RECAP_ENABLED = _get_bool("RECAP_ENABLED", True)
-RECAP_TIME = os.environ.get("RECAP_TIME", "23:00").strip()  # HH:MM, local
-RECAP_MIN_MINUTES = _get_float("RECAP_MIN_MINUTES", 5.0)     # skip near-empty days
-
-# --- Weekly "Wrapped" --------------------------------------------------------
-WEEKLY_ENABLED = _get_bool("WEEKLY_ENABLED", True)
-WEEKLY_DAY = os.environ.get("WEEKLY_DAY", "sun").strip().lower()  # weekday name
-WEEKLY_TIME = os.environ.get("WEEKLY_TIME", "20:00").strip()      # HH:MM, local
-
-# --- Sweet bookends ----------------------------------------------------------
-# A gap this long before returning reads as "just woke up" (good-morning).
-LONG_AWAY_SECONDS = _get_float("LONG_AWAY_SECONDS", 4 * 3600)
-
-# Where the per-day tallies are stored.
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-
-# --- Behaviour --------------------------------------------------------------
-# Also report what's playing in the background (Spotify / Apple Music), so a
-# message can be "watching X while Y plays". A song change counts as an update.
-REPORT_MEDIA = _get_bool("REPORT_MEDIA", True)
-
-# Start paused (menubar shows 😴 until you un-pause).
-START_PAUSED = _get_bool("START_PAUSED", False)
 
 
 def missing_requirements() -> list[str]:
@@ -179,3 +275,6 @@ def missing_requirements() -> list[str]:
             "(get a free key at console.groq.com)"
         )
     return problems
+
+
+reload()

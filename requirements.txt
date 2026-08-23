@@ -2,6 +2,10 @@
 discord.py>=2.3
 requests>=2.31.0
 python-dotenv>=1.0.0
+# The settings window. Runs as its own process (Qt can't share an event loop
+# with rumps or pystray), which is also why it's a plain dependency on both
+# platforms rather than a per-OS one.
+PySide6>=6.6
 
 # macOS
 rumps>=0.4.0; sys_platform == "darwin"

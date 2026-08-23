@@ -1,0 +1,176 @@
+name: Build installers
+
+# PyInstaller can't cross-compile, so each installer is built on its own OS.
+# Push a tag (v1.0.0) to cut a release, or run this by hand to get artifacts
+# without publishing anything.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: macOS .dmg
+    runs-on: macos-14        # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Work out the version
+        id: version
+        run: |
+          ref="${GITHUB_REF_NAME}"
+          [[ "${GITHUB_REF_TYPE}" == "tag" ]] && echo "value=${ref#v}" >> "$GITHUB_OUTPUT" \
+                                              || echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build the app
+        run: pyinstaller packaging/Overshare.spec --noconfirm
+
+      # Signing runs only once the secrets exist. Without them the build still
+      # succeeds and produces an unsigned .dmg — users right-click → Open the
+      # first time. Adding APPLE_* secrets turns this on with no code change.
+      - name: Sign and notarize
+        if: env.APPLE_ID != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+        run: |
+          echo "$APPLE_CERT_P12" | base64 --decode > /tmp/cert.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import /tmp/cert.p12 -k build.keychain \
+            -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -p actions build.keychain
+          codesign --deep --force --options runtime \
+            --sign "Developer ID Application: $APPLE_TEAM_ID" \
+            dist/Overshare.app
+          xcrun notarytool store-credentials profile \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD"
+
+      - name: Package the .dmg
+        run: ./packaging/make_dmg.sh "${{ steps.version.outputs.value }}"
+
+      - name: Staple the notarization
+        if: env.APPLE_ID != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+        run: |
+          xcrun notarytool submit \
+            "dist/Overshare-${{ steps.version.outputs.value }}.dmg" \
+            --keychain-profile profile --wait
+          xcrun stapler staple \
+            "dist/Overshare-${{ steps.version.outputs.value }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/*.dmg
+
+  windows:
+    name: Windows .exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Work out the version
+        id: version
+        shell: bash
+        run: |
+          ref="${GITHUB_REF_NAME}"
+          [[ "${GITHUB_REF_TYPE}" == "tag" ]] && echo "value=${ref#v}" >> "$GITHUB_OUTPUT" \
+                                              || echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      # Inno Setup wants a real .ico; the repo only carries a .png.
+      - name: Make the Windows icon
+        run: |
+          python -c "from PIL import Image; im = Image.open('assets/icon.png').convert('RGBA'); im.save('assets/icon.ico', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])"
+
+      - name: Build the app
+        run: pyinstaller packaging/Overshare.spec --noconfirm
+
+      # Inno Setup ships on the runner image but isn't always on PATH, so find
+      # ISCC.exe before falling back to installing it.
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = Get-Command iscc.exe -ErrorAction SilentlyContinue
+          if (-not $iscc) {
+            $candidates = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+            ) | Where-Object { Test-Path $_ }
+            if ($candidates) {
+              $iscc = $candidates[0]
+            } else {
+              choco install innosetup -y --no-progress
+              $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            }
+          } else {
+            $iscc = $iscc.Source
+          }
+          Write-Host "Using $iscc"
+          & $iscc "/DAppVersion=${{ steps.version.outputs.value }}" packaging\installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+
+  release:
+    name: Publish the release
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/macos-dmg/*.dmg
+            artifacts/windows-installer/*.exe
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            **macOS** — download the `.dmg`, drag Overshare to Applications.
+            The first time, **right-click the app → Open** and confirm: the app
+            isn't signed by a paid Apple developer account, so a normal
+            double-click gets refused.
+
+            **Windows** — download and run the `Setup.exe`. SmartScreen may warn
+            you; click **More info → Run anyway**. Installs for your user only,
+            so there's no admin prompt.
+
+            Then click the 💌 in your menu bar (or tray) → **Settings…**
