@@ -71,7 +71,10 @@ def _cv2_available() -> bool:
 
 def webcam_available() -> bool:
     if sys.platform == "darwin":
-        return _resolve("imagesnap") is not None
+        # imagesnap is preferred — it can target a camera by name. OpenCV is
+        # the fallback, and it's bundled in the packaged app, so a peek works
+        # on a Mac with no Homebrew on it.
+        return _resolve("imagesnap") is not None or _cv2_available()
     if sys.platform.startswith("win"):
         return _cv2_available()
     return False
@@ -87,7 +90,7 @@ def snap_webcam(warmup: float = 0.6, mirror: bool = False) -> str | None:
     if sys.platform == "darwin":
         return _snap_webcam_mac(warmup, mirror)
     if sys.platform.startswith("win"):
-        return _snap_webcam_win(warmup, mirror)
+        return _snap_webcam_cv2(warmup, mirror)
     return None
 
 
@@ -163,7 +166,10 @@ def _pick_camera_mac() -> str | None:
 def _snap_webcam_mac(warmup: float, mirror: bool) -> str | None:
     imagesnap = _resolve("imagesnap")
     if not imagesnap:
-        return None
+        # No Homebrew on this Mac — use the bundled OpenCV instead. It always
+        # takes the default camera, so a pinned camera_device is ignored here;
+        # install imagesnap if that matters.
+        return _snap_webcam_cv2(warmup, mirror)
     path = _fresh(".jpg")
     device = _pick_camera_mac()
     try:
@@ -213,10 +219,10 @@ def _snap_screen_mac() -> str | None:
     return path if os.path.exists(path) and os.path.getsize(path) > 0 else _rm(path)
 
 
-# --- Windows --------------------------------------------------------------
+# --- OpenCV (Windows, and macOS without imagesnap) -------------------------
 
 
-def _snap_webcam_win(warmup: float, mirror: bool) -> str | None:
+def _snap_webcam_cv2(warmup: float, mirror: bool) -> str | None:
     try:
         import cv2
     except Exception:
