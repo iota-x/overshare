@@ -22,6 +22,7 @@ from . import history
 from . import notifier
 from . import questions
 from . import recap
+from . import settings
 from . import sites
 from . import sound
 from . import weekly
@@ -91,7 +92,9 @@ class InDetailApp(rumps.App):
         self.mirror_item.state = 1 if settings.get("mirror_capture") else 0
         # Full settings panel (everything the menu bar covers, in one window).
         self.settings_item = rumps.MenuItem("Settings…", callback=self.open_settings)
-        self._settings_ctrl = None
+        # Last-seen config.json timestamp, so tick() can spot edits made in the
+        # settings window and reload without a restart.
+        self._config_stamp = config.config_mtime()
         self._reminders = set()   # live rumps.Timers for pending !remind nudges
 
         self.menu = [
@@ -218,11 +221,12 @@ class InDetailApp(rumps.App):
         self.mirror_item.state = 1 if new else 0
 
     def open_settings(self, _sender) -> None:
+        # The settings window is a Qt app in its own process — rumps already
+        # owns this one's event loop. It writes config.json; _poll_config picks
+        # the changes up from there.
         try:
-            from .settings_window import SettingsController
-            if self._settings_ctrl is None:
-                self._settings_ctrl = SettingsController.alloc().init()
-            self._settings_ctrl.show(self._sync_menu_states)
+            from . import launcher
+            launcher.open_settings()
         except Exception as e:
             rumps.notification("overshare", "Settings", f"couldn’t open settings ({e})")
 
@@ -604,7 +608,25 @@ class InDetailApp(rumps.App):
                 self.send_now(None)
 
     # --- background loop ----------------------------------------------------
+    def _poll_config(self) -> None:
+        """Adopt edits made in the settings window, without a restart.
+
+        Every module reads its values as `config.<NAME>` at the point of use, so
+        a reload is enough — nothing has stale copies. The one exception is our
+        own poll timer, whose interval was fixed when it was created.
+        """
+        stamp = config.config_mtime()
+        if stamp == self._config_stamp:
+            return
+        self._config_stamp = stamp
+        config.reload()
+        settings._cache = None       # her preferences may have changed too
+        self._sync_menu_states()
+        if abs(self.timer.interval - config.POLL_INTERVAL) > 0.01:
+            self.timer.interval = config.POLL_INTERVAL
+
     def tick(self, _timer) -> None:
+        self._poll_config()
         self._drain_companion()
         self._refresh_icon()
         if self.paused:

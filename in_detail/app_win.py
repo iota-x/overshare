@@ -21,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import capture, config, collectors, companion, history, notifier, questions, recap, sites, sound, weekly
+from . import capture, config, collectors, companion, history, notifier, questions, recap, settings, sites, sound, weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -64,6 +64,9 @@ class WinApp:
         self._selfie_date = ""    # last date the daily auto-selfie was sent
         self._question_date = ""  # last date the daily couple question was sent
         self._running = True
+        # Last-seen config.json timestamp, so the loop can spot edits made
+        # in the settings window and reload without a restart.
+        self._config_stamp = config.config_mtime()
         self._screentime_text = "just getting started"
         self._hertime_text = "not set"
         self._reminders: set = set()  # live threading.Timers for pending !remind nudges
@@ -164,13 +167,14 @@ class WinApp:
             self._notify("🙏 asked her", asked)
 
     def _open_settings(self, _icon, _item) -> None:
-        def run():
-            try:
-                from .settings_win import open_settings_window
-                open_settings_window(on_change=self._refresh)
-            except Exception as e:
-                self._notify("Settings", f"couldn't open settings ({e})")
-        threading.Thread(target=run, daemon=True).start()
+        # The settings window is a Qt app in its own process — pystray already
+        # owns this one's loop. It writes config.json; _poll_config picks the
+        # changes up from there.
+        try:
+            from . import launcher
+            launcher.open_settings()
+        except Exception as e:
+            self._notify("Settings", f"couldn't open settings ({e})")
 
     def _recap_now(self, _icon, _item) -> None:
         threading.Thread(target=recap.post, args=(self.day,), daemon=True).start()
@@ -499,8 +503,26 @@ class WinApp:
         finally:
             self._weekly_posting = False
 
+    def _poll_config(self) -> None:
+        """Adopt edits made in the settings window, without a restart.
+
+        Every module reads its values as `config.<NAME>` at the point of use, so
+        reloading here is enough — nothing is holding a stale copy.
+        """
+        stamp = config.config_mtime()
+        if stamp == self._config_stamp:
+            return
+        self._config_stamp = stamp
+        config.reload()
+        settings._cache = None       # her preferences may have changed too
+        self._refresh()
+
     def _loop(self) -> None:
         while self._running:
+            try:
+                self._poll_config()
+            except Exception:
+                pass
             try:
                 self._latest = collectors.collect()
             except Exception:
