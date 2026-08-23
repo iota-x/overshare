@@ -38,9 +38,20 @@ jobs:
       - name: Build the app
         run: pyinstaller packaging/Overshare.spec --noconfirm
 
-      # Signing runs only once the secrets exist. Without them the build still
-      # succeeds and produces an unsigned .dmg — users right-click → Open the
-      # first time. Adding APPLE_* secrets turns this on with no code change.
+      # --- Signing (dormant until the secrets exist) -----------------------
+      # Without them the build still succeeds and ships an unsigned .dmg, which
+      # users get past with right-click → Open the first time. Setting all five
+      # of these turns signing on by itself — no change to this file:
+      #
+      #   APPLE_ID            Apple ID owning the developer account
+      #   APPLE_TEAM_ID       the 10-character Team ID
+      #   APPLE_APP_PASSWORD  an app-specific password, for notarization
+      #   APPLE_CERT_P12      the Developer ID certificate, base64-encoded
+      #   APPLE_CERT_PASSWORD the password for that .p12
+      #
+      # Needs a paid ($99/yr) Apple Developer account. Windows is a separate
+      # OV/EV certificate, and OV ones trip SmartScreen anyway until they build
+      # reputation — which is why that side stays unsigned regardless.
       - name: Sign and notarize
         if: env.APPLE_ID != ''
         env:
