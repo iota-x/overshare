@@ -92,7 +92,27 @@ def _health() -> int:
     return len(problems)
 
 
+def _force_utf8_console() -> None:
+    """Let a Windows console print the cards.
+
+    The cards are full of emoji and the separators are box-drawing characters,
+    but Windows still hands Python a legacy code page (cp1252) in plenty of
+    contexts — a redirected pipe, an older terminal, CI. Encoding those into it
+    raises UnicodeEncodeError, so this used to die before printing a single
+    card, on the exact tool the troubleshooting docs tell people to run.
+    Python 3.7+ can retag the stream in place.
+    """
+    if not sys.platform.startswith("win"):
+        return
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass  # not a real console (or already utf-8) — nothing to fix
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_console()
     ap = argparse.ArgumentParser(prog="in_detail.selftest", description=__doc__)
     ap.add_argument("--post", action="store_true",
                     help="really send the cards to the configured destination")
