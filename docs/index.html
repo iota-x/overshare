@@ -153,6 +153,65 @@
     @keyframes pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
   }
 
+  /* --- Changelog panel --------------------------------------------------- */
+  #changelog {
+    position: fixed; inset: 0; z-index: 60;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+    background: rgba(10, 6, 12, .7);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  #changelog.open { display: flex; }
+  .cl-panel {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 16px; width: min(720px, 100%); max-height: min(78vh, 760px);
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 30px 90px -20px rgba(0,0,0,.6);
+  }
+  .cl-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-wrap: wrap;
+  }
+  .cl-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  .cl-head .right { display: flex; align-items: center; gap: 8px; }
+  .cl-head .btn { padding: 8px 14px; font-size: 13.5px; border-radius: 9px; }
+  .cl-head .btn svg { width: 15px; height: 15px; }
+  .cl-x {
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--muted); font-size: 18px; line-height: 1;
+  }
+  .cl-x:hover { color: var(--text); background: var(--surface-alt); }
+
+  .cl-body { overflow-y: auto; padding: 6px 22px 22px; }
+  .cl-rel { padding: 20px 0; border-bottom: 1px solid var(--border); }
+  .cl-rel:last-child { border-bottom: none; }
+  .cl-tag {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .cl-tag b { font-size: 16px; }
+  .cl-tag .pill {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .3px;
+    color: var(--on-accent); background: var(--accent);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .cl-tag time { color: var(--muted); font-size: 13px; }
+
+  /* Rendered release notes. Kept deliberately plain — the notes carry the
+     structure, this only has to stay readable. */
+  .cl-md { font-size: 14px; color: var(--text); }
+  .cl-md h2, .cl-md h3 { font-size: 14.5px; margin: 16px 0 6px; font-weight: 700; }
+  .cl-md p { margin: 0 0 10px; }
+  .cl-md ul { margin: 0 0 10px; padding-left: 20px; }
+  .cl-md li { margin: 0 0 5px; }
+  .cl-md code {
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: 5px; padding: 1px 5px; font-size: 12.5px;
+  }
+  .cl-md a { color: var(--accent); }
+  .cl-empty { color: var(--muted); padding: 26px 0; text-align: center; }
+
   /* --- Open source strip ------------------------------------------------ */
   .oss {
     display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
@@ -336,7 +395,7 @@
         <span>·</span>
         <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">Terms</a>
         <span>·</span>
-        <a href="https://github.com/iota-x/overshare/releases">Changelog</a>
+        <a href="https://github.com/iota-x/overshare/releases" id="changelog-link">Changelog</a>
       </nav>
     </div>
   </footer>
@@ -345,6 +404,21 @@
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot">
   <button class="close" aria-label="Close">&times;</button>
   <img alt="">
+</div>
+
+<div id="changelog" role="dialog" aria-modal="true" aria-labelledby="cl-title">
+  <div class="cl-panel">
+    <div class="cl-head">
+      <h3 id="cl-title">What's new</h3>
+      <div class="right">
+        <a class="btn" href="https://github.com/iota-x/overshare/releases" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          <span>View on GitHub</span></a>
+        <button class="cl-x" aria-label="Close">&times;</button>
+      </div>
+    </div>
+    <div class="cl-body"><p class="cl-empty">Loading releases…</p></div>
+  </div>
 </div>
 
 <script>
@@ -406,6 +480,128 @@
     box.addEventListener('click', close);        // backdrop and close button both
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && box.classList.contains('open')) close();
+    });
+  })();
+
+  // The changelog reads GitHub's releases and renders them here, so following
+  // "what changed" doesn't mean leaving for a repo page. The GitHub link is
+  // still in the header for anyone who wants the full thing.
+  (function () {
+    var panel = document.getElementById('changelog');
+    var body = panel.querySelector('.cl-body');
+    var link = document.getElementById('changelog-link');
+    var loaded = false;
+
+    // Release notes are ours, but they still get escaped before any formatting
+    // is applied — never build HTML out of fetched text directly.
+    function esc(s) {
+      return s.replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function inline(s) {
+      return esc(s)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+                 '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        // Bare URLs, but not ones already inside an href we just built.
+        .replace(/(^|[\s(])((?:https?:\/\/)[^\s<)]+)/g,
+                 '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    }
+
+    // Just enough markdown for what GitHub release notes actually contain.
+    function md(src) {
+      var out = [], list = null, para = [];
+
+      function flushList() {
+        if (list) { out.push('<ul>' + list.join('') + '</ul>'); list = null; }
+      }
+      function flushPara() {
+        // Consecutive non-blank lines are one paragraph, as markdown says —
+        // otherwise hard-wrapped prose renders as a stack of fragments.
+        if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para = []; }
+      }
+
+      (src || '').split('\n').forEach(function (raw) {
+        var line = raw.replace(/\s+$/, '');
+
+        var bullet = line.match(/^\s*[-*]\s+(.*)$/);
+        if (bullet) {
+          flushPara();
+          list = list || [];
+          list.push('<li>' + inline(bullet[1]) + '</li>');
+          return;
+        }
+
+        var head = line.match(/^(#{1,6})\s+(.*)$/);
+        if (head) {
+          flushPara(); flushList();
+          out.push('<h3>' + inline(head[2]) + '</h3>');
+          return;
+        }
+
+        if (!line.trim()) { flushPara(); flushList(); return; }
+        flushList();
+        para.push(line.trim());
+      });
+      flushPara(); flushList();
+      return out.join('');
+    }
+
+    function render(releases) {
+      if (!releases.length) {
+        body.innerHTML = '<p class="cl-empty">No releases yet.</p>';
+        return;
+      }
+      body.innerHTML = releases.map(function (r, i) {
+        var when = r.published_at
+          ? new Date(r.published_at).toLocaleDateString(undefined,
+              { year: 'numeric', month: 'long', day: 'numeric' })
+          : '';
+        return '<div class="cl-rel"><div class="cl-tag">' +
+               '<b>' + esc(r.tag_name || '') + '</b>' +
+               (i === 0 ? '<span class="pill">LATEST</span>' : '') +
+               (when ? '<time>' + esc(when) + '</time>' : '') +
+               '</div><div class="cl-md">' + md(r.body) + '</div></div>';
+      }).join('');
+    }
+
+    function load() {
+      if (loaded) return;
+      loaded = true;
+      fetch('https://api.github.com/repos/iota-x/overshare/releases?per_page=10')
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (list) { render(list.filter(function (r) { return !r.draft; })); })
+        .catch(function () {
+          loaded = false;   // let a later open retry a rate-limited request
+          body.innerHTML = '<p class="cl-empty">Couldn\'t load the releases just ' +
+                           'now — the button above has them all.</p>';
+        });
+    }
+
+    function open(e) {
+      if (e) e.preventDefault();
+      panel.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      panel.querySelector('.cl-x').focus();
+      load();
+    }
+    function close() {
+      panel.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    if (link) link.addEventListener('click', open);
+    panel.querySelector('.cl-x').addEventListener('click', close);
+    // Backdrop closes; clicks inside the panel must not bubble up to it.
+    panel.addEventListener('click', close);
+    panel.querySelector('.cl-panel').addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && panel.classList.contains('open')) close();
     });
   })();
 </script>
