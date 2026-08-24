@@ -104,7 +104,6 @@
     position: absolute; left: 2%; width: 33%; height: 6.14%;
     background: none; border: 0; padding: 0; cursor: pointer; border-radius: 8px;
   }
-  .hero-art .spots button:hover { background: rgba(255,111,165,.14); }
   .hero-art .spots button:nth-child(1) { top: 10.4%; }
   .hero-art .spots button:nth-child(2) { top: 16.6%; }
   .hero-art .spots button:nth-child(3) { top: 22.7%; }
@@ -113,10 +112,14 @@
   .hero-art .spots button:nth-child(6) { top: 41.1%; }
   .hero-art .spots button:nth-child(7) { top: 47.3%; }
   .hero-art .spots button:nth-child(8) { top: 53.4%; }
-  .hero-art::after {                       /* the glow lives with the art now */
-    content: ""; position: absolute; inset: -8% -12% 20% -4%; z-index: -1;
-    background: radial-gradient(closest-side, rgba(255,111,165,.20), transparent);
-    filter: blur(36px); pointer-events: none;
+  /* A bloom behind the window, not around it. The old one reached 12% past
+     each side, which against a dark screenshot read as a box the picture was
+     failing to fill. Kept well inside the art and much softer. */
+  .hero-art::after {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: 18%; right: 18%; top: 8%; height: 46%;
+    background: radial-gradient(closest-side, rgba(255,111,165,.14), transparent);
+    filter: blur(52px);
   }
 
   .statement {
@@ -175,7 +178,7 @@
     padding-block: var(--beat); text-align: center; color: var(--rose);
   }
   .watcher .art {
-    display: block; width: 100%; max-width: 760px; height: auto;
+    display: block; width: 100%; max-width: 1100px; height: auto;
     border: 1px solid var(--edge); border-radius: 14px;
     box-shadow: 0 50px 120px -50px rgba(255,111,165,.28),
                 0 40px 100px -60px rgba(0,0,0,.9);
@@ -195,10 +198,10 @@
   .stage { padding-block: var(--beat); position: relative; }
   .stage::before {                        /* echoes the hero's glow, once */
     content: ""; position: absolute; z-index: 0;
-    left: 50%; top: 12%; width: min(1100px, 92vw); height: 380px;
+    left: 50%; top: 16%; width: min(720px, 62vw); height: 300px;
     transform: translateX(-50%);
-    background: radial-gradient(closest-side, rgba(255,111,165,.16), transparent);
-    filter: blur(30px); pointer-events: none;
+    background: radial-gradient(closest-side, rgba(255,111,165,.11), transparent);
+    filter: blur(46px); pointer-events: none;
   }
   .shot { position: relative; z-index: 1; }
   /* Capped: full-bleed, this was the loudest thing on the page. */
@@ -376,3 +379,18 @@
 .plat .note b { color: var(--text); font-weight: 600; }
 .plat .tag { align-self: flex-start; font-size: 11.5px; font-weight: 600;
              letter-spacing: .14em; text-transform: uppercase; color: var(--rose); }
+
+/* --- Open-source strip ---------------------------------------------------
+   These were dropped when the page was rewritten, but install.html still uses
+   them. Without a width the octocat has a viewBox and nothing else, so it
+   expands to fill the page. */
+.oss {
+  border: 1px solid var(--edge); border-radius: 16px; padding: clamp(20px, 2.6vw, 28px);
+  display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.028), transparent);
+}
+.oss svg.mk { width: 30px; height: 30px; flex: none; fill: var(--text); }
+.oss > div { flex: 1 1 320px; }
+.oss b { display: block; font-size: 16.5px; margin-bottom: 3px; }
+.oss span { color: var(--mute); font-size: 15px; }
+.oss .dl { flex: none; }

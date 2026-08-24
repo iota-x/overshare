@@ -90,6 +90,11 @@ jobs:
           xcrun stapler staple \
             "dist/Overshare-${{ steps.version.outputs.value }}.dmg"
 
+      # A stable name as well as the versioned one, so the website can link
+      # straight at the file instead of asking the API which file to link to.
+      - name: Add a stable-named copy
+        run: cp "dist/Overshare-${{ steps.version.outputs.value }}.dmg" dist/Overshare-macOS.dmg
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
@@ -150,6 +155,10 @@ jobs:
           Write-Host "Using $iscc"
           & $iscc "/DAppVersion=${{ steps.version.outputs.value }}" packaging\installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)" }
+
+      - name: Add a stable-named copy
+        shell: bash
+        run: cp "dist/Overshare-Setup-${{ steps.version.outputs.value }}.exe" dist/Overshare-Windows.exe
 
       - uses: actions/upload-artifact@v4
         with:

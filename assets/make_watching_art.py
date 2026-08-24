@@ -15,17 +15,18 @@ X0, X1, Y0, Y1 = 950, 1140, 800, 940            # measured from the red clusters
 paper = im.crop((X0 - 90, Y0 + 20, X0 - 30, Y0 + 80)).resize((1, 1), Image.LANCZOS).getpixel((0, 0))
 d.rectangle([X0, Y0, X1, Y1], fill=paper)
 
-cx, cy, s = (X0 + X1) / 2, (Y0 + Y1) / 2 + 4, 3.6
-heart = []
-for i in range(241):                             # the classic parametric heart
-    t = i / 240 * 2 * math.pi
-    heart.append((cx + s * 16 * math.sin(t) ** 3,
-                  cy - s * (13 * math.cos(t) - 5 * math.cos(2 * t)
-                            - 2 * math.cos(3 * t) - math.cos(4 * t))))
+cx, cy = (X0 + X1) / 2, (Y0 + Y1) / 2
 INK = (176, 38, 74)                              # the marker red already in the art
-d.polygon(heart, fill=INK)
-# A hand-drawn edge rather than a vector-perfect one.
-d.line(heart + [heart[0]], fill=INK, width=5, joint="curve")
+
+# "<3" written out, not a heart glyph — it's a note somebody scrawled, and the
+# typed version is the joke. Drawn as strokes so it keeps the marker feel.
+LW = 11
+d.line([(cx - 52, cy), (cx - 12, cy - 34)], fill=INK, width=LW, joint="curve")
+d.line([(cx - 52, cy), (cx - 12, cy + 34)], fill=INK, width=LW, joint="curve")
+
+# The 3: two stacked bowls, open to the left.
+d.arc([cx + 2, cy - 40, cx + 62, cy + 2], start=-95, end=115, fill=INK, width=LW)
+d.arc([cx + 2, cy - 2, cx + 62, cy + 40], start=-115, end=95, fill=INK, width=LW)
 
 # --- now the palette shift ----------------------------------------------------
 a = np.asarray(im).astype(np.float32) / 255.0
