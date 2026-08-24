@@ -7,9 +7,10 @@ import sys
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QWidget
+from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
+                               QMessageBox, QWidget)
 
-from ... import config, settings
+from ... import config, settings, uninstall
 from ..stores import CFG
 from ..widgets import button, choice_row, text_row, toggle_row
 from .base import Page
@@ -95,6 +96,30 @@ class AdvancedPage(Page):
         line.addStretch(1)
         danger.add_widget(reset, separated=False)
 
+        # --- Uninstall --------------------------------------------------------
+        # Windows gets the worst of this: a per-user Inno install isn't in
+        # Program Files, "Overshare" is easy to miss in Installed apps, and the
+        # usual outcome is deleting the shortcut while the tray app keeps
+        # running. The uninstaller sits next to the binary; this runs it.
+        if uninstall.available():
+            gone = self.add_card(
+                "Uninstall",
+                "Removes Overshare from this computer. She stops hearing "
+                "anything the moment it closes.")
+            self._wipe = QCheckBox("Also delete my settings and history")
+            self._wipe.setObjectName("RowHelp")
+            gone.add_widget(self._wipe, separated=False)
+
+            row = QWidget()
+            row.setObjectName("Bare")
+            line = QHBoxLayout(row)
+            line.setContentsMargins(0, 8, 0, 0)
+            btn = button("Uninstall Overshare")
+            btn.clicked.connect(self._uninstall)
+            line.addWidget(btn)
+            line.addStretch(1)
+            gone.add_widget(row, separated=False)
+
     # --- actions ----------------------------------------------------------------
     def _open_folder(self) -> None:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -127,3 +152,31 @@ class AdvancedPage(Page):
         config.reload()
         settings._cache = None   # drop the in-process copy of what we just deleted
         self.ctx.say("Settings reset — reopen this window to see the defaults")
+
+    def _uninstall(self) -> None:
+        wipe = self._wipe.isChecked()
+        where = "moved to the Trash" if sys.platform == "darwin" \
+            else "removed by the Windows uninstaller"
+
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Warning)
+        box.setWindowTitle("Uninstall Overshare?")
+        box.setText("Uninstall Overshare from this computer?")
+        box.setInformativeText(
+            f"The app is {where}, and it stops sending straight away.\n\n"
+            + ("Your settings and history are deleted too — that can't be undone."
+               if wipe else
+               "Your settings and history are kept, so reinstalling picks up "
+               "where you left off."))
+        box.setStandardButtons(
+            QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Yes)
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if box.exec() != QMessageBox.StandardButton.Yes:
+            return
+
+        problem = uninstall.run(also_data=wipe)
+        if problem:
+            self.ctx.say(problem)
+            return
+        # Nothing left worth showing: the app this window belongs to is going.
+        QApplication.quit()

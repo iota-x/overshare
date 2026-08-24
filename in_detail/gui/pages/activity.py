@@ -53,6 +53,15 @@ class ActivityPage(Page):
         # --- What ---------------------------------------------------------------
         what = self.add_card("What gets shared")
         row, _ = toggle_row(
+            CFG, "REPORT_TITLES", "Window and document titles",
+            "The difference between “on Notion” and “on Notion — Q3 planning”. "
+            "This is what reads the channel you're in on Discord, the document "
+            "you have open, the video you're watching. Turn it off and she gets "
+            "the app name and nothing else.",
+            dark=dark)
+        what.add_row(row)
+
+        row, _ = toggle_row(
             CFG, "REPORT_MEDIA", "Background music",
             "Lets a message read “watching X while Y plays”. A song change counts "
             "as an update on its own.", dark=dark)

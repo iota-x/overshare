@@ -149,6 +149,55 @@ def check_late_token_starts_the_bot():
     print("companion: a late token brings the bot online")
 
 
+def check_uninstall():
+    """Offered only by an installed build, and never against a checkout."""
+    import os
+    import tempfile
+    from pathlib import Path
+
+    from in_detail import uninstall
+
+    assert not uninstall.available(), "a source checkout offered to uninstall itself"
+    assert uninstall.run(also_data=False), "run() must refuse in a checkout"
+
+    tmp = Path(tempfile.mkdtemp())
+    if sys.platform.startswith("win"):
+        (tmp / "unins000.exe").write_text("stub")
+        exe, plat = tmp / "Overshare.exe", "win32"
+    else:
+        exe = tmp / "Overshare.app" / "Contents" / "MacOS" / "Overshare"
+        exe.parent.mkdir(parents=True)
+        plat = "darwin"
+    exe.write_text("stub")
+
+    with mock.patch.object(sys, "frozen", True, create=True), \
+         mock.patch.object(sys, "executable", str(exe)), \
+         mock.patch.object(sys, "platform", plat):
+        assert uninstall.available(), "an installed build could not find its uninstaller"
+    print("uninstall: offered by an installed build, refused in a checkout")
+
+
+def check_titles_toggle():
+    """REPORT_TITLES must actually drop titles, and keep everything else."""
+    from in_detail import collectors, config
+
+    before = bool(config.REPORT_TITLES)
+    try:
+        config.save({"REPORT_TITLES": False})
+        config.reload()
+        snap = collectors.collect()
+        assert snap.window_title == "" and snap.tab_title == "", \
+            "titles still collected with the toggle off"
+
+        config.save({"REPORT_TITLES": True})
+        config.reload()
+        assert config.REPORT_TITLES is True
+    finally:
+        config.save({"REPORT_TITLES": before})
+        config.reload()
+    print("titles: the toggle drops titles and nothing else")
+
+
 if sys.platform.startswith("win"):
     from in_detail.app_win import WinApp
     check_first_run(WinApp, "windows")
@@ -161,4 +210,6 @@ check_launcher_is_async()
 check_late_token_starts_the_bot()
 check_window_comes_forward()
 check_health_page()
+check_titles_toggle()
+check_uninstall()
 print("OK")

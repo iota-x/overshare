@@ -239,6 +239,11 @@ def _apply() -> None:
 
     # --- Behaviour -----------------------------------------------------------
     # Also report background music, so a message can be "watching X while Y plays".
+    # The difference between "on Notion" and "on Notion — Q3 planning". Titles
+    # are where nearly all the texture lives: the Discord channel, the document
+    # you have open, the video you're watching. On by default because without it
+    # the messages read like a process list.
+    g["REPORT_TITLES"] = _get_bool("REPORT_TITLES", True)
     g["REPORT_MEDIA"] = _get_bool("REPORT_MEDIA", True)
     # Start paused (menubar shows 😴 until you un-pause).
     g["START_PAUSED"] = _get_bool("START_PAUSED", False)
