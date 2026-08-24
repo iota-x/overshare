@@ -1,0 +1,378 @@
+/* ------------------------------------------------------------------------
+     Minimal, so everything rests on the type. One statement, one enormous
+     product shot, and as little else as the page can survive with. The accent
+     appears three times on the whole page; that scarcity is the point.
+     ------------------------------------------------------------------------ */
+  :root {
+    --ink:   #0E0C11;
+    --raise: #16131B;   /* the only lifted surface */
+    --edge:  #251F2D;
+    --text:  #FAF7F9;
+    --mute:  #877E92;
+    --rose:  #FF6FA5;
+    --iris:  #F2C14B;   /* the eye, and only the eye */
+
+    --display: "Bricolage Grotesque", system-ui, sans-serif;
+    --body:    "Instrument Sans", system-ui, -apple-system, sans-serif;
+
+    --gut: clamp(24px, 5vw, 76px);   /* one gutter, everywhere */
+    --beat: clamp(88px, 13vh, 160px);/* one vertical rhythm, everywhere */
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--ink); color: var(--text);
+    font-family: var(--body); font-size: 17px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  ::selection { background: var(--rose); color: #23101A; }
+  :focus-visible { outline: 2px solid var(--rose); outline-offset: 4px; }
+
+  .frame { width: 100%; max-width: 1440px; margin-inline: auto; padding-inline: var(--gut); }
+
+  /* Small letterspaced labels do the work a mono face would, without adding
+     a third typeface to a page this quiet. */
+  .kicker {
+    display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--rose); margin-bottom: 4px;
+  }
+  .label {
+    font-size: 11.5px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--mute);
+  }
+
+  /* --- The statement ------------------------------------------------------- */
+  .hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: space-between;
+          padding-top: 26px; padding-bottom: clamp(28px, 5vh, 56px); }
+  /* The art used to start flush against the top rule with nothing between them. */
+  .hero-body { margin-top: clamp(28px, 6vh, 72px); }
+  .hero-top { display: flex; align-items: center; gap: 14px; }
+  .mark { font-family: var(--display); font-weight: 700; font-size: 17px;
+          letter-spacing: -.02em; display: inline-flex; align-items: center; gap: 9px; }
+  .mark svg { width: 21px; height: 21px; fill: none; stroke: var(--rose);
+              stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* The right of the top rule was empty, and on a page this bare an empty
+     corner reads as unfinished rather than as restraint. */
+  .top-nav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .top-nav a {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    color: var(--mute); font-size: 14px; padding: 8px 12px; border-radius: 999px;
+    transition: color .2s, background .2s;
+  }
+  .top-nav a:hover { color: var(--text); background: var(--raise); }
+  /* The one filled thing in the nav — it's the only action the page wants. */
+  .top-nav a.cta { background: var(--rose); color: #23101A; font-weight: 600; }
+  .top-nav a.cta:hover { background: #FF87B6; color: #23101A; }
+  .top-nav svg { width: 16px; height: 16px; fill: currentColor; }
+  @media (max-width: 700px) { .top-nav a span { display: none; } }
+
+  /* Statement left, the app to its right — the empty half was the loudest
+     thing on the page. */
+  .hero-body { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
+  @media (min-width: 1080px) {
+    .hero-body { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(24px, 4vw, 64px); }
+    /* Sharing the row with the art costs the statement some width, so it comes
+       down a size — "She knows" belongs on one line. */
+    .hero .statement { font-size: clamp(58px, 9.4vw, 148px); }
+  }
+  .hero-art { position: relative; display: none; }
+  @media (min-width: 1080px) { .hero-art { display: block; } }
+  /* The eight pages crossfade in place; the frame never moves. */
+  .hero-art .frames {
+    position: relative; width: 118%; aspect-ratio: 880 / 1014;
+    border: 1px solid var(--edge); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 70px 150px -60px rgba(0,0,0,1);
+    mask-image: linear-gradient(180deg, #000 72%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
+  }
+  .hero-art .frame {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: top left;
+    /* Short on purpose: the eight shots share an identical sidebar, so a slow
+       crossfade ghosts two highlighted rows at once. This reads as a click. */
+    opacity: 0; transition: opacity .16s linear;
+  }
+  .hero-art .frame.on { opacity: 1; }
+
+  /* Rows of the app's own sidebar, as percentages of the shot — the window is
+     a fixed layout, so these stay aligned at every size. */
+  .hero-art .spots { position: absolute; inset: 0; width: 118%; }
+  .hero-art .spots button {
+    position: absolute; left: 2%; width: 33%; height: 6.14%;
+    background: none; border: 0; padding: 0; cursor: pointer; border-radius: 8px;
+  }
+  .hero-art .spots button:hover { background: rgba(255,111,165,.14); }
+  .hero-art .spots button:nth-child(1) { top: 10.4%; }
+  .hero-art .spots button:nth-child(2) { top: 16.6%; }
+  .hero-art .spots button:nth-child(3) { top: 22.7%; }
+  .hero-art .spots button:nth-child(4) { top: 28.9%; }
+  .hero-art .spots button:nth-child(5) { top: 35.0%; }
+  .hero-art .spots button:nth-child(6) { top: 41.1%; }
+  .hero-art .spots button:nth-child(7) { top: 47.3%; }
+  .hero-art .spots button:nth-child(8) { top: 53.4%; }
+  .hero-art::after {                       /* the glow lives with the art now */
+    content: ""; position: absolute; inset: -8% -12% 20% -4%; z-index: -1;
+    background: radial-gradient(closest-side, rgba(255,111,165,.20), transparent);
+    filter: blur(36px); pointer-events: none;
+  }
+
+  .statement {
+    font-family: var(--display);
+    font-variation-settings: "wdth" 88, "opsz" 96;
+    font-weight: 800;
+    font-size: clamp(58px, 14.2vw, 208px);
+    line-height: .84; letter-spacing: -.045em;
+    margin: clamp(40px, 8vh, 90px) 0 0; text-wrap: balance;
+  }
+  .statement span { display: block; }
+  .statement .hit { color: var(--rose); }
+
+  .foot-hero {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 32px; flex-wrap: wrap; margin-top: clamp(36px, 7vh, 78px);
+  }
+  .claim { max-width: 30ch; color: var(--mute); font-size: clamp(16px, 1.5vw, 19px); }
+  .claim b { color: var(--text); font-weight: 500; }
+
+  .grab { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .dl {
+    display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+    padding: 13px 22px; border-radius: 999px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--edge); color: var(--text);
+    transition: border-color .25s, background .25s, transform .25s;
+  }
+  .dl:hover { border-color: #4A4056; transform: translateY(-2px); }
+  .dl.on { background: var(--rose); border-color: var(--rose); color: #23101A; }
+  .dl.on:hover { background: #FF87B6; border-color: #FF87B6; }
+  .dl svg { width: 17px; height: 17px; fill: currentColor; }
+  .meta { color: var(--mute); font-size: 13px; letter-spacing: .01em; }
+
+  /* --- The watcher --------------------------------------------------------
+     An original ringed-iris eye, not anyone's character art. The pupil tracks
+     the cursor for as long as you're on the page: the product watches you, so
+     the page does too. */
+  .eye { display: block; overflow: visible; }
+  .eye .lid   { fill: none; stroke: currentColor; stroke-width: 2.6;
+                stroke-linecap: round; stroke-linejoin: round; }
+  .eye .globe { fill: var(--iris); stroke: none; }
+  .eye .ring  { fill: none; stroke: #1A1206; stroke-width: 1.7; opacity: .8; }
+  .eye .pupil { fill: #150F04; }
+  .eye .look  { transition: transform .18s cubic-bezier(.22,.61,.36,1); }
+  .eye .shutter {
+    transform-origin: 50% 50%; transform-box: fill-box;
+    animation: blink 7s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95%           { transform: scaleY(.06); }
+  }
+
+  .watcher {
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    padding-block: var(--beat); text-align: center; color: var(--rose);
+  }
+  .watcher .art {
+    display: block; width: 100%; max-width: 760px; height: auto;
+    border: 1px solid var(--edge); border-radius: 14px;
+    box-shadow: 0 50px 120px -50px rgba(255,111,165,.28),
+                0 40px 100px -60px rgba(0,0,0,.9);
+  }
+  /* The picture already says the line, so the caption stays a caption. */
+  .watcher p { margin: 0; }
+  .watcher small { color: var(--mute); font-size: 15px; }
+
+  .mark .eye { width: 22px; height: 22px; color: var(--rose); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .eye .shutter { animation: none; }
+    .eye .look { transition: none; }
+  }
+
+  /* --- The shot ------------------------------------------------------------ */
+  .stage { padding-block: var(--beat); position: relative; }
+  .stage::before {                        /* echoes the hero's glow, once */
+    content: ""; position: absolute; z-index: 0;
+    left: 50%; top: 12%; width: min(1100px, 92vw); height: 380px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(255,111,165,.16), transparent);
+    filter: blur(30px); pointer-events: none;
+  }
+  .shot { position: relative; z-index: 1; }
+  /* Capped: full-bleed, this was the loudest thing on the page. */
+  .shot { max-width: 1040px; margin-inline: auto; }
+  .shot img {
+    display: block; width: 100%; height: auto; cursor: zoom-in;
+    border: 1px solid var(--edge); border-radius: clamp(10px, 1.2vw, 18px);
+    box-shadow: 0 60px 140px -50px rgba(0,0,0,.95);
+  }
+  .cap { display: flex; justify-content: space-between; gap: 20px;
+         margin-top: 18px; flex-wrap: wrap; }
+
+  /* --- Prose beats: a few lines, set large. No cards. --------------------- */
+  .beat { padding-block: var(--beat); }
+  /* The measure belongs on the heading, not its wrapper: `ch` resolves against
+     the element's own font, so 22ch on a 17px container was a 190px column and
+     the 76px headings broke every other word. */
+  .lines { max-width: none; }
+  .lines h2 { max-width: 13ch; }
+  h2 {
+    font-family: var(--display); font-variation-settings: "wdth" 92, "opsz" 40;
+    font-weight: 700; font-size: clamp(34px, 5.4vw, 76px);
+    line-height: .96; letter-spacing: -.035em; margin: 18px 0 0;
+  }
+  h2 em { font-style: normal; color: var(--rose); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: start; }
+  .split .say { color: var(--mute); font-size: clamp(16px, 1.4vw, 19px); max-width: 46ch; }
+  .split .say p { margin: 0 0 18px; }
+  .split .say p:last-child { margin-bottom: 0; }
+  .split .say b { color: var(--text); font-weight: 500; }
+
+  /* A list that reads as a list, not a grid of boxes. */
+  .rows { border-top: 1px solid var(--edge); margin-top: clamp(40px, 6vh, 72px); }
+  .row {
+    display: grid; grid-template-columns: 8ch 1fr 1.25fr; gap: clamp(16px, 3vw, 48px);
+    padding: clamp(20px, 2.6vh, 30px) 0; border-bottom: 1px solid var(--edge);
+    align-items: baseline;
+  }
+  .row .k { color: var(--mute); font-size: 12px; font-weight: 600;
+            letter-spacing: .16em; text-transform: uppercase; }
+  .row h3 { margin: 0; font-size: clamp(18px, 1.9vw, 24px); font-weight: 600;
+            letter-spacing: -.018em; font-family: var(--display);
+            font-variation-settings: "wdth" 95, "opsz" 24; }
+  .row p { margin: 0; color: var(--mute); font-size: 16px; }
+  .row p b { color: var(--text); font-weight: 500; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2vw, 26px);
+          margin-top: clamp(36px, 6vh, 64px); }
+  .pair img {
+    display: block; width: 100%; height: auto; cursor: zoom-in;
+    border: 1px solid var(--edge); border-radius: 12px;
+  }
+  .pair figure { margin: 0; }
+  .pair figcaption { margin-top: 12px; color: var(--mute); font-size: 14px; }
+  .pair figcaption b { color: var(--text); font-weight: 500; }
+
+  details { border-bottom: 1px solid var(--edge); }
+  details summary {
+    cursor: pointer; list-style: none; padding: 20px 0;
+    font-size: clamp(17px, 1.7vw, 21px); font-weight: 500; letter-spacing: -.015em;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; color: var(--mute); font-weight: 400; }
+  details[open] summary::after { content: "−"; color: var(--rose); }
+  details .ans { padding: 0 0 22px; color: var(--mute); max-width: 62ch; margin: 0; }
+
+  .close { padding-block: var(--beat) clamp(40px, 6vh, 70px); }
+  .close .statement { font-size: clamp(40px, 8.6vw, 128px); margin-top: 0; }
+
+  footer {
+    border-top: 1px solid var(--edge); padding: 24px 0 60px;
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    color: var(--mute); font-size: 14px;
+  }
+  footer a { text-decoration: none; }
+  footer a:hover { color: var(--rose); }
+  footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
+
+  /* --- Motion: one load sequence, then quiet ------------------------------ */
+  .up { opacity: 0; transform: translateY(14px); }
+  .up.in { opacity: 1; transform: none;
+           transition: opacity .8s cubic-bezier(.19,1,.22,1), transform .8s cubic-bezier(.19,1,.22,1); }
+  .statement span { opacity: 0; transform: translateY(.14em); }
+  .lit .statement span {
+    opacity: 1; transform: none;
+    transition: opacity .9s cubic-bezier(.19,1,.22,1), transform .9s cubic-bezier(.19,1,.22,1);
+  }
+  .lit .statement span:nth-child(2) { transition-delay: .09s; }
+  .lit .statement span:nth-child(3) { transition-delay: .18s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .up, .statement span { opacity: 1; transform: none; transition: none; }
+  }
+
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; }
+    .row { grid-template-columns: 1fr; gap: 8px; }
+    .row .k { margin-bottom: 4px; }
+    .pair { grid-template-columns: 1fr; }
+    .lines { max-width: none; }
+  }
+
+  /* --- Overlays ------------------------------------------------------------ */
+  #lightbox, #changelog {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    padding: 22px; background: rgba(8,6,10,.93);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #lightbox { z-index: 50; cursor: zoom-out; }
+  #changelog { z-index: 60; }
+  #lightbox.open, #changelog.open { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px;
+                  border: 1px solid rgba(255,255,255,.12); }
+  #lightbox .x, .cl-x {
+    border: 1px solid var(--edge); background: var(--raise); color: var(--mute);
+    cursor: pointer; border-radius: 999px;
+  }
+  #lightbox .x { position: absolute; top: 18px; right: 22px; width: 40px; height: 40px; font-size: 19px; }
+  .cl { background: var(--ink); border: 1px solid var(--edge); border-radius: 16px;
+        width: min(680px, 100%); max-height: min(80vh, 760px); display: flex;
+        flex-direction: column; overflow: hidden; }
+  .cl-top { display: flex; align-items: center; gap: 14px; padding: 18px 22px;
+            border-bottom: 1px solid var(--edge); flex-wrap: wrap; }
+  .cl-top h3 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 700;
+               letter-spacing: -.02em; }
+  .cl-top .dl { margin-left: auto; padding: 8px 15px; font-size: 13px; }
+  .cl-x { width: 32px; height: 32px; font-size: 17px; }
+  .cl-x:hover { color: var(--text); }
+  .cl-body { overflow-y: auto; padding: 4px 22px 22px; }
+  .rel { padding: 20px 0; border-bottom: 1px solid var(--edge); }
+  .rel:last-child { border-bottom: none; }
+  .rel-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 9px; }
+  .rel-h b { font-size: 17px; font-family: var(--display); letter-spacing: -.02em; }
+  .rel-h .now { font-size: 10.5px; letter-spacing: .14em; background: var(--rose);
+                color: #23101A; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+  .rel-h time { font-size: 13px; color: var(--mute); }
+  .md { font-size: 15px; color: var(--mute); }
+  .md h3 { font-size: 15px; margin: 15px 0 6px; font-weight: 600; color: var(--text); }
+  .md p { margin: 0 0 10px; }
+  .md ul { margin: 0 0 10px; padding-left: 20px; }
+  .md li { margin-bottom: 5px; }
+  .md b { color: var(--text); font-weight: 500; }
+  .md code { font-size: 13px; background: var(--raise); border: 1px solid var(--edge);
+             border-radius: 5px; padding: 1px 6px; }
+  .empty { color: var(--mute); text-align: center; padding: 26px 0; }
+
+/* --- Install page --------------------------------------------------------
+   Its own page because "how do I actually get this" was a paragraph buried
+   two thirds down the home page, competing with everything around it. */
+.slab { padding-block: clamp(56px, 9vh, 110px) clamp(28px, 4vh, 48px); }
+.slab .statement { font-size: clamp(44px, 8vw, 116px); margin-top: 14px; }
+.back { display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        color: var(--mute); font-size: 14px; }
+.back:hover { color: var(--rose); }
+
+.platforms { display: grid; grid-template-columns: repeat(2, 1fr);
+             gap: clamp(16px, 2.4vw, 28px); padding-bottom: var(--beat); }
+@media (max-width: 860px) { .platforms { grid-template-columns: 1fr; } }
+.plat {
+  border: 1px solid var(--edge); border-radius: 18px; padding: clamp(24px, 3vw, 38px);
+  background: linear-gradient(180deg, rgba(255,255,255,.028), transparent);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.plat.here { border-color: var(--rose); }
+.plat h2 { font-size: clamp(24px, 2.6vw, 34px); margin: 0; display: flex;
+           align-items: center; gap: 12px; }
+.plat h2 svg { width: 26px; height: 26px; fill: currentColor; }
+.plat .req { color: var(--mute); font-size: 14px; margin: 0; }
+.plat .dl { align-self: flex-start; font-size: 16px; padding: 14px 26px; }
+.plat .note { border-top: 1px solid var(--edge); padding-top: 16px; margin: 4px 0 0;
+              color: var(--mute); font-size: 14.5px; }
+.plat .note b { color: var(--text); font-weight: 600; }
+.plat .tag { align-self: flex-start; font-size: 11.5px; font-weight: 600;
+             letter-spacing: .14em; text-transform: uppercase; color: var(--rose); }
