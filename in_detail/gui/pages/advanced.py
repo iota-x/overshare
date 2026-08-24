@@ -7,13 +7,14 @@ import sys
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
-                               QMessageBox, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMessageBox,
+                               QWidget)
 
 from ... import config, settings, uninstall, updates, version
 from ..stores import CFG
 from ..probes import Prober
-from ..widgets import button, choice_row, text_row, toggle_row
+from ..widgets import (Row, Switch, button, choice_row, text_row,
+                       toggle_row)
 from .base import Page
 
 
@@ -137,9 +138,16 @@ class AdvancedPage(Page):
                 "Uninstall",
                 "Removes Overshare from this computer. They stop hearing "
                 "anything the moment it closes.")
-            self._wipe = QCheckBox("Also delete my settings and history")
-            self._wipe.setObjectName("RowHelp")
-            gone.add_widget(self._wipe, separated=False)
+            # A Row + Switch, like every other toggle here. A bare QCheckBox
+            # renders as a featureless pill: the stylesheet draws its indicator
+            # as a track with no knob and no tick, left from before the switch
+            # was painted by hand.
+            self._wipe = Switch(False, dark=dark)
+            gone.add_widget(
+                Row("Also delete my settings and history",
+                    "Off keeps them, so reinstalling picks up where you left off.",
+                    self._wipe),
+                separated=False)
 
             row = QWidget()
             row.setObjectName("Bare")
