@@ -52,11 +52,27 @@ EOF
 
 rm -f "$DMG"
 echo "==> building $DMG"
-hdiutil create \
-  -volname "Overshare" \
-  -srcfolder "$STAGING" \
-  -ov -format UDZO \
-  "$DMG" >/dev/null
+
+# hdiutil fails with "Resource busy" on CI often enough to matter: something
+# (Spotlight, fsevents) is still holding the staging folder when it starts. It
+# clears on its own, so retry rather than fail a release build over it.
+for attempt in 1 2 3 4 5; do
+  if hdiutil create \
+      -volname "Overshare" \
+      -srcfolder "$STAGING" \
+      -ov -format UDZO \
+      "$DMG" >/dev/null 2>/tmp/hdiutil.err; then
+    break
+  fi
+  if [ "$attempt" = 5 ]; then
+    echo "==> hdiutil failed five times:" >&2
+    cat /tmp/hdiutil.err >&2
+    exit 1
+  fi
+  echo "    hdiutil attempt $attempt failed ($(tr -d '\n' </tmp/hdiutil.err)) — retrying" >&2
+  rm -f "$DMG"
+  sleep $((attempt * 5))
+done
 
 echo "==> done: $DMG"
 ls -lh "$DMG" | awk '{print "    " $5}'
