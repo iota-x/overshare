@@ -711,10 +711,21 @@ class InDetailApp(rumps.App):
         threading.Thread(target=self._send_worker, args=(decision,), daemon=True).start()
 
     def _send_worker(self, decision: Decision) -> None:
-        message = summarize(decision.snapshot, decision.minutes, decision.kind)
-        notifier.send_update(
-            message, decision.snapshot, decision.minutes, decision.kind
-        )
+        # Same reasoning as the Windows build: this is a daemon thread inside a
+        # windowed app, so an exception here goes nowhere at all.
+        try:
+            message = summarize(decision.snapshot, decision.minutes, decision.kind)
+        except Exception as e:
+            log.exception("send: could not write the message", e)
+            return
+        try:
+            ok = notifier.send_update(
+                message, decision.snapshot, decision.minutes, decision.kind)
+        except Exception as e:
+            log.exception("send: delivery raised", e)
+            return
+        log.write("send: sent" if ok else "send: every channel refused it",
+                  message[:120])
 
 
 def main() -> None:

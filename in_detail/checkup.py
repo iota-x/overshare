@@ -199,10 +199,32 @@ def _bot() -> list[Check]:
     return out
 
 
+def _tray() -> list[Check]:
+    """What the *other* process is doing.
+
+    Everything above runs wherever it's called from. The tray app is a separate
+    process, and it's the one that actually sends — so a settings window can
+    report a perfectly healthy machine while the sender quietly throws on every
+    pass. The log is the only channel between them.
+    """
+    from . import log
+
+    line = log.last_send()
+    if not line:
+        return [Check(
+            "Updates going out", "warn", "nothing in the log yet",
+            "Give it a minute with the app in the foreground, then Run again. "
+            "If it stays empty, the tray app isn't reaching the send step.")]
+    if "send: sent" in line:
+        return [Check("Updates going out", "good", line.split("|")[-1].strip()[:70])]
+    return [Check("Updates going out", "bad", line[:110],
+                  "This is the last thing the sender recorded.", critical=True)]
+
+
 def run() -> list[Check]:
     """Every check, in the order they matter."""
     out: list[Check] = []
-    for part in (_delivery, _sharing, _activity, _bot):
+    for part in (_delivery, _sharing, _activity, _bot, _tray):
         try:
             out.extend(part())
         except Exception as e:                       # a broken check is a finding

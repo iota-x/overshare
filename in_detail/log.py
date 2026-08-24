@@ -55,5 +55,33 @@ def write(event: str, detail: str = "") -> None:
 
 
 def exception(event: str, exc: BaseException) -> None:
+    """Log an exception and its traceback.
+
+    Formatted from the exception object, not from `format_exc()` — that reads
+    the *ambient* exception, so calling this with one caught earlier (which the
+    poll loop does, by design) recorded a cheerful "NoneType: None".
+    """
     write(event, "".join(traceback.format_exception_only(type(exc), exc)).strip())
-    write(event + " (traceback)", traceback.format_exc().replace("\n", " ⏎ "))
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    write(event + " (traceback)", tb.strip().replace("\n", " ⏎ "))
+
+
+def tail(limit: int = 12) -> list[str]:
+    """The last few lines, newest last.
+
+    The settings window is a separate process from the tray app, so this file is
+    the only way it can see what the part that actually sends is doing.
+    """
+    try:
+        with open(path(), encoding="utf-8", errors="replace") as fh:
+            return [l.rstrip("\n") for l in fh.readlines()[-limit:]]
+    except Exception:
+        return []
+
+
+def last_send() -> str:
+    """The most recent line about sending, whichever way it went."""
+    for line in reversed(tail(400)):
+        if "send:" in line or "loop:" in line:
+            return line
+    return ""

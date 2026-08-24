@@ -149,6 +149,31 @@ def check_late_token_starts_the_bot():
     print("companion: a late token brings the bot online")
 
 
+def check_loop_failures_are_recorded():
+    """A throwing tick must leave a real traceback, not silence."""
+    import os
+
+    from in_detail import log
+
+    try:
+        raise ValueError("a tick that throws")
+    except Exception as e:
+        saved = e
+
+    # Tagged, so this reads only the lines this call wrote. Scanning the whole
+    # tail picks up older runs and fails on their content instead of ours.
+    tag = f"ci-probe-{os.getpid()}"
+    log.exception(tag, saved)
+    mine = [l for l in log.tail(500) if tag in l]
+    assert mine, "nothing was recorded"
+    joined = " ".join(mine)
+    assert "a tick that throws" in joined, "the reason wasn't recorded"
+    assert "NoneType: None" not in joined, \
+        "traceback taken from the ambient exception, not the one passed in"
+    assert "check_first_run.py" in joined, "no traceback captured"
+    print("log: a failed tick records its traceback")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -212,4 +237,5 @@ check_window_comes_forward()
 check_health_page()
 check_titles_toggle()
 check_uninstall()
+check_loop_failures_are_recorded()
 print("OK")

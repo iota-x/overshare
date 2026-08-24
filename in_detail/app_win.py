@@ -69,6 +69,7 @@ class WinApp:
         self._screentime_text = "just getting started"
         self._hertime_text = "not set"
         self._reminders: set = set()  # live threading.Timers for pending !remind nudges
+        self._loop_errors: dict[str, int] = {}   # what's failing, and how often
         try:
             self._latest = collectors.collect()
         except Exception:
@@ -467,8 +468,22 @@ class WinApp:
         threading.Thread(target=self._send_worker, args=(decision,), daemon=True).start()
 
     def _send_worker(self, decision: Decision) -> None:
-        msg = summarize(decision.snapshot, decision.minutes, decision.kind)
-        notifier.send_update(msg, decision.snapshot, decision.minutes, decision.kind)
+        # Runs on its own thread, in a windowed build with no stderr. Without
+        # this, a summarizer or network failure took the whole update with it
+        # and left no trace anywhere — the app looked healthy and she got
+        # nothing.
+        try:
+            msg = summarize(decision.snapshot, decision.minutes, decision.kind)
+        except Exception as e:
+            log.exception("send: could not write the message", e)
+            return
+        try:
+            ok = notifier.send_update(
+                msg, decision.snapshot, decision.minutes, decision.kind)
+        except Exception as e:
+            log.exception("send: delivery raised", e)
+            return
+        log.write("send: sent" if ok else "send: every channel refused it", msg[:120])
 
     def _tick(self) -> None:
         self._drain_companion()
@@ -569,19 +584,29 @@ class WinApp:
 
     def _loop(self) -> None:
         while self._running:
-            try:
-                self._poll_config()
-            except Exception:
-                pass
-            try:
-                self._latest = collectors.collect()
-            except Exception:
-                pass
-            try:
-                self._tick()
-            except Exception:
-                pass
+            # Each stage is isolated so one bad poll can't kill the loop — but
+            # they used to be `except: pass`, which meant a _tick() that threw
+            # on every pass sent nothing, for ever, in complete silence. That is
+            # exactly the shape of "it's running and she gets nothing".
+            for name, step in (("poll_config", self._poll_config),
+                               ("collect", self._collect_into_latest),
+                               ("tick", self._tick)):
+                try:
+                    step()
+                except Exception as e:
+                    self._complain(name, e)
             time.sleep(config.POLL_INTERVAL)
+
+    def _collect_into_latest(self) -> None:
+        self._latest = collectors.collect()
+
+    def _complain(self, where: str, exc: BaseException) -> None:
+        """Log a loop failure, but don't write the same one 30 times a minute."""
+        key = f"{where}:{type(exc).__name__}"
+        seen = self._loop_errors.get(key, 0) + 1
+        self._loop_errors[key] = seen
+        if seen == 1 or seen % 100 == 0:
+            log.exception(f"loop: {where} failed (x{seen})", exc)
 
     def run(self) -> None:
         self.icon.run()
