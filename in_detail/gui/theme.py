@@ -116,6 +116,42 @@ def qss(dark: bool) -> str:
         border: 1px solid {c['border']};
         border-radius: 12px;
     }}
+
+    /* --- Welcome screen ------------------------------------------------- */
+    #Hero {{
+        background: {c['accent_soft']};
+        border: 1px solid {c['border']};
+        border-radius: 16px;
+    }}
+    #Hero QLabel {{ background: transparent; }}
+    #HeroTitle {{
+        font-family: {FONT_DISPLAY};
+        font-size: 30px; font-weight: 800;
+        color: {c['text']};
+    }}
+    #HeroAccent {{
+        font-family: {FONT_DISPLAY};
+        font-size: 30px; font-weight: 800;
+        color: {c['accent']};
+    }}
+    #HeroSub {{ color: {c['muted']}; font-size: 14px; }}
+
+    #Step {{
+        background: {c['surface']};
+        border: 1px solid {c['border']};
+        border-radius: 12px;
+    }}
+    #Step QLabel {{ background: transparent; }}
+    #StepTitle {{ font-size: 14px; font-weight: 700; }}
+    #StepBody  {{ color: {c['muted']}; font-size: 12.5px; }}
+    #StepNum   {{ color: {c['accent']}; font-size: 11.5px; font-weight: 800; }}
+
+    #Reassure {{
+        background: {c['surface_alt']};
+        border: 1px solid {c['border']};
+        border-radius: 12px;
+    }}
+    #Reassure QLabel {{ background: transparent; }}
     #Card QLabel {{ background: transparent; }}
     #CardTitle {{ font-size: 13px; font-weight: 700; }}
     #RowLabel {{ font-size: 13px; }}

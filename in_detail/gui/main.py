@@ -62,7 +62,8 @@ class SettingsWindow(QMainWindow):
         self.setMinimumSize(*_WINDOW_MIN)
         self.setWindowIcon(_icon())
 
-        self.ctx = Context(dark=dark, status=self._say, retheme=retheme)
+        self.ctx = Context(dark=dark, status=self._say, retheme=retheme,
+                           navigate=self.goto_page)
 
         root = QWidget()
         self.setCentralWidget(root)
@@ -89,11 +90,9 @@ class SettingsWindow(QMainWindow):
             self._nav.addItem(item)
 
         self._nav.currentRowChanged.connect(self._switch_page)
-        self._nav.setCurrentRow(0)
-
-        # A fresh install lands on Setup with a nudge rather than in silence.
-        if not config.is_configured():
-            self._say("Paste your Discord webhook link below to get started 💌")
+        # A fresh install starts on Welcome, which explains the thing before
+        # asking for a webhook. Anyone already set up goes straight to Setup.
+        self._nav.setCurrentRow(0 if not config.is_configured() else 1)
 
     # --- chrome ---------------------------------------------------------------
     def _build_sidebar(self) -> QWidget:
@@ -140,6 +139,13 @@ class SettingsWindow(QMainWindow):
     # --- behaviour --------------------------------------------------------------
     def current_page(self) -> int:
         return self._nav.currentRow()
+
+    def goto_page(self, title: str) -> None:
+        """Select a page by its sidebar label."""
+        for i in range(self._nav.count()):
+            if self._nav.item(i).text().strip().lower() == title.strip().lower():
+                self._nav.setCurrentRow(i)
+                return
 
     def select_page(self, index: int) -> None:
         """Keep the reader where they were across a theme rebuild."""
