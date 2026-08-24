@@ -90,10 +90,25 @@ def enabled() -> bool:
     return bool(config.DISCORD_BOT_TOKEN)
 
 
+def connected() -> bool:
+    """Is the bot actually on Discord right now?"""
+    return _client is not None and _loop is not None
+
+
 def start() -> None:
+    """Bring the bot up. Safe to call repeatedly — it starts at most one.
+
+    Called again whenever config.json changes, because a token pasted into the
+    settings window arrives long after the app started, and until this ran again
+    the bot simply stayed offline with nothing to say why.
+    """
     global _thread
-    if not enabled() or _thread is not None:
+    if not enabled():
         return
+    if _thread is not None and _thread.is_alive():
+        return
+    from . import log
+    log.write("companion: starting the bot")
     _thread = threading.Thread(target=_run, daemon=True, name="companion")
     _thread.start()
 
@@ -481,8 +496,11 @@ def _run() -> None:
         import asyncio
         import time
         import discord
-    except Exception:
+    except Exception as e:
+        from . import log
+        log.exception("companion: discord.py failed to import", e)
         return
+    from . import log
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -506,9 +524,19 @@ def _run() -> None:
         try:
             loop.run_until_complete(client.start(config.DISCORD_BOT_TOKEN))
         except discord.LoginFailure:
+            log.write("companion: Discord rejected the token",
+                      "Bot tab → Reset Token, then paste the new one.")
             break  # bad token — retrying won't help
-        except Exception:
-            pass
+        except discord.PrivilegedIntentsRequired:
+            # The single most common reason a bot never comes online, and until
+            # now it looked exactly like a bot that simply didn't start.
+            log.write(
+                "companion: message content intent is off",
+                "Developer Portal → your app → Bot → Privileged Gateway Intents "
+                "→ turn on MESSAGE CONTENT INTENT, then restart Overshare.")
+            break  # retrying won't help either until someone flips the switch
+        except Exception as e:
+            log.exception("companion: connection dropped", e)
         _connected = False
         try:
             loop.run_until_complete(client.close())
