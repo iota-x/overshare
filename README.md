@@ -395,18 +395,15 @@ a Pause button for the moments that shouldn't be a live feed.
 Real, useful features I skipped — because **I share everything with my girl. Like,
 everything.** If you're more private, you'll want some of these:
 
-- **🔒 Privacy blocklist / incognito guard** — the big one. Auto-hide banking,
-  passwords, 1Password, and *private/incognito windows* behind a vague "busy 🔒".
-  I left this out on purpose (she can see my banking, my passwords, my incognito
-  tabs — no secrets here). **Most people should add this before going live.**
 - **🌙 Quiet hours** — auto-pause overnight so it isn't broadcasting while you sleep.
 - **😴 Snooze** — "pause 1 hour / till tomorrow" instead of only an indefinite pause.
 - **🔗 Windows browser URLs** — thumbnails / clickable links / per-site colors on
   Windows (needs UI-Automation address-bar reading).
 - **👥 Multiple recipients** · **📊 web dashboard**.
 
-*(🎚️ A real settings window used to be on this list — it's built now, see
-[The settings window](#the-settings-window).)*
+*(🎚️ A real settings window and 🔒 the privacy blocklist both used to be on
+this list. Both are built — see [The settings window](#the-settings-window) and
+Settings… → Privacy.)*
 
 PRs welcome. Or just trust your partner completely and skip half of these like I did. 💛
 

@@ -54,13 +54,26 @@ def accessibility_ok() -> bool:
 
 
 def collect() -> Snapshot:
-    """Take one read of the current activity (never raises)."""
+    """Take one read of the current activity (never raises).
+
+    The blocklist is applied here rather than where cards are sent, because
+    everything reads from this one function — so a hidden app never reaches the
+    card, the bot's presence, *or the day's tally*, and can't resurface hours
+    later inside a recap's "top apps".
+    """
     if _backend is None:
         return Snapshot()
     try:
-        return _backend.collect()
+        snap = _backend.collect()
     except Exception:
         return Snapshot()
+    try:
+        from . import privacy
+        return privacy.redact(snap)
+    except Exception:
+        # A broken blocklist fails closed: say nothing rather than leak the
+        # very thing it exists to hide.
+        return Snapshot(idle_seconds=snap.idle_seconds)
 
 
 if __name__ == "__main__":

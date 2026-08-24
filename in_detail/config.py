@@ -212,6 +212,26 @@ def _apply() -> None:
     # A gap this long before returning reads as "just woke up".
     g["LONG_AWAY_SECONDS"] = _get_float("LONG_AWAY_SECONDS", 4 * 3600)
 
+    # --- Privacy blocklist ---------------------------------------------------
+    # What never gets broadcast, however much else does. On by default: this
+    # app reads your screen, and a password manager showing up in someone
+    # else's chat is not a thing anyone should have to opt out of.
+    g["PRIVACY_ENABLED"] = _get_bool("PRIVACY_ENABLED", True)
+    # Private/incognito windows, recognised by how browsers title them.
+    g["PRIVACY_HIDE_INCOGNITO"] = _get_bool("PRIVACY_HIDE_INCOGNITO", True)
+    # Comma-separated, matched case-insensitively against the app name and its
+    # bundle id / exe.
+    g["PRIVACY_APPS"] = _get_str(
+        "PRIVACY_APPS",
+        "1Password,Bitwarden,KeePass,LastPass,Dashlane,Keychain Access,"
+        "Proton Pass,NordPass")
+    # Matched against the URL, so "chase.com" or just "bank" both work.
+    g["PRIVACY_SITES"] = _get_str("PRIVACY_SITES", "")
+    # Matched against window title, tab title and URL.
+    g["PRIVACY_WORDS"] = _get_str("PRIVACY_WORDS", "")
+    # What she sees instead.
+    g["PRIVACY_LABEL"] = _get_str("PRIVACY_LABEL", "something private 🔒")
+
     # --- Appearance ----------------------------------------------------------
     # Settings-window theme: "system" follows the OS, or force "light"/"dark".
     g["UI_THEME"] = _get_str("UI_THEME", "system").lower()

@@ -28,6 +28,7 @@ _CATEGORY_COLOR = {
     "gaming": 0xA855F7,    # purple
     "notes": 0xF59E0B,     # amber
     "design": 0xEC4899,    # pink
+    "private": 0x6B7280,   # deliberately dull — it says nothing
     "other": 0x9CA3AF,     # grey
 }
 
@@ -41,6 +42,7 @@ _CATEGORY_EMOJI = {
     "gaming": "🎮",
     "notes": "📝",
     "design": "🎨",
+    "private": "🔒",
     "other": "🖥️",
 }
 
@@ -150,6 +152,9 @@ def describe(snap) -> tuple[str, str, str, str, int]:
     "#general", "Gooner hideout", 0x5865F2). The card and the bot's presence
     both read from here so they can never disagree about what you're doing."""
     category = snap.category
+    if category == "private":
+        # Everything else in here exists to add detail. There isn't any.
+        return "🔒", snap.app, snap.app, "", _CATEGORY_COLOR["private"]
     emoji = _CATEGORY_EMOJI.get(category, "🖥️")
     color = _CATEGORY_COLOR.get(category, _CATEGORY_COLOR["other"])
     header = snap.app

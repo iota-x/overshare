@@ -1,21 +1,68 @@
-"""Peek — the camera and screen switches, and the warning that goes with them."""
+"""Privacy — the blocklist, and the camera/screen switches."""
 
 from __future__ import annotations
 
 from ..stores import CFG, RUNTIME
-from ..widgets import slider_row, text_row, toggle_row
+from ..widgets import Group, slider_row, text_row, toggle_row
 from .base import Page
 
 
 class PeekPage(Page):
-    title = "Camera & screen"
-    blurb = ("She can ask for a webcam photo or a screenshot on demand. These are "
-             "the switches that decide whether that's possible at all.")
+    title = "Privacy"
+    blurb = ("What never leaves this machine, and what she's allowed to look at "
+             "when she asks.")
     nav = "Privacy"
     icon = "lock"
 
     def build(self) -> None:
         dark = self.ctx.dark
+
+        # --- Blocklist -----------------------------------------------------------
+        block = self.add_card(
+            "Never share these",
+            "Anything matching is replaced with a vague line instead of being "
+            "described \u2014 and it's kept out of the daily and weekly recaps too, "
+            "so it can't quietly reappear there later.")
+        body = Group()
+        row, _ = toggle_row(
+            CFG, "PRIVACY_ENABLED", "Hide private activity", "",
+            dark=dark, on_change=body.setEnabled)
+        block.add_row(row)
+
+        row, _ = toggle_row(
+            CFG, "PRIVACY_HIDE_INCOGNITO", "Private & incognito windows",
+            "Recognised from the window title, which is the only signal either OS "
+            "offers \u2014 a browser that words it unusually could slip through.",
+            dark=dark)
+        body.add_row(row)
+
+        row, _ = text_row(
+            CFG, "PRIVACY_APPS", "Apps",
+            "Comma separated, matched against the app's name and its bundle id \u2014 "
+            "so \u201c1password\u201d catches both.",
+            placeholder="1Password, Bitwarden, \u2026", stack=True)
+        body.add_row(row)
+
+        row, _ = text_row(
+            CFG, "PRIVACY_SITES", "Sites",
+            "Matched anywhere in the address \u2014 \u201cchase.com\u201d, or just \u201cbank\u201d.",
+            placeholder="chase.com, myclinic.org", stack=True)
+        body.add_row(row)
+
+        row, _ = text_row(
+            CFG, "PRIVACY_WORDS", "Words in a title",
+            "Matched against window titles, tab titles and addresses. For a "
+            "filename you'd rather wasn't announced.",
+            placeholder="salary, diagnosis", stack=True)
+        body.add_row(row)
+
+        row, _ = text_row(
+            CFG, "PRIVACY_LABEL", "She sees instead", "",
+            placeholder="something private \U0001F512", width=250)
+        body.add_row(row)
+
+        block.add_widget(body)
+        body.setEnabled(bool(CFG.get("PRIVACY_ENABLED")))
 
         master = self.add_card(
             "Master switch",
