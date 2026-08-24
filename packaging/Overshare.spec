@@ -13,6 +13,16 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(SPECPATH))
+
+# The release workflow rewrites in_detail/version.py from the tag before it
+# builds. Read it back rather than hardcoding, so the bundle, the plist and the
+# update check can never disagree about what this build is.
+def _version():
+    ns = {}
+    exec((open(os.path.join(ROOT, "in_detail", "version.py")).read()), ns)
+    return ns.get("VERSION", "0.0.0")
+
+APP_VERSION = _version()
 MACOS = sys.platform == "darwin"
 WINDOWS = sys.platform.startswith("win")
 
@@ -121,8 +131,8 @@ if MACOS:
         info_plist={
             "CFBundleName": "Overshare",
             "CFBundleDisplayName": "Overshare",
-            "CFBundleShortVersionString": "1.0.0",
-            "CFBundleVersion": "1.0.0",
+            "CFBundleShortVersionString": APP_VERSION,
+            "CFBundleVersion": APP_VERSION,
             "NSHighResolutionCapable": True,
             # Menu-bar app — no Dock icon. The settings window flips this
             # process back to a normal app while it's open (see gui/main.py).

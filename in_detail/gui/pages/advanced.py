@@ -10,8 +10,9 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QApplication, QCheckBox, QHBoxLayout, QLabel,
                                QMessageBox, QWidget)
 
-from ... import config, settings, uninstall
+from ... import config, settings, uninstall, updates, version
 from ..stores import CFG
+from ..probes import Prober
 from ..widgets import button, choice_row, text_row, toggle_row
 from .base import Page
 
@@ -95,6 +96,36 @@ class AdvancedPage(Page):
         line.addWidget(reset_btn)
         line.addStretch(1)
         danger.add_widget(reset, separated=False)
+
+        # --- Updates ----------------------------------------------------------
+        up = self.add_card(
+            "Updates",
+            f"You're on {version.VERSION}. Checked against the releases page — "
+            "nothing is downloaded until you ask.")
+        self._up_status = QLabel("Checking…")
+        self._up_status.setObjectName("RowHelp")
+        self._up_status.setWordWrap(True)
+        up.add_widget(self._up_status, separated=False)
+
+        row = QWidget()
+        row.setObjectName("Bare")
+        line = QHBoxLayout(row)
+        line.setContentsMargins(0, 8, 0, 0)
+        line.setSpacing(8)
+        self._up_check = button("Check again")
+        self._up_check.clicked.connect(self._check_updates)
+        line.addWidget(self._up_check)
+        self._up_get = button("Download and install", accent=True)
+        self._up_get.setVisible(False)
+        self._up_get.clicked.connect(self._get_update)
+        line.addWidget(self._up_get)
+        line.addStretch(1)
+        up.add_widget(row, separated=False)
+
+        self._release = None
+        self._up_worker = Prober(self)
+        self._up_worker.finished.connect(self._show_update)
+        self._check_updates()
 
         # --- Uninstall --------------------------------------------------------
         # Windows gets the worst of this: a per-user Inno install isn't in
@@ -180,3 +211,63 @@ class AdvancedPage(Page):
             return
         # Nothing left worth showing: the app this window belongs to is going.
         QApplication.quit()
+
+    # --- updates -----------------------------------------------------------
+    def _check_updates(self) -> None:
+        self._up_status.setText("Checking…")
+        self._up_check.setEnabled(False)
+        self._up_get.setVisible(False)
+        # Prober wraps this on a worker thread — a network call on the UI
+        # thread would freeze the window for as long as GitHub takes.
+        self._up_worker.run(updates.latest)
+
+    def _show_update(self, rel) -> None:
+        self._up_check.setEnabled(True)
+        self._release = rel if getattr(rel, "newer", False) else None
+
+        if rel is None or not hasattr(rel, "version"):
+            self._up_status.setText(
+                "Couldn't reach GitHub just now. You're still on "
+                f"{version.VERSION}.")
+            return
+        if not rel.newer:
+            self._up_status.setText(f"Up to date — {version.VERSION} is the latest.")
+            return
+
+        mb = rel.size / 1048576 if rel.size else 0
+        note = (f"<b>{rel.version} is out</b> — you're on {version.VERSION}. "
+                f"{mb:.0f} MB.")
+        if sys.platform == "darwin":
+            note += ("<br>macOS drops the Accessibility grant when the app is "
+                     "replaced, so re-grant it afterwards or updates stop "
+                     "naming what you're in.")
+        self._up_status.setText(note)
+        self._up_get.setVisible(True)
+
+    def _get_update(self) -> None:
+        rel = self._release
+        if rel is None:
+            return
+        self._up_get.setEnabled(False)
+        self._up_status.setText("Downloading…")
+
+        def fetch():
+            return updates.download(rel)
+
+        worker = Prober(self)
+        worker.finished.connect(self._downloaded)
+        self._up_fetch = worker            # keep it alive until it reports
+        worker.run(fetch)
+
+    def _downloaded(self, path) -> None:
+        self._up_get.setEnabled(True)
+        if not isinstance(path, str):
+            # Prober turns an exception into a Result; either way it didn't work.
+            self._up_status.setText(
+                "That download didn't verify, so it was thrown away. "
+                "Try again, or grab it from the releases page.")
+            return
+        self._up_status.setText(
+            "Downloaded and checksum verified. The installer is opening — "
+            "quit Overshare before running it.")
+        updates.reveal(path)
