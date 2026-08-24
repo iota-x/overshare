@@ -149,6 +149,32 @@ def check_late_token_starts_the_bot():
     print("companion: a late token brings the bot online")
 
 
+def check_permission_watcher():
+    """Losing Accessibility must be announced once, and regaining it once.
+
+    Updating the app replaces the bundle and macOS revokes the grant with it,
+    so this fires on exactly the upgrade path everyone takes.
+    """
+    from in_detail import app, collectors
+
+    notes = []
+    probe = app.InDetailApp.__new__(app.InDetailApp)
+    seq = iter([False, True, True])
+    ticks = [1, 2, 3]
+
+    with mock.patch.object(app.rumps, "notification",
+                           lambda *a, **k: notes.append(a[1])), \
+         mock.patch.object(collectors, "accessibility_ok", lambda: next(seq)), \
+         mock.patch.object(app.time, "sleep", lambda s: ticks.pop() and None):
+        try:
+            probe._watch_permission()
+        except (StopIteration, IndexError):
+            pass
+
+    assert notes == ["Missing Accessibility", "Accessibility is back"], notes
+    print("accessibility: announced once when lost, once when back")
+
+
 def check_loop_failures_are_recorded():
     """A throwing tick must leave a real traceback, not silence."""
     import os
@@ -238,4 +264,6 @@ check_health_page()
 check_titles_toggle()
 check_uninstall()
 check_loop_failures_are_recorded()
+if not sys.platform.startswith("win"):
+    check_permission_watcher()
 print("OK")
