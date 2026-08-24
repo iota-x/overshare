@@ -8,8 +8,10 @@ from .her import HerPage
 from .peek import PeekPage
 from .recaps import RecapsPage
 from .setup import SetupPage
+from .welcome import WelcomePage
 
 PAGES = [
+    WelcomePage,
     SetupPage,
     ActivityPage,
     AIPage,

@@ -19,6 +19,8 @@ class Context:
     status: object = None
     # Rebuild the window under a new theme (set by main.py).
     retheme: object = None
+    # Jump to another page by title (set by main.py).
+    navigate: object = None
 
     def say(self, message: str) -> None:
         if callable(self.status):
@@ -28,6 +30,11 @@ class Context:
         """Re-run the window with whatever theme is now configured."""
         if callable(self.retheme):
             self.retheme()
+
+    def goto(self, title: str) -> None:
+        """Send the reader to another page — used by the welcome screen's CTA."""
+        if callable(self.navigate):
+            self.navigate(title)
 
 
 class Page(QScrollArea):
