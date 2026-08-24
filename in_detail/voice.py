@@ -1,4 +1,4 @@
-"""Speak text aloud on his machine — the muscle behind `!say`.
+"""Speak text aloud on your machine — the muscle behind `!say`.
 
 macOS: the built-in `say` command. Windows: PowerShell's System.Speech (built
 into every Windows 10/11 box, nothing to install). No third-party TTS deps.

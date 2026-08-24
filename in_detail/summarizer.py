@@ -94,7 +94,7 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     ]
     mood = settings.get("mood")
     if mood:
-        lines.append(f"his current mood/status: {mood}")
+        lines.append(f"their current mood/status: {mood}")
     # Where possible hand the model the *parsed* pieces and withhold the raw
     # title: given the raw string it echoes it verbatim ("on discord #general |
     # gooner hideout"), which reads like a log line, not something you'd text.

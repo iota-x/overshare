@@ -12,7 +12,7 @@ from __future__ import annotations
 import datetime as _dt
 import re
 
-from . import channels
+from . import channels, timefmt
 from . import config
 from . import settings
 from . import sites
@@ -48,7 +48,7 @@ _CATEGORY_EMOJI = {
 
 
 def _timestamp() -> str:
-    return _dt.datetime.now().strftime("%-I:%M %p").lower()  # "8:42 pm"
+    return timefmt.clock()  # "8:42 pm"
 
 
 def _youtube_thumbnail(url: str) -> str:

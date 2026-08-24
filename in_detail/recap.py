@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as _dt
 
-from . import config, history, notifier, sites, summarizer
+from . import config, history, notifier, sites, summarizer, timefmt
 from .history import DailyLog, load as _load_day
 
 
@@ -33,7 +33,7 @@ def _hms(seconds: float) -> str:
 
 def _clock(iso: str) -> str:
     try:
-        return _dt.datetime.fromisoformat(iso).strftime("%-I:%M %p").lower()
+        return timefmt.clock(_dt.datetime.fromisoformat(iso))
     except Exception:
         return ""
 
@@ -85,7 +85,7 @@ def build_message(log: DailyLog) -> tuple[str, dict]:
     """Returns (content, embed) for the recap."""
     intro = summarizer.recap_intro(_stats_text(log))
 
-    pretty_date = _dt.date.fromisoformat(log.date).strftime("%A, %b %-d").lower()
+    pretty_date = timefmt.weekday(_dt.date.fromisoformat(log.date))
 
     fields = [{"name": "⏱ active", "value": _hms(log.active_seconds), "inline": True}]
     if log.first_active and log.last_active:

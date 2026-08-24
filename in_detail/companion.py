@@ -49,15 +49,15 @@ def _help_embed(p: str) -> dict:
         "color": 0x8B5CF6,
         "description": f"type these in the channel · prefix is `{p}` (change it with `{p}prefix >`)",
         "fields": [
-            {"name": "👀 check on him", "value": f"`{p}wyd` — what he's doing now\n`{p}song` — what he's listening to\n`{p}recap` — his day so far", "inline": False},
-            {"name": "📸 see him", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — his screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
-            {"name": "💌 poke him", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜\n`{p}kiss` 😘 · `{p}hug` 🫂 · `{p}boop`", "inline": False},
-            {"name": "🔊 reach him", "value": f"`{p}say <text>` — speak it aloud on his Mac\n`{p}remind 30m <text>` — nudge him later (s/m/h)\n`{p}sound kiss` — play a chime on his Mac", "inline": False},
-            {"name": "🙏 permission", "value": f"when he asks to do something, a card pops up — react ✅ / ❌ on it, or `{p}yes` / `{p}no`", "inline": False},
-            {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → he gets a ❤️\nreact ❤️ to any card → 💛 flashes on his Mac\n`{p}petname <name>` — what he calls you", "inline": False},
+            {"name": "👀 check in", "value": f"`{p}wyd` — what they're doing now\n`{p}song` — what they're listening to\n`{p}recap` — their day so far", "inline": False},
+            {"name": "📸 take a look", "value": f"`{p}peek` — a webcam photo 🤳\n`{p}screen` — their screen right now 🖥️\n`{p}live` — live-ish view (📷 or `{p}live screen`)", "inline": False},
+            {"name": "💌 poke them", "value": f"`{p}poke` 👉 · `{p}miss` 🥺 · `{p}callme` 📞 · `{p}break` · `{p}food` 🍜\n`{p}kiss` 😘 · `{p}hug` 🫂 · `{p}boop`", "inline": False},
+            {"name": "🔊 reach them", "value": f"`{p}say <text>` — speak it aloud on their computer\n`{p}remind 30m <text>` — nudge them later (s/m/h)\n`{p}sound kiss` — play a chime on their computer", "inline": False},
+            {"name": "🙏 permission", "value": f"when they ask to do something, a card pops up — react ✅ / ❌ on it, or `{p}yes` / `{p}no`", "inline": False},
+            {"name": "🌙 sweet", "value": f"`{p}gm` / `{p}gn` — good morning / goodnight\nsay **i love you** → they get a ❤️\nreact ❤️ to any card → 💛 flashes on their computer\n`{p}petname <name>` — what they call you", "inline": False},
             {"name": "📍 where your updates go", "value": f"`{p}dm` — your DMs\n`{p}channel` (or `{p}dm off`) — here instead\n`{p}both` · `{p}where` — check", "inline": False},
             {"name": "🎨 style", "value": f"`{p}tone cutesy` · `chill` · `detailed` · `default`", "inline": False},
-            {"name": "✍️ just talk", "value": "anything else you type pops up on his screen 💛", "inline": False},
+            {"name": "✍️ just talk", "value": "anything else you type pops up on their screen 💛", "inline": False},
         ],
         "footer": {"text": f"overshare · {p}help"},
     }
@@ -258,7 +258,7 @@ async def _ask_permission(channel_id, text: str) -> None:
         ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
         embed = discord.Embed.from_dict({
             "title": "🙏 permission request",
-            "description": (f"he's asking:\n\n**{text}**\n\n"
+            "description": (f"they're asking:\n\n**{text}**\n\n"
                             f"react ✅ to allow · ❌ to say no  ·  or `{_prefix()}yes` / `{_prefix()}no`"),
             "color": 0xF5A9C0,
         })
@@ -335,7 +335,7 @@ def _register(client, discord) -> None:
         cid = msg.channel.id
         prefix = _prefix()
 
-        # Not a command → normal message: notify him, and love-react.
+        # Not a command → normal message: notify them, and love-react.
         if not low.startswith(prefix):
             if text:
                 events.put(("message", (name, text)))
@@ -434,7 +434,7 @@ def _register(client, discord) -> None:
             newname = parts[1].strip() if len(parts) > 1 else ""
             if newname:
                 settings.set("pet_name", newname)
-                await say(f"okay — he'll call you **{newname}** from now on 💛")
+                await say(f"okay — they'll call you **{newname}** from now on 💛")
             else:
                 cur = settings.get("pet_name")
                 await say(f"your pet name is **{cur}**" if cur else f"no pet name set. try `{prefix}petname babygirl`")
@@ -447,7 +447,7 @@ def _register(client, discord) -> None:
             spoken = bits[1].strip() if len(bits) > 1 else ""
             if spoken:
                 events.put(("say", (cid, spoken)))
-                await say("🔊 saying that out loud on his mac 💛")
+                await say("🔊 saying that out loud for them 💛")
             else:
                 await say(f"say what? try `{prefix}say i love you` 💛")
         elif cmd.startswith("remind"):
@@ -456,21 +456,21 @@ def _register(client, discord) -> None:
             message = bits[2].strip() if len(bits) >= 3 else ""
             if secs and message:
                 events.put(("remind", (cid, secs, message)))
-                await say(f"⏰ okay — i'll nudge him in {_fmt_duration(secs)}: “{message}” 💛")
+                await say(f"⏰ okay — i'll nudge them in {_fmt_duration(secs)}: “{message}” 💛")
             else:
                 await say(f"try `{prefix}remind 30m drink water` (use s/m/h) 💛")
         elif cmd in ("yes", "allow", "y", "approve"):
             asked = _pop_latest_perm()
             if asked:
                 events.put(("permission_result", (True, asked)))
-                await say(f"✅ okay — told him yes to “{asked}” 💛")
+                await say(f"✅ okay — told them yes to “{asked}” 💛")
             else:
                 await say("nothing pending to approve rn 🤍")
         elif cmd in ("no", "deny", "n", "nope"):
             asked = _pop_latest_perm()
             if asked:
                 events.put(("permission_result", (False, asked)))
-                await say(f"❌ okay — told him no to “{asked}”")
+                await say(f"❌ okay — told them no to “{asked}”")
             else:
                 await say("nothing pending to say no to 🤍")
         # unknown command → silently ignore

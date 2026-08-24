@@ -1,4 +1,4 @@
-"""A tiny sound board for `!sound <name>` — plays a chime on his machine.
+"""A tiny sound board for `!sound <name>` — plays a chime on their machine.
 
 macOS: maps names to the built-in system sounds in /System/Library/Sounds.
 Windows: maps names to `winsound.MessageBeep` icon tones (stdlib, no file

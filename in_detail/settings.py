@@ -12,9 +12,9 @@ from . import config
 
 # card_destination: "channel" | "dm" | "both"
 # tone: "default" | "cutesy" | "chill" | "detailed"
-# mood: free text (his current status), "" = none
+# mood: free text (their current status), "" = none
 # prefix: bot command prefix override ("" = use config.BOT_PREFIX)
-# camera_enabled / screen_enabled: his live privacy switches for `!peek`/`!screen`/
+# camera_enabled / screen_enabled: their live privacy switches for `!peek`/`!screen`/
 #   `!live` (toggled from the menu bar). config.PEEK_ENABLED is the master off.
 # mirror_capture: flip webcam photos left-to-right so they read like a mirror
 #   (the natural selfie view) instead of imagesnap's reversed-feeling raw frame.
