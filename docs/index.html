@@ -54,6 +54,10 @@
 
   /* Small letterspaced labels do the work a mono face would, without adding
      a third typeface to a page this quiet. */
+  .kicker {
+    display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--rose); margin-bottom: 4px;
+  }
   .label {
     font-size: 11.5px; font-weight: 600; letter-spacing: .18em;
     text-transform: uppercase; color: var(--mute);
@@ -91,13 +95,39 @@
   }
   .hero-art { position: relative; display: none; }
   @media (min-width: 1080px) { .hero-art { display: block; } }
-  .hero-art img {
-    display: block; width: 118%; max-width: none; height: auto;
-    border: 1px solid var(--edge); border-radius: 16px;
+  /* The eight pages crossfade in place; the frame never moves. */
+  .hero-art .frames {
+    position: relative; width: 118%; aspect-ratio: 880 / 1014;
+    border: 1px solid var(--edge); border-radius: 16px; overflow: hidden;
     box-shadow: 0 70px 150px -60px rgba(0,0,0,1);
     mask-image: linear-gradient(180deg, #000 72%, transparent);
     -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
   }
+  .hero-art .frame {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: top left;
+    /* Short on purpose: the eight shots share an identical sidebar, so a slow
+       crossfade ghosts two highlighted rows at once. This reads as a click. */
+    opacity: 0; transition: opacity .16s linear;
+  }
+  .hero-art .frame.on { opacity: 1; }
+
+  /* Rows of the app's own sidebar, as percentages of the shot — the window is
+     a fixed layout, so these stay aligned at every size. */
+  .hero-art .spots { position: absolute; inset: 0; width: 118%; }
+  .hero-art .spots button {
+    position: absolute; left: 2%; width: 33%; height: 6.14%;
+    background: none; border: 0; padding: 0; cursor: pointer; border-radius: 8px;
+  }
+  .hero-art .spots button:hover { background: rgba(255,111,165,.14); }
+  .hero-art .spots button:nth-child(1) { top: 10.4%; }
+  .hero-art .spots button:nth-child(2) { top: 16.6%; }
+  .hero-art .spots button:nth-child(3) { top: 22.7%; }
+  .hero-art .spots button:nth-child(4) { top: 28.9%; }
+  .hero-art .spots button:nth-child(5) { top: 35.0%; }
+  .hero-art .spots button:nth-child(6) { top: 41.1%; }
+  .hero-art .spots button:nth-child(7) { top: 47.3%; }
+  .hero-art .spots button:nth-child(8) { top: 53.4%; }
   .hero-art::after {                       /* the glow lives with the art now */
     content: ""; position: absolute; inset: -8% -12% 20% -4%; z-index: -1;
     background: radial-gradient(closest-side, rgba(255,111,165,.20), transparent);
@@ -341,7 +371,7 @@
     <div class="hero-top">
       <span class="mark">
 <svg class="eye" viewBox="0 0 64 40" aria-hidden="true"><g class="shutter"><path class="lid" d="M2 20 C14 4 50 4 62 20 C50 36 14 36 2 20 Z"/><g class="look"><circle class="globe" cx="32" cy="20" r="11"/><circle class="ring" cx="32" cy="20" r="7.5"/><circle class="ring" cx="32" cy="20" r="4.5"/><circle class="pupil" cx="32" cy="20" r="2.4"/></g></g></svg>Overshare</span>
-      <span class="label">for macOS &amp; Windows</span>
+      <span class="label">the clingy girlfriend starter pack</span>
       <nav class="top-nav">
         <a href="#questions">Questions</a>
         <a href="https://github.com/iota-x/overshare/releases" id="cl-link-top">Changelog</a>
@@ -353,14 +383,33 @@
 
     <div class="hero-body">
       <h1 class="statement"><span>She knows</span><span class="hit">everything.</span></h1>
-      <div class="hero-art" aria-hidden="true">
-        <img src="screenshots/hero-app.png" alt="">
+      <div class="hero-art" id="tour">
+        <div class="frames">
+          <img class="frame" src="screenshots/app/0-welcome.webp" alt="Welcome page" loading="eager">
+          <img class="frame on" src="screenshots/app/1-setup.webp" alt="Setup page" loading="eager">
+          <img class="frame" src="screenshots/app/2-activity.webp" alt="Activity page" loading="lazy">
+          <img class="frame" src="screenshots/app/3-ai.webp" alt="AI page" loading="lazy">
+          <img class="frame" src="screenshots/app/4-privacy.webp" alt="Privacy page" loading="lazy">
+          <img class="frame" src="screenshots/app/5-recaps.webp" alt="Recaps page" loading="lazy">
+          <img class="frame" src="screenshots/app/6-her.webp" alt="Her page" loading="lazy">
+          <img class="frame" src="screenshots/app/7-advanced.webp" alt="Advanced page" loading="lazy">
+        </div>
+        <!-- The sidebar in the picture is real: these sit exactly over its rows. -->
+        <div class="spots">
+          <button data-i="0" aria-label="Show the Welcome page"></button>
+          <button data-i="1" aria-label="Show the Setup page"></button>
+          <button data-i="2" aria-label="Show the Activity page"></button>
+          <button data-i="3" aria-label="Show the AI page"></button>
+          <button data-i="4" aria-label="Show the Privacy page"></button>
+          <button data-i="5" aria-label="Show the Recaps page"></button>
+          <button data-i="6" aria-label="Show the Her page"></button>
+          <button data-i="7" aria-label="Show the Advanced page"></button>
+        </div>
       </div>
-    </div>
 
     <div class="foot-hero">
-      <p class="claim up">It watches what you're doing and tells your partner about it,
-         all day. <b>You don't type a word of it.</b></p>
+      <p class="claim up">She gets a running commentary on your entire day — what you opened, what
+         you watched, what's playing. <b>You never type a word of it.</b></p>
       <div>
         <div class="grab up">
           <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest">
@@ -467,6 +516,45 @@
   </section>
 
   <!-- ------------------------------------------------------------------ -->
+  <section class="beat" id="rules">
+    <div class="split">
+      <div class="lines up">
+        <span class="kicker">House rules</span>
+        <h2>Both of you. Or <em>neither of you.</em></h2>
+      </div>
+      <div class="say up">
+        <p>Install it on your own machine before you send it to anyone. Pointed
+           one way it stops being a bit and starts being surveillance — and it
+           will feel like it, fast.</p>
+        <p><b>And get an actual yes.</b> Not “fine”. Not because you asked twice.
+           The pause button and the blocklist exist because yes has edges, and
+           both of you get to move them whenever you like.</p>
+      </div>
+    </div>
+
+    <div class="rows">
+      <div class="row up">
+        <span class="k">Mutual</span>
+        <h3>Point it both ways</h3>
+        <p>The joke only lands when you're both in it. <b>If you'd hate having it
+           on you, don't put it on them.</b></p>
+      </div>
+      <div class="row up">
+        <span class="k">Asked</span>
+        <h3>Enthusiastic, or not at all</h3>
+        <p>If someone had to be talked into it, that's a no. <b>Uninstalling is
+           one drag to the Trash</b>, and nobody should need a reason.</p>
+      </div>
+      <div class="row up">
+        <span class="k">Yours</span>
+        <h3>Pause without a conversation</h3>
+        <p>One click stops everything, any time. <b>They see that updates
+           stopped, never what you were doing when they did.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
   <section class="beat">
     <div class="split">
       <div class="lines up">
@@ -511,6 +599,11 @@
       <details><summary>Does she need to install anything?</summary>
         <p class="ans">No — just Discord or Telegram, which she almost certainly already
         has. Everything runs on your computer.</p></details>
+      <details><summary>Isn't this a bit controlling?</summary>
+        <p class="ans">It is, if it only points one way and nobody properly agreed.
+        Put it on your own machine too, ask properly, and never argue with the pause
+        button — that's the whole difference between a bit and a problem. See the
+        <a href="#rules">house rules</a>.</p></details>
       <details><summary>Is this healthy?</summary>
         <p class="ans">It started because someone said “you never tell me anything”, and
         it's meant for two people who both find it funny. There's a pause button and a
@@ -575,6 +668,38 @@
   // you reach it — on a page this quiet, more motion would be noise.
   addEventListener('load', function () { document.body.classList.add('lit'); });
   requestAnimationFrame(function () { document.body.classList.add('lit'); });
+
+  // The hero window walks its own pages, and the sidebar in the picture is
+  // clickable. Auto-play stops the moment someone takes over.
+  (function () {
+    var tour = document.getElementById('tour');
+    if (!tour) return;
+    var frames = [].slice.call(tour.querySelectorAll('.frame'));
+    var spots = [].slice.call(tour.querySelectorAll('.spots button'));
+    var at = 1, timer = null;                      // opens on Setup
+    var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function show(i) {
+      at = (i + frames.length) % frames.length;
+      frames.forEach(function (f, n) { f.classList.toggle('on', n === at); });
+    }
+    function play() { if (!still && !timer) timer = setInterval(function () { show(at + 1); }, 2600); }
+    function halt() { clearInterval(timer); timer = null; }
+
+    spots.forEach(function (b, i) {
+      b.addEventListener('click', function () { halt(); show(i); });
+      b.addEventListener('focus', function () { halt(); show(i); });
+    });
+    tour.addEventListener('pointerenter', halt);
+    tour.addEventListener('pointerleave', play);
+
+    // Only run it while it's actually on screen.
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        es[0].isIntersecting ? play() : halt();
+      }, { threshold: .25 }).observe(tour);
+    } else { play(); }
+  })();
 
   // Every eye on the page follows the cursor. Cheap: one listener, and the
   // work happens on an animation frame rather than per mouse event.
