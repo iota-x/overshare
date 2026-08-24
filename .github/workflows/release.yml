@@ -32,18 +32,22 @@ jobs:
       - name: Stamp the version into the build
         # Otherwise the packaged app has no idea what it is, and the in-app
         # update check has nothing to compare against.
-        shell: bash
+        #
+        # Passed through the environment rather than a temp file: Git Bash on
+        # the Windows runner and the Python it launches do not agree on where
+        # /tmp is, so a file written by one wasn't there for the other.
+        shell: python
+        env:
+          OVERSHARE_VERSION: ${{ steps.version.outputs.value }}
         run: |
-          printf 'VERSION = "%s"\n' "${{ steps.version.outputs.value }}" > /tmp/v.txt
-          python - <<'EOF'
-          import pathlib, os
+          import os, pathlib
+          v = os.environ["OVERSHARE_VERSION"]
           p = pathlib.Path("in_detail/version.py")
           t = p.read_text()
-          new = open("/tmp/v.txt").read().strip()
-          t = t.replace('VERSION = "0.0.0-dev"', new)
-          p.write_text(t)
+          new = f'VERSION = "{v}"'
+          assert 'VERSION = "0.0.0-dev"' in t, "placeholder already replaced?"
+          p.write_text(t.replace('VERSION = "0.0.0-dev"', new))
           print("stamped:", new)
-          EOF
 
       - name: Install dependencies
         run: |
@@ -137,18 +141,22 @@ jobs:
       - name: Stamp the version into the build
         # Otherwise the packaged app has no idea what it is, and the in-app
         # update check has nothing to compare against.
-        shell: bash
+        #
+        # Passed through the environment rather than a temp file: Git Bash on
+        # the Windows runner and the Python it launches do not agree on where
+        # /tmp is, so a file written by one wasn't there for the other.
+        shell: python
+        env:
+          OVERSHARE_VERSION: ${{ steps.version.outputs.value }}
         run: |
-          printf 'VERSION = "%s"\n' "${{ steps.version.outputs.value }}" > /tmp/v.txt
-          python - <<'EOF'
-          import pathlib, os
+          import os, pathlib
+          v = os.environ["OVERSHARE_VERSION"]
           p = pathlib.Path("in_detail/version.py")
           t = p.read_text()
-          new = open("/tmp/v.txt").read().strip()
-          t = t.replace('VERSION = "0.0.0-dev"', new)
-          p.write_text(t)
+          new = f'VERSION = "{v}"'
+          assert 'VERSION = "0.0.0-dev"' in t, "placeholder already replaced?"
+          p.write_text(t.replace('VERSION = "0.0.0-dev"', new))
           print("stamped:", new)
-          EOF
 
       - name: Install dependencies
         run: |
