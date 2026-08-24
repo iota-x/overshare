@@ -226,15 +226,21 @@ def qss(dark: bool) -> str:
     }}
     QPushButton[flat="true"]:hover {{ color: {c['accent_hov']}; }}
 
-    /* --- Switch (a QCheckBox drawn as a pill) ---------------------------- */
-    QCheckBox {{ spacing: 0px; background: transparent; }}
+    /* Toggles are the painted Switch in widgets.py, not a styled checkbox —
+       a stylesheet can recolour an indicator but can't move a knob inside it.
+       This rule used to draw a plain pill with no knob and no tick, so any
+       stray QCheckBox came out as a featureless blob. It looks like a checkbox
+       now, so the next one is merely plain rather than broken. */
+    QCheckBox {{ spacing: 8px; background: transparent; }}
     QCheckBox::indicator {{
-        width: 38px; height: 22px;
-        border-radius: 11px;
+        width: 16px; height: 16px;
+        border-radius: 4px;
         background: {c['border_hard']};
-        border: none;
+        border: 1px solid {c['border']};
     }}
-    QCheckBox::indicator:checked {{ background: {c['accent']}; }}
+    QCheckBox::indicator:checked {{
+        background: {c['accent']}; border-color: {c['accent']};
+    }}
     QCheckBox::indicator:disabled {{ background: {c['border']}; }}
 
     QRadioButton {{ background: transparent; spacing: 8px; padding: 3px 0; }}
