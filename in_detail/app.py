@@ -33,7 +33,6 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    from . import settings
     her = settings.get("pet_name") or config.HER_NAME or "love"
     return random.choice([
         f"good morning {her} ☀️ hope you slept well",
@@ -82,7 +81,6 @@ class InDetailApp(rumps.App):
         self.weekly_item = rumps.MenuItem("Send weekly wrap now", callback=self.weekly_now)
         # Live privacy switches: whether she can pull a camera / screen view.
         # Checkmark = allowed. config.PEEK_ENABLED is the master off-switch.
-        from . import settings
         self.camera_item = rumps.MenuItem("Allow camera peeks", callback=self.toggle_camera)
         self.screen_item = rumps.MenuItem("Allow screen peeks", callback=self.toggle_screen)
         # Mirror webcam photos so they look like a selfie rather than reversed.
@@ -149,7 +147,6 @@ class InDetailApp(rumps.App):
 
     # --- UI helpers ---------------------------------------------------------
     def _refresh_icon(self) -> None:
-        from . import settings
         active_icon = settings.get("mood_emoji") or _ACTIVE_ICON
         if self._flash_ticks > 0:
             self.title = "💛"
@@ -206,19 +203,16 @@ class InDetailApp(rumps.App):
         self._apply_paused_ui()
 
     def toggle_camera(self, _sender) -> None:
-        from . import settings
         new = not bool(settings.get("camera_enabled"))
         settings.set("camera_enabled", new)
         self.camera_item.state = 1 if new else 0
 
     def toggle_screen(self, _sender) -> None:
-        from . import settings
         new = not bool(settings.get("screen_enabled"))
         settings.set("screen_enabled", new)
         self.screen_item.state = 1 if new else 0
 
     def toggle_mirror(self, _sender) -> None:
-        from . import settings
         new = not bool(settings.get("mirror_capture"))
         settings.set("mirror_capture", new)
         self.mirror_item.state = 1 if new else 0
@@ -235,13 +229,12 @@ class InDetailApp(rumps.App):
 
     def _sync_menu_states(self) -> None:
         # Keep the menu-bar checkmarks in step with edits made in the panel.
-        from . import settings
         self.camera_item.state = 1 if settings.get("camera_enabled") else 0
         self.screen_item.state = 1 if settings.get("screen_enabled") else 0
         self.mirror_item.state = 1 if settings.get("mirror_capture") else 0
 
     def _say_aloud(self, text: str) -> None:
-        from . import voice, settings
+        from . import voice
         voice.speak(text, settings.get("say_voice") or None)
 
     def _schedule_reminder(self, seconds: int, message: str) -> None:
@@ -304,7 +297,6 @@ class InDetailApp(rumps.App):
             self._flash()
 
     def set_mood(self, _sender) -> None:
-        from . import settings
         try:
             from AppKit import NSApplication
             NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
@@ -352,7 +344,6 @@ class InDetailApp(rumps.App):
             self._flash()
 
     def _answer_peek(self, channel_id, source: str) -> None:
-        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
@@ -380,7 +371,6 @@ class InDetailApp(rumps.App):
             )
 
     def _answer_live(self, channel_id, source: str) -> None:
-        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
@@ -424,7 +414,6 @@ class InDetailApp(rumps.App):
         return (now.hour, now.minute) >= (hh, mm)
 
     def _maybe_auto_selfie(self) -> None:
-        from . import settings
         if not (settings.get("selfie_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
             return
         today = _dt.date.today().isoformat()
@@ -435,7 +424,6 @@ class InDetailApp(rumps.App):
             threading.Thread(target=self._send_auto_selfie, daemon=True).start()
 
     def _send_auto_selfie(self) -> None:
-        from . import settings
         if not (config.PEEK_ENABLED and settings.peek_source_enabled("cam") and capture.webcam_available()):
             return
         path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
@@ -446,7 +434,6 @@ class InDetailApp(rumps.App):
             )
 
     def _maybe_daily_question(self) -> None:
-        from . import settings
         if not (settings.get("daily_question_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
             return
         today = _dt.date.today().isoformat()
@@ -467,7 +454,6 @@ class InDetailApp(rumps.App):
         self.screentime_item.title = ("📊 Today: " + " · ".join(parts))[:80]
 
     def _update_her_time(self) -> None:
-        from . import settings
         tz = settings.get("her_timezone")
         if not tz:
             self.hertime_item.title = "🕐 Her time: not set"
