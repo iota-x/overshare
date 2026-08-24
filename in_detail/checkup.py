@@ -112,6 +112,23 @@ def _activity() -> list[Check]:
                     "Some windows genuinely have no title. If it says this for "
                     "every app, the app can't read titles at all — on macOS "
                     "that's Accessibility."))
+
+            # The link and the video thumbnail on a card both come from the URL.
+            # Without it a browsing card is just a title, which is the whole of
+            # "it showed the video name but no link".
+            if snap.category == "browsing":
+                if snap.url:
+                    out.append(Check("Browser link", "good", snap.url[:70]))
+                elif sys.platform.startswith("win") and not config.READ_BROWSER_URL:
+                    out.append(Check(
+                        "Browser link", "off", "address bar reading is turned off",
+                        "Activity → Read the browser address bar. It's what "
+                        "gives cards their link and video thumbnail."))
+                else:
+                    out.append(Check(
+                        "Browser link", "warn", "no URL read from this window",
+                        "Cards will show the page title but no link or "
+                        "thumbnail. Recent activity below says what went wrong."))
         else:
             out.append(Check(
                 "Right now it can see", "bad", "nothing",

@@ -200,6 +200,19 @@ def check_loop_failures_are_recorded():
     print("log: a failed tick records its traceback")
 
 
+def check_no_duplicate_checks():
+    """Each check appears once. An if/elif/else got mis-nested and Health
+    showed both "Titles — good" and "Titles — nothing readable" at once."""
+    from collections import Counter
+
+    from in_detail import checkup
+
+    counts = Counter(c.name for c in checkup.run())
+    dupes = {n: k for n, k in counts.items() if k > 1}
+    assert not dupes, f"a check is reported more than once: {dupes}"
+    print(f"health: {len(counts)} checks, each reported once")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -262,6 +275,7 @@ check_late_token_starts_the_bot()
 check_window_comes_forward()
 check_health_page()
 check_titles_toggle()
+check_no_duplicate_checks()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):
