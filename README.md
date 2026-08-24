@@ -1,5 +1,7 @@
 # overshare 💌
 
+### [→ overshare on the web](https://iota-x.github.io/overshare/) · [install it](https://iota-x.github.io/overshare/install.html)
+
 **the clingy-girlfriend starter pack 💅** — a tiny menu-bar / tray app that keeps
 your partner *lovingly over-informed* about everything you do on your computer,
 automatically, in real time, in detail. For the girlfriends who need to know
