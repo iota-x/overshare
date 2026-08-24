@@ -61,6 +61,10 @@ _BROWSER_SUFFIX = re.compile(
 # Chromium appends resource warnings to the title; they aren't part of the page.
 _BROWSER_NOISE = re.compile(
     r"\s*[-–—]\s*(High memory usage[^-–—]*|\d+(\.\d+)?\s*[KMG]B)\s*", re.I)
+# ...and prefixes an unread count, so a tab reads "(26) Some Video - YouTube".
+# It's about the notifications, not the page, and it changes constantly — left
+# in, it makes every card look different when nothing has actually changed.
+_BROWSER_COUNT = re.compile(r"^\s*\(\d+\)\s*")
 
 
 def permission_ok() -> bool:
@@ -137,6 +141,22 @@ _URL_SCHEMES = ("http://", "https://", "about:", "file://", "chrome://", "edge:/
 _url_cache: tuple[str, str] = ("", "")  # (window+title key, url)
 
 
+_noted: set = set()
+
+
+def _note(event: str, detail: str = "") -> None:
+    """Log a URL-read problem once. It happens every couple of seconds
+    otherwise, and would bury everything else in the file."""
+    if event in _noted:
+        return
+    _noted.add(event)
+    try:
+        from . import log
+        log.write(event, detail)
+    except Exception:
+        pass
+
+
 def _normalise_url(text: str) -> str:
     """Address bars hide the scheme — 'github.com/x' means 'https://github.com/x'."""
     t = (text or "").strip()
@@ -161,13 +181,23 @@ def _browser_url(hwnd, title: str) -> str:
     if _url_cache[0] == key:
         return _url_cache[1]
     url = ""
+    raw = ""
     try:
         window = _auto.ControlFromHandle(hwnd)
         if window is not None:
-            edit = window.EditControl(searchDepth=8)
-            if edit.Exists(maxSearchSeconds=0.4, searchIntervalSeconds=0.1):
-                url = _normalise_url(edit.GetValuePattern().Value)
-    except Exception:
+            # Chromium's omnibox sits deeper than 8 in the UIA tree on some
+            # builds, and 0.4s isn't always enough to walk it on a busy machine.
+            # Missing it costs the link and the thumbnail, so give it room.
+            edit = window.EditControl(searchDepth=12)
+            if edit.Exists(maxSearchSeconds=1.0, searchIntervalSeconds=0.1):
+                raw = edit.GetValuePattern().Value or ""
+                url = _normalise_url(raw)
+                if not url and raw:
+                    _note("browser url: address bar didn't look like a URL", raw[:80])
+            else:
+                _note("browser url: no address bar found in the window tree")
+    except Exception as e:
+        _note("browser url: UI Automation failed", f"{type(e).__name__}: {e}")
         url = ""
     _url_cache = (key, url)
     return url
@@ -194,7 +224,8 @@ def collect() -> Snapshot:
 
     if proc in _BROWSERS:
         snap.category = "browsing"
-        snap.tab_title = _BROWSER_SUFFIX.sub("", _BROWSER_NOISE.sub(" ", title)).strip()
+        snap.tab_title = _BROWSER_COUNT.sub(
+            "", _BROWSER_SUFFIX.sub("", _BROWSER_NOISE.sub(" ", title))).strip()
         if config.READ_BROWSER_URL:
             snap.url = _browser_url(hwnd, title)
 
