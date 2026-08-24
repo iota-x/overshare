@@ -63,6 +63,14 @@ jobs:
           print('menu-bar app constructs, paused =', app.paused)
           "
 
+      # v1.2.x installed, started, and then sat in the tray with no window and
+      # no way to reach one. Constructing the class wasn't enough to catch it —
+      # nothing exercised the path a new user actually takes.
+      - name: First run reaches the settings window
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python packaging/check_first_run.py
+
       - name: Build the settings window
         # Offscreen Qt, so this works on a headless runner. Walks every page,
         # which is what catches a broken layout or a bad widget binding.

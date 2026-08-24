@@ -21,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import capture, config, collectors, companion, history, notifier, questions, recap, settings, sites, sound, weekly
+from . import capture, config, collectors, companion, history, log, notifier, questions, recap, settings, sites, sound, weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -82,7 +82,10 @@ class WinApp:
             pystray.MenuItem("Set mood…", self._set_mood),
             pystray.MenuItem("Reply to her…", self._reply),
             pystray.MenuItem("Ask permission…", self._ask_permission),
-            pystray.MenuItem("Settings…", self._open_settings),
+            # default=True is what makes a left-click on the tray icon do
+            # anything at all: pystray dispatches an icon click to the item
+            # marked default, and silently does nothing when none is.
+            pystray.MenuItem("Settings…", self._open_settings, default=True),
             pystray.MenuItem("Send daily recap now", self._recap_now),
             pystray.MenuItem("Send weekly wrap now", self._weekly_now),
             pystray.MenuItem("Quit", self._quit),
@@ -90,6 +93,7 @@ class WinApp:
         self.icon = pystray.Icon("overshare", _load_icon(), self._tooltip(), menu)
 
         companion.start()
+        threading.Thread(target=self._first_run, daemon=True).start()
         threading.Thread(target=self._loop, daemon=True).start()
         # Windows machines get shut down for the night, so the in-process day
         # rollover never runs — see recap.catch_up.
@@ -173,9 +177,15 @@ class WinApp:
         # changes up from there.
         try:
             from . import launcher
-            launcher.open_settings()
+            launcher.open_settings(on_fail=self._settings_failed)
         except Exception as e:
+            log.exception("settings: could not launch", e)
             self._notify("Settings", f"couldn't open settings ({e})")
+
+    def _settings_failed(self, why: str) -> None:
+        """The window started and died. Point at the log, which now has the why."""
+        from . import log as _log
+        self._notify("Settings didn't open", f"{why} — details in {_log.path()}")
 
     def _recap_now(self, _icon, _item) -> None:
         threading.Thread(target=recap.post, args=(self.day,), daemon=True).start()
@@ -497,6 +507,29 @@ class WinApp:
             weekly.post()
         finally:
             self._weekly_posting = False
+
+    def _first_run(self) -> None:
+        """Show the settings window when there's nothing configured yet.
+
+        Without this, installing the app and double-clicking it appears to do
+        nothing: there's no window, and on Windows 11 a new tray icon goes
+        straight into the hidden overflow, so there isn't even an icon to find.
+        The app was running the whole time with no way to reach it.
+        """
+        if config.is_configured():
+            return
+        # Let the tray icon finish registering first, so the notification below
+        # has somewhere to point.
+        time.sleep(1.5)
+        try:
+            from . import launcher
+            launcher.open_settings(on_fail=self._settings_failed)
+            log.write("first run: opened settings")
+        except Exception as e:
+            log.exception("first run: could not open settings", e)
+            self._notify(
+                "Overshare is running",
+                "Open the tray (the ^ next to the clock) and click Overshare to set it up.")
 
     def _catch_up(self) -> None:
         """Send what the schedule missed while the machine was off."""

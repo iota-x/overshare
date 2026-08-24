@@ -10,7 +10,10 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
+
+from . import log
 
 _child: subprocess.Popen | None = None
 
@@ -30,8 +33,37 @@ def is_open() -> bool:
     return _child is not None and _child.poll() is None
 
 
-def open_settings() -> None:
-    """Show the settings window, reusing the one already open if there is one."""
+def _watch(child: subprocess.Popen, on_fail) -> None:
+    """Notice a child that dies on startup, and say so somewhere.
+
+    A frozen Windows build is a GUI-subsystem binary: if the settings process
+    fails on import there is no console for the traceback and no window to show
+    it in, so the only symptom is that nothing opens. This turns that into a log
+    line and a notification.
+
+    It runs on its own thread because the callers don't have 2.5s to spare —
+    rumps dispatches menu clicks on the AppKit main thread, and blocking that
+    freezes the whole menu bar.
+    """
+    try:
+        code = child.wait(timeout=2.5)
+    except subprocess.TimeoutExpired:
+        log.write("settings: window is up")        # still running == it worked
+        return
+    log.write("settings: child exited immediately", f"returncode={code}")
+    if on_fail is not None:
+        try:
+            on_fail(f"the settings window quit straight away (exit {code})")
+        except Exception:
+            pass
+
+
+def open_settings(on_fail=None) -> None:
+    """Show the settings window, reusing the one already open if there is one.
+
+    `on_fail` is called with a message if the window dies on startup instead of
+    appearing. It fires from a background thread, well after this returns.
+    """
     global _child
     if is_open():
         # Qt won't raise a window from another process for us; on macOS `open`
@@ -47,7 +79,11 @@ def open_settings() -> None:
     # itself back to a normal app so its window can take focus. Flagged through
     # the environment so only the settings process does it.
     env["OVERSHARE_GUI"] = "1"
-    _child = subprocess.Popen(_command(), env=env)
+
+    cmd = _command()
+    log.write("settings: launching", " ".join(cmd))
+    _child = subprocess.Popen(cmd, env=env)
+    threading.Thread(target=_watch, args=(_child, on_fail), daemon=True).start()
 
 
 def close_settings() -> None:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import threading
+import time
 
 import rumps
 
@@ -19,6 +20,7 @@ from . import capture
 from . import collectors
 from . import companion
 from . import history
+from . import log
 from . import notifier
 from . import questions
 from . import recap
@@ -141,6 +143,8 @@ class InDetailApp(rumps.App):
         threading.Thread(target=self._collect_loop, daemon=True).start()
         # Anything that came due while the app was closed — see recap.catch_up.
         threading.Thread(target=self._catch_up, daemon=True).start()
+        # A fresh install has nothing set up and no window to set it up in.
+        threading.Thread(target=self._first_run, daemon=True).start()
 
         self.timer = rumps.Timer(self.tick, config.POLL_INTERVAL)
         self.timer.start()
@@ -223,9 +227,15 @@ class InDetailApp(rumps.App):
         # the changes up from there.
         try:
             from . import launcher
-            launcher.open_settings()
+            launcher.open_settings(on_fail=self._settings_failed)
         except Exception as e:
+            log.exception("settings: could not launch", e)
             rumps.notification("overshare", "Settings", f"couldn’t open settings ({e})")
+
+    def _settings_failed(self, why: str) -> None:
+        """The window started and died. Point at the log, which now has the why."""
+        rumps.notification("overshare", "Settings didn’t open",
+                           f"{why} — details in {log.path()}")
 
     def _sync_menu_states(self) -> None:
         # Keep the menu-bar checkmarks in step with edits made in the panel.
@@ -477,6 +487,23 @@ class InDetailApp(rumps.App):
         history.save(prev)
         self.day = history.load(today)
         self._worked_today = False  # fresh day
+
+    def _first_run(self) -> None:
+        """Show the settings window when there's nothing configured yet.
+
+        A menu-bar app with no window is invisible until you know to look in the
+        menu bar — and someone who just installed it doesn't. This is the one
+        moment the app should put itself in front of you.
+        """
+        if config.is_configured():
+            return
+        time.sleep(1.5)          # let the menu-bar item register first
+        try:
+            from . import launcher
+            launcher.open_settings(on_fail=self._settings_failed)
+            log.write("first run: opened settings")
+        except Exception as e:
+            log.exception("first run: could not open settings", e)
 
     def _catch_up(self) -> None:
         """Send what the schedule missed while we weren't running."""
