@@ -145,6 +145,7 @@ class InDetailApp(rumps.App):
         threading.Thread(target=self._catch_up, daemon=True).start()
         # A fresh install has nothing set up and no window to set it up in.
         threading.Thread(target=self._first_run, daemon=True).start()
+        threading.Thread(target=self._watch_permission, daemon=True).start()
 
         self.timer = rumps.Timer(self.tick, config.POLL_INTERVAL)
         self.timer.start()
@@ -487,6 +488,38 @@ class InDetailApp(rumps.App):
         history.save(prev)
         self.day = history.load(today)
         self._worked_today = False  # fresh day
+
+    def _watch_permission(self) -> None:
+        """Say something when Accessibility is missing, and when it comes back.
+
+        Updating the app replaces the bundle, and macOS ties the Accessibility
+        grant to the bundle — so installing a new version silently revokes it.
+        Nothing breaks loudly when that happens: window titles just stop
+        arriving, and every message quietly gets poorer. "on Notion — JOURNAL"
+        becomes "on Notion" and nobody is told why.
+
+        It's also why the packaged app can look less capable than the same code
+        run from a terminal, which already has the grant.
+        """
+        told = None
+        while True:            # daemon thread; it goes when the app does
+            ok = collectors.accessibility_ok()
+            if ok != told:
+                if not ok:
+                    log.write("accessibility: not granted",
+                              "window titles are unavailable, so updates lose "
+                              "their detail")
+                    rumps.notification(
+                        "overshare", "Missing Accessibility",
+                        "Updates will say “on Notion” instead of what you're "
+                        "actually doing. System Settings → Privacy & Security → "
+                        "Accessibility → switch Overshare off and on.")
+                elif told is not None:
+                    log.write("accessibility: granted again")
+                    rumps.notification("overshare", "Accessibility is back",
+                                       "Updates have their detail again 💛")
+                told = ok
+            time.sleep(60)
 
     def _first_run(self) -> None:
         """Show the settings window when there's nothing configured yet.
