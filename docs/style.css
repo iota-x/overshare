@@ -73,7 +73,7 @@
      thing on the page. */
   .hero-body { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
   @media (min-width: 1080px) {
-    .hero-body { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(24px, 4vw, 64px); }
+    .hero-body { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: clamp(24px, 4vw, 64px); }
     /* Sharing the row with the art costs the statement some width, so it comes
        down a size — "She knows" belongs on one line. */
     .hero .statement { font-size: clamp(58px, 9.4vw, 148px); }
@@ -81,8 +81,13 @@
   .hero-art { position: relative; display: none; }
   @media (min-width: 1080px) { .hero-art { display: block; } }
   /* The eight pages crossfade in place; the frame never moves. */
+  /* Run to the actual right edge of the screen. At 118% the window stopped
+     short of it on a wide display, which read as a cropped picture rather than
+     one continuing past the frame. The extra is the container's own gutter plus
+     whatever centring margin the 1440 cap leaves over. */
   .hero-art .frames {
-    position: relative; width: 118%; aspect-ratio: 880 / 1014;
+    position: relative; aspect-ratio: 880 / 1014;
+    width: calc(100% + var(--gut) + max(0px, (100vw - 1440px) / 2));
     border: 1px solid var(--edge); border-radius: 16px; overflow: hidden;
     box-shadow: 0 70px 150px -60px rgba(0,0,0,1);
     mask-image: linear-gradient(180deg, #000 72%, transparent);
@@ -99,7 +104,11 @@
 
   /* Rows of the app's own sidebar, as percentages of the shot — the window is
      a fixed layout, so these stay aligned at every size. */
-  .hero-art .spots { position: absolute; inset: 0; width: 118%; }
+  /* Same width as the frames, so the hotspots stay over the drawn sidebar. */
+  .hero-art .spots {
+    position: absolute; inset: 0;
+    width: calc(100% + var(--gut) + max(0px, (100vw - 1440px) / 2));
+  }
   .hero-art .spots button {
     position: absolute; left: 2%; width: 33%; height: 6.14%;
     background: none; border: 0; padding: 0; cursor: pointer; border-radius: 8px;
@@ -130,8 +139,22 @@
     line-height: .84; letter-spacing: -.045em;
     margin: clamp(40px, 8vh, 90px) 0 0; text-wrap: balance;
   }
-  .statement span { display: block; }
+  .statement > span { display: block; }
   .statement .hit { color: var(--rose); }
+
+  /* The second line types itself: "She knows everything." → "she knows it's
+     3am." and back. min-height holds the line open while it's mid-delete, so
+     the art beside it doesn't jump every few seconds. */
+  .statement .hit { min-height: .84em; }
+  .statement .caret {
+    display: inline-block; width: .055em; height: .62em; margin-left: .04em;
+    background: currentColor; vertical-align: baseline;
+    animation: blink 1.1s steps(1, end) infinite;
+  }
+  @keyframes blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+  /* Nothing types itself when motion is turned down — the first word just sits
+     there, which is the sentence the page is actually making. */
+  @media (prefers-reduced-motion: reduce) { .statement .caret { display: none; } }
 
   .foot-hero {
     display: flex; align-items: flex-end; justify-content: space-between;
@@ -186,6 +209,10 @@
   /* The picture already says the line, so the caption stays a caption. */
   .watcher p { margin: 0; }
   .watcher small { color: var(--mute); font-size: 15px; }
+  /* Says out loud what the picture is doing there. Quieter than the caption
+     above it, because it's the legal note and not the joke. */
+  .watcher .fineprint { max-width: 62ch; }
+  .watcher .fineprint small { font-size: 12.5px; line-height: 1.55; opacity: .62; }
 
   .mark .eye { width: 22px; height: 22px; color: var(--rose); }
 
@@ -286,17 +313,17 @@
   .up { opacity: 0; transform: translateY(14px); }
   .up.in { opacity: 1; transform: none;
            transition: opacity .8s cubic-bezier(.19,1,.22,1), transform .8s cubic-bezier(.19,1,.22,1); }
-  .statement span { opacity: 0; transform: translateY(.14em); }
-  .lit .statement span {
+  .statement > span { opacity: 0; transform: translateY(.14em); }
+  .lit .statement > span {
     opacity: 1; transform: none;
     transition: opacity .9s cubic-bezier(.19,1,.22,1), transform .9s cubic-bezier(.19,1,.22,1);
   }
-  .lit .statement span:nth-child(2) { transition-delay: .09s; }
-  .lit .statement span:nth-child(3) { transition-delay: .18s; }
+  .lit .statement > span:nth-child(2) { transition-delay: .09s; }
+  .lit .statement > span:nth-child(3) { transition-delay: .18s; }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .up, .statement span { opacity: 1; transform: none; transition: none; }
+    .up, .statement > span { opacity: 1; transform: none; transition: none; }
   }
 
   @media (max-width: 900px) {
