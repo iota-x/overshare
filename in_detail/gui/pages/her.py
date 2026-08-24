@@ -26,7 +26,8 @@ class HerPage(Page):
     title = "Her preferences"
     blurb = ("Everything on this page she can also change herself from Discord — "
              "this is just the same set of dials, in one place.")
-    nav = "💞  Her"
+    nav = "Her"
+    icon = "heart"
 
     def build(self) -> None:
         delivery = self.add_card("Delivery")

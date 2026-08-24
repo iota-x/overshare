@@ -21,7 +21,8 @@ _WEBHOOK_HELP = (
 class SetupPage(Page):
     title = "Setup"
     blurb = "One link is all it takes to start. Everything else is optional."
-    nav = "💌  Setup"
+    nav = "Setup"
+    icon = "envelope"
 
     def build(self) -> None:
         dark = self.ctx.dark
@@ -56,6 +57,45 @@ class SetupPage(Page):
         line.addWidget(guide)
         line.addStretch(1)
         card.add_raw(actions)
+
+        # --- Telegram ------------------------------------------------------------
+        tg = self.add_card(
+            "Telegram  ·  optional",
+            "Not everyone is on Discord. Fill this in and the same cards go to "
+            "Telegram too — having both on at once is fine.")
+
+        self._tg_status = StatusDot(dark)
+        row, self._tg_token = text_row(
+            CFG, "TELEGRAM_BOT_TOKEN", "Bot token",
+            "In Telegram, message @BotFather → /newbot → copy the token it gives you.",
+            placeholder="123456:ABC-DEF…", secret=True, stack=True,
+            on_change=lambda _: self._check_telegram(),
+        )
+        tg.add_row(row)
+        tg.add_raw(self._tg_status)
+
+        row, self._tg_chat = text_row(
+            CFG, "TELEGRAM_CHAT_ID", "Chat",
+            "Which conversation to post into. Send your new bot any message, "
+            "then press Find my chat.",
+            placeholder="press Find my chat", width=220,
+            on_change=lambda _: self._check_telegram(),
+        )
+        tg.add_row(row)
+
+        tg_actions = QWidget()
+        tg_actions.setObjectName("Bare")
+        line = QHBoxLayout(tg_actions)
+        line.setContentsMargins(0, 8, 0, 0)
+        line.setSpacing(8)
+        self._tg_find = button("Find my chat")
+        self._tg_find.clicked.connect(self._find_chat)
+        line.addWidget(self._tg_find)
+        self._tg_test = button("Send a test message", accent=True)
+        self._tg_test.clicked.connect(self._send_tg_test)
+        line.addWidget(self._tg_test)
+        line.addStretch(1)
+        tg.add_raw(tg_actions)
 
         # --- Two-way -----------------------------------------------------------
         two_way = self.add_card(
@@ -120,12 +160,66 @@ class SetupPage(Page):
         self._test_probe.started_.connect(lambda: self._test_btn.setEnabled(False))
         self._test_probe.finished.connect(self._test_result)
 
+        self._tg_probe = probes.Prober(self)
+        self._tg_probe.started_.connect(
+            lambda: self._tg_status.set_state("busy", "Checking…"))
+        self._tg_probe.finished.connect(self._tg_result)
+
+        self._tg_find_probe = probes.Prober(self)
+        self._tg_find_probe.started_.connect(
+            lambda: (self._tg_find.setEnabled(False),
+                     self._tg_status.set_state("busy", "Looking for your chat…")))
+        self._tg_find_probe.finished.connect(self._found_chat)
+
+        self._tg_test_probe = probes.Prober(self)
+        self._tg_test_probe.started_.connect(lambda: self._tg_test.setEnabled(False))
+        self._tg_test_probe.finished.connect(self._tg_test_result)
+
         QTimer.singleShot(150, self.on_show)
 
     # --- checks ---------------------------------------------------------------
     def on_show(self) -> None:
         self._check_webhook()
         self._check_bot()
+        self._check_telegram()
+
+    # --- telegram --------------------------------------------------------------
+    def _check_telegram(self) -> None:
+        if not self._tg_token.text().strip():
+            self._tg_status.set_state("idle", "Not set — Discord only")
+            self._tg_test.setEnabled(False)
+            return
+        self._tg_probe.run(probes.check_telegram,
+                           self._tg_token.text().strip(), self._tg_chat.text().strip())
+
+    def _tg_result(self, result: probes.Result) -> None:
+        self._tg_status.set_state("good" if result.ok else "bad", result.message)
+        self._tg_test.setEnabled(result.ok)
+
+    def _find_chat(self) -> None:
+        self._tg_find_probe.run(probes.find_telegram_chat, self._tg_token.text().strip())
+
+    def _found_chat(self, result: probes.Result) -> None:
+        self._tg_find.setEnabled(True)
+        if not result.ok:
+            self._tg_status.set_state("warn", result.message)
+            return
+        chat_id = result.detail.get("chat_id", "")
+        if chat_id:
+            self._tg_chat.setText(chat_id)
+            CFG.set("TELEGRAM_CHAT_ID", chat_id)
+            self.ctx.say(result.message)
+            self._check_telegram()
+
+    def _send_tg_test(self) -> None:
+        self.ctx.say("Sending a test message…")
+        self._tg_test_probe.run(probes.send_telegram_test,
+                                self._tg_token.text().strip(), self._tg_chat.text().strip())
+
+    def _tg_test_result(self, result: probes.Result) -> None:
+        self._tg_test.setEnabled(True)
+        self._tg_status.set_state("good" if result.ok else "bad", result.message)
+        self.ctx.say(result.message)
 
     def _check_webhook(self) -> None:
         self._hook_probe.run(probes.check_webhook, self._hook_field.text().strip())

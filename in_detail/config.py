@@ -104,6 +104,16 @@ def _apply() -> None:
     g = globals()
 
     # --- Delivery ------------------------------------------------------------
+    # Cards go to every destination that's switched on *and* filled in, so more
+    # than one can run at once — see in_detail/channels/.
+    g["DISCORD_ENABLED"] = _get_bool("DISCORD_ENABLED", True)
+    g["TELEGRAM_ENABLED"] = _get_bool("TELEGRAM_ENABLED", True)
+
+    # Telegram: talk to @BotFather for a token, and the chat id is whichever
+    # conversation the bot should post into.
+    g["TELEGRAM_BOT_TOKEN"] = _get_str("TELEGRAM_BOT_TOKEN")
+    g["TELEGRAM_CHAT_ID"] = _get_str("TELEGRAM_CHAT_ID")
+
     # The Discord webhook she'll receive updates through.
     g["DISCORD_WEBHOOK_URL"] = _get_str("DISCORD_WEBHOOK_URL")
     # Display name / avatar the webhook posts as.
@@ -201,6 +211,10 @@ def _apply() -> None:
     # --- Sweet bookends ------------------------------------------------------
     # A gap this long before returning reads as "just woke up".
     g["LONG_AWAY_SECONDS"] = _get_float("LONG_AWAY_SECONDS", 4 * 3600)
+
+    # --- Appearance ----------------------------------------------------------
+    # Settings-window theme: "system" follows the OS, or force "light"/"dark".
+    g["UI_THEME"] = _get_str("UI_THEME", "system").lower()
 
     # --- Behaviour -----------------------------------------------------------
     # Also report background music, so a message can be "watching X while Y plays".

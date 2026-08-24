@@ -98,7 +98,11 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 13px; padding: 22px;
   }
-  .step .ico { font-size: 26px; line-height: 1; }
+  .step .ico {
+    width: 26px; height: 26px; display: block;
+    fill: none; stroke: var(--accent); stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .step h3 { margin: 12px 0 5px; font-size: 16.5px; }
   .step p { margin: 0; color: var(--muted); font-size: 14px; }
 
@@ -120,9 +124,65 @@
   }
   .note b { font-weight: 700; }
 
+  /* --- Click-to-zoom -------------------------------------------------- */
+  .zoomable { cursor: zoom-in; }
+  #lightbox {
+    position: fixed; inset: 0; z-index: 50;
+    display: none; align-items: center; justify-content: center;
+    padding: 24px; cursor: zoom-out;
+    background: rgba(10, 6, 12, .88);
+    /* Backdrop blur keeps the page readable behind without competing. */
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img {
+    max-width: 100%; max-height: 100%;
+    border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 30px 90px -20px rgba(0,0,0,.8);
+  }
+  #lightbox .close {
+    position: absolute; top: 18px; right: 22px;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06); color: #fff;
+    font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  #lightbox .close:hover { background: rgba(255,255,255,.14); }
+  @media (prefers-reduced-motion: no-preference) {
+    #lightbox.open img { animation: pop .16s ease-out; }
+    @keyframes pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
+  }
+
+  /* --- Open source strip ------------------------------------------------ */
+  .oss {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .oss .mark { flex: 0 0 auto; width: 34px; height: 34px; fill: var(--text); }
+  .oss .copy { flex: 1 1 320px; }
+  .oss .copy b { display: block; font-size: 16px; margin-bottom: 3px; }
+  .oss .copy span { color: var(--muted); font-size: 14px; }
+  .oss .go { display: flex; gap: 10px; flex-wrap: wrap; }
+
   footer {
     border-top: 1px solid var(--border); margin-top: 40px;
-    padding: 30px 0 60px; text-align: center; color: var(--muted); font-size: 13.5px;
+    padding: 26px 0 64px; color: var(--muted); font-size: 14px;
+  }
+  .foot-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+  }
+  .foot-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  /* The separators are decoration, so keep them out of the reading order. */
+  .foot-links span { color: var(--border); user-select: none; }
+  footer a { color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+  footer a:hover { color: var(--text); background: var(--surface-alt); }
+  .built a { color: var(--text); padding: 0; }
+  .built a:hover { color: var(--accent); background: none; }
+
+  @media (max-width: 640px) {
+    .foot-row { justify-content: center; text-align: center; }
   }
 
   @media (max-width: 760px) {
@@ -157,7 +217,7 @@
   </header>
 
   <div class="shot">
-    <img src="screenshots/settings-setup.png"
+    <img class="zoomable" src="screenshots/settings-setup.png"
          alt="Overshare's settings window on the Setup page, showing a Discord webhook link with a green Connected check and a Send a test message button.">
     <p class="caption">Paste one Discord link. It checks it for you. That's the setup.</p>
   </div>
@@ -169,20 +229,32 @@
       it to a Discord channel of your choosing.
     </p>
     <div class="steps">
+      <!-- Same vectors the app's sidebar uses, so the two read as one product. -->
       <div class="step">
-        <div class="ico">👀</div>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.2 12 Q12 4.2 21.8 12 Q12 19.8 2.2 12 Z"/>
+          <circle cx="12" cy="12" r="2.9"/>
+        </svg>
         <h3>It notices</h3>
         <p>The app you're in, the file you're editing, the tab you're reading,
            the song playing behind it, and when you've wandered off.</p>
       </div>
       <div class="step">
-        <div class="ico">✨</div>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M11 2.6 Q12 9.2 18.6 10.4 Q12 11.6 11 18.2
+                   Q10 11.6 3.4 10.4 Q10 9.2 11 2.6 Z"/>
+          <path d="M18 14.4 Q18.4 17.2 21.2 17.6 Q18.4 18 18 20.8
+                   Q17.6 18 14.8 17.6 Q17.6 17.2 18 14.4 Z" fill="currentColor"/>
+        </svg>
         <h3>It writes</h3>
         <p>A warm one-liner, not a log entry. Free AI via Groq or a local model —
            or plain templates with no AI at all.</p>
       </div>
       <div class="step">
-        <div class="ico">💌</div>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5.5" width="18" height="13" rx="2.5"/>
+          <path d="M3.6 6.6 L12 13.2 L20.4 6.6"/>
+        </svg>
         <h3>She gets it</h3>
         <p>A rich card in Discord, with links and thumbnails. She can reply,
            react, and ask for a photo — and you're told every time.</p>
@@ -199,12 +271,12 @@
     </p>
     <div class="grid">
       <figure>
-        <img src="screenshots/settings-ai-dark.png"
+        <img class="zoomable" src="screenshots/settings-ai-dark.png"
              alt="The AI page in dark mode, with provider options and a verified key.">
         <figcaption><b>AI</b> — pick a brain, key checked live</figcaption>
       </figure>
       <figure>
-        <img src="screenshots/settings-privacy-dark.png"
+        <img class="zoomable" src="screenshots/settings-privacy-dark.png"
              alt="The Privacy page, with a master switch over the camera and screen.">
         <figcaption><b>Privacy</b> — one master switch over camera and screen</figcaption>
       </figure>
@@ -224,6 +296,24 @@
   </section>
 
   <section>
+    <div class="oss">
+      <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      <div class="copy">
+        <b>Free and open source</b>
+        <span>This app reads your screen, so you shouldn't have to take my word
+        for what it does — every line is on GitHub, MIT licensed. Issues and
+        pull requests welcome.</span>
+      </div>
+      <div class="go">
+        <a class="btn" href="https://github.com/iota-x/overshare">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          <span>View the source</span></a>
+        <a class="btn" href="https://github.com/iota-x/overshare/blob/main/CONTRIBUTING.md">Contribute</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="note">
       <b>Heads up on first launch.</b> The app isn't signed by a paid developer
       account, so macOS will say it “could not verify” it — right-click the app
@@ -235,14 +325,26 @@
   </section>
 
   <footer>
-    <p>
-      <a href="https://github.com/iota-x/overshare">GitHub</a> ·
-      <a href="https://github.com/iota-x/overshare/releases">All releases</a> ·
-      <a href="https://github.com/iota-x/overshare/issues">Report a bug</a> ·
-      <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">MIT</a>
-    </p>
-    <p>Built because someone said “you never tell me anything”. 💛</p>
+    <div class="foot-row">
+      <div class="built">Built by <a href="https://github.com/iota-x">iota</a></div>
+      <nav class="foot-links">
+        <a href="https://github.com/iota-x/overshare">About</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/issues">Support</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare#privacy">Privacy</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">Terms</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/releases">Changelog</a>
+      </nav>
+    </div>
   </footer>
+</div>
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot">
+  <button class="close" aria-label="Close">&times;</button>
+  <img alt="">
 </div>
 
 <script>
@@ -277,6 +379,34 @@
         meta.textContent = bits.join(' · ');
       })
       .catch(function () { /* keep the static fallback text and links */ });
+  })();
+
+  // Click any screenshot to see it full size. The screenshots carry real UI
+  // detail — status dots, model names — that's unreadable at page scale.
+  (function () {
+    var box = document.getElementById('lightbox');
+    var full = box.querySelector('img');
+
+    function open(src, alt) {
+      full.src = src;
+      full.alt = alt || '';
+      box.classList.add('open');
+      document.body.style.overflow = 'hidden';   // don't scroll the page behind
+      box.querySelector('.close').focus();
+    }
+    function close() {
+      box.classList.remove('open');
+      document.body.style.overflow = '';
+      full.removeAttribute('src');               // let the browser drop the decode
+    }
+
+    document.querySelectorAll('.zoomable').forEach(function (img) {
+      img.addEventListener('click', function () { open(img.currentSrc || img.src, img.alt); });
+    });
+    box.addEventListener('click', close);        // backdrop and close button both
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && box.classList.contains('open')) close();
+    });
   })();
 </script>
 

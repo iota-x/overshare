@@ -14,7 +14,8 @@ _DAYS = [("mon", "Monday"), ("tue", "Tuesday"), ("wed", "Wednesday"),
 class RecapsPage(Page):
     title = "Recaps & rituals"
     blurb = "The messages that go out on a clock rather than because you moved."
-    nav = "🗓  Recaps"
+    nav = "Recaps"
+    icon = "calendar"
 
     def build(self) -> None:
         dark = self.ctx.dark

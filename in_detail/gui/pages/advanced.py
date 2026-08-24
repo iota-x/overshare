@@ -11,19 +11,30 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QWidget
 
 from ... import config, settings
 from ..stores import CFG
-from ..widgets import button, text_row, toggle_row
+from ..widgets import button, choice_row, text_row, toggle_row
 from .base import Page
 
 
 class AdvancedPage(Page):
     title = "Advanced"
     blurb = "Things you'll probably only touch once."
-    nav = "⚙️  Advanced"
+    nav = "Advanced"
+    icon = "sliders"
 
     def build(self) -> None:
         dark = self.ctx.dark
 
-        # --- Appearance ---------------------------------------------------------
+        # --- Theme ----------------------------------------------------------------
+        appearance = self.add_card(
+            "Appearance",
+            "Applies to this window. The menu-bar icon always follows the system.")
+        row, _ = choice_row(
+            CFG, "UI_THEME", "Theme",
+            [("system", "Match my system"), ("light", "Light"), ("dark", "Dark")],
+            "", width=180, on_change=lambda _: self.ctx.restyle())
+        appearance.add_row(row)
+
+        # --- How it looks in Discord ----------------------------------------------
         look = self.add_card(
             "How the messages look in Discord",
             "The name and avatar the webhook posts under.")

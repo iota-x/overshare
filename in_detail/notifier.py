@@ -12,8 +12,7 @@ from __future__ import annotations
 import datetime as _dt
 import re
 
-import requests
-
+from . import channels
 from . import config
 from . import settings
 from . import sites
@@ -119,57 +118,19 @@ def _context_of(title: str, *names: str) -> tuple[str, str]:
     return segments[0], " — ".join(segments[1:])
 
 
-_fail_streak = 0  # consecutive webhook post failures (for the health indicator)
-
-
 def healthy() -> bool:
-    return _fail_streak < 3
-
-
-def _post(payload: dict) -> bool:
-    global _fail_streak
-    if not config.DISCORD_WEBHOOK_URL:
-        return False
-    payload.setdefault("username", config.WEBHOOK_USERNAME)
-    payload.setdefault("allowed_mentions", {"parse": []})
-    if config.WEBHOOK_AVATAR_URL:
-        payload.setdefault("avatar_url", config.WEBHOOK_AVATAR_URL)
-    try:
-        r = requests.post(config.DISCORD_WEBHOOK_URL, json=payload, timeout=10)
-        code = r.status_code
-    except Exception:
-        code = 0
-    ok = code in (200, 204)
-    if code == 429:
-        pass  # rate-limited but reachable — not a health failure
-    elif ok:
-        _fail_streak = 0
-    else:
-        _fail_streak += 1
-    return ok
+    """Is delivery working? Answered across every destination in use."""
+    return channels.healthy()
 
 
 def _deliver(content: str = "", embed: dict | None = None) -> bool:
-    """Send to wherever she's chosen: the channel, her DMs, or both."""
-    dest = settings.get("card_destination")  # channel | dm | both
-    sent = False
-    if dest in ("channel", "both"):
-        payload: dict = {}
-        if content:
-            payload["content"] = content[:1900]
-        if embed:
-            payload["embeds"] = [embed]
-        if payload:
-            sent = _post(payload)
-    if dest in ("dm", "both") and config.HER_PRIMARY_ID:
-        try:
-            from . import companion
-            if companion.enabled():
-                companion.dm_user(config.HER_PRIMARY_ID, content, embed)
-                sent = True
-        except Exception:
-            pass
-    return sent
+    """Send one card to every destination that's set up.
+
+    Cards are built as Discord embeds throughout — that stays true, because
+    every builder already speaks it and it carries more structure than a plain
+    string. Channels that aren't Discord render it down themselves.
+    """
+    return channels.deliver(content, embed)
 
 
 def send(message: str) -> bool:
