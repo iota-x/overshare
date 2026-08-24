@@ -9,6 +9,7 @@ Run by CI on macOS and Windows. Imports only; nothing is sent and no window
 opens.
 """
 
+import os
 import pathlib
 import sys
 import types
@@ -213,6 +214,59 @@ def check_no_duplicate_checks():
     print(f"health: {len(counts)} checks, each reported once")
 
 
+def check_update_guardrails():
+    """The updater downloads and hands over an installer, so its refusals are
+    the security boundary. They get tested, not assumed."""
+    import hashlib
+
+    from in_detail import updates
+
+    for bad in ("http://github.com/x.dmg",          # not https
+                "https://github.com.evil.tld/x.dmg",  # lookalike host
+                "https://evil.example/x.dmg"):
+        try:
+            updates._check_host(bad)
+            raise AssertionError(f"allowed a download from {bad}")
+        except ValueError:
+            pass
+    for good in ("https://github.com/iota-x/overshare/releases/download/v1/x.dmg",
+                 "https://objects.githubusercontent.com/a/b"):
+        updates._check_host(good)
+
+    # No checksum published -> refuse outright rather than trust it.
+    try:
+        updates.download(updates.Release("9.9.9", good, "x.dmg", 10, ""))
+        raise AssertionError("downloaded an asset with no checksum")
+    except ValueError:
+        pass
+
+    # A hash that doesn't match must delete the file.
+    body = b"pretend installer"
+    class R:
+        def __init__(self): self._b = [body]
+        def read(self, n=-1): return self._b.pop() if self._b else b""
+        def geturl(self): return good
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    rel = updates.Release("9.9.9", good, "x.dmg", len(body), "0" * 64)
+    with mock.patch.object(updates.urllib.request, "urlopen", lambda *a, **k: R()):
+        try:
+            updates.download(rel)
+            raise AssertionError("kept a file whose checksum didn't match")
+        except ValueError:
+            pass
+        rel.sha256 = hashlib.sha256(body).hexdigest()
+        path = updates.download(rel)
+    assert os.path.exists(path), "a verified download was thrown away"
+    os.remove(path)
+
+    # And version comparison, where a string compare would be wrong.
+    from in_detail.version import parts
+    assert parts("1.3.10") > parts("1.3.9"), "1.3.10 must be newer than 1.3.9"
+    print("updates: refuses bad hosts and bad checksums, keeps verified ones")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -276,6 +330,7 @@ check_window_comes_forward()
 check_health_page()
 check_titles_toggle()
 check_no_duplicate_checks()
+check_update_guardrails()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

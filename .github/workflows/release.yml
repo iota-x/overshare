@@ -29,6 +29,22 @@ jobs:
           [[ "${GITHUB_REF_TYPE}" == "tag" ]] && echo "value=${ref#v}" >> "$GITHUB_OUTPUT" \
                                               || echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
 
+      - name: Stamp the version into the build
+        # Otherwise the packaged app has no idea what it is, and the in-app
+        # update check has nothing to compare against.
+        shell: bash
+        run: |
+          printf 'VERSION = "%s"\n' "${{ steps.version.outputs.value }}" > /tmp/v.txt
+          python - <<'EOF'
+          import pathlib, os
+          p = pathlib.Path("in_detail/version.py")
+          t = p.read_text()
+          new = open("/tmp/v.txt").read().strip()
+          t = t.replace('VERSION = "0.0.0-dev"', new)
+          p.write_text(t)
+          print("stamped:", new)
+          EOF
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -117,6 +133,22 @@ jobs:
           ref="${GITHUB_REF_NAME}"
           [[ "${GITHUB_REF_TYPE}" == "tag" ]] && echo "value=${ref#v}" >> "$GITHUB_OUTPUT" \
                                               || echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp the version into the build
+        # Otherwise the packaged app has no idea what it is, and the in-app
+        # update check has nothing to compare against.
+        shell: bash
+        run: |
+          printf 'VERSION = "%s"\n' "${{ steps.version.outputs.value }}" > /tmp/v.txt
+          python - <<'EOF'
+          import pathlib, os
+          p = pathlib.Path("in_detail/version.py")
+          t = p.read_text()
+          new = open("/tmp/v.txt").read().strip()
+          t = t.replace('VERSION = "0.0.0-dev"', new)
+          p.write_text(t)
+          print("stamped:", new)
+          EOF
 
       - name: Install dependencies
         run: |
