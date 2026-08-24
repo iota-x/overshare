@@ -3,723 +3,569 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overshare — lovingly over-informed</title>
-<meta name="description" content="A tiny menu-bar app that keeps your partner lovingly over-informed about everything you do on your computer. Free, open source, macOS and Windows.">
+<title>Overshare — she knows. all of it.</title>
+<meta name="description" content="A menu-bar app that tells your partner what you're doing on your computer, all day, without you typing a word. Free and open source, for macOS and Windows.">
 
-<meta property="og:title" content="Overshare 💌">
-<meta property="og:description" content="A tiny menu-bar app that keeps your partner lovingly over-informed about everything you do on your computer.">
+<meta property="og:title" content="Overshare">
+<meta property="og:description" content="She knows what you're doing. You didn't type a word of it.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://iota-x.github.io/overshare/screenshots/settings-setup.png">
 <meta name="twitter:card" content="summary_large_image">
-
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..800,0..100,0..1&family=Instrument+Sans:wght@400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
-  /* Same palette as the app. Light is the base; dark only redefines tokens,
-     so nothing is left with a colour defined in one mode only. */
+  /* ------------------------------------------------------------------------
+     A love letter written by surveillance software. The palette is a room lit
+     only by a laptop at 1am; the type pairs a warm wonky serif (the human half)
+     against a monospace (the machine half) and never lets them blur.
+     ------------------------------------------------------------------------ */
   :root {
-    --bg: #FDF8F7;  --surface: #FFFFFF;  --surface-alt: #F7EFEE;
-    --border: #ECDFDD;  --text: #2B2226;  --muted: #8A7B80;
-    --accent: #DB4F86;  --accent-hov: #C83F75;  --accent-soft: #FCEDF3;
-    --on-accent: #FFFFFF;
-    --shadow: 0 24px 60px -28px rgba(90,20,50,.28);
-    --font: ".AppleSystemUIFont", "Segoe UI Variable Text", "Segoe UI",
-            system-ui, "Helvetica Neue", sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #17131A;  --surface: #211C26;  --surface-alt: #2A2430;
-      --border: #332B39;  --text: #F2EBEF;  --muted: #A2939F;
-      --accent: #FF7AAE;  --accent-hov: #FF95BF;  --accent-soft: #33212C;
-      --on-accent: #2B0F1C;
-      --shadow: 0 30px 80px -30px rgba(0,0,0,.85);
-    }
+    --ink:      #140F19;   /* the dark room */
+    --panel:    #1E1726;   /* his messages, the app's cards */
+    --panel-2:  #261E30;
+    --edge:     #342A42;
+    --text:     #F3EAF0;
+    --mute:     #9B8BA8;
+    --rose:     #FF6FA5;   /* her, and every call to action */
+    --rose-dim: #4A2338;
+    --sage:     #6FE3A6;   /* delivered, connected, working */
+    --amber:    #FFC978;
+
+    --serif: "Fraunces", Georgia, serif;
+    --sans:  "Instrument Sans", system-ui, -apple-system, sans-serif;
+    --mono:  "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+    --col: 660px;          /* the conversation column */
   }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; scroll-padding-top: 86px; }
+  html { scroll-behavior: smooth; scroll-padding-top: 78px; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: var(--font); line-height: 1.65;
+    margin: 0; background: var(--ink); color: var(--text);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    /* faint vertical glow, like a screen in a dark room */
+    background-image: radial-gradient(58% 42% at 50% 0%, #241A2E 0%, transparent 62%);
+    background-repeat: no-repeat;
   }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
-  a { color: var(--accent); }
-  h2 { font-size: clamp(26px, 4vw, 36px); letter-spacing: -.022em;
-       margin: 0 0 10px; font-weight: 780; line-height: 1.2; }
-  .lede { color: var(--muted); margin: 0 0 34px; max-width: 620px; font-size: 16px; }
-  .eyebrow {
-    display: inline-block; font-size: 12px; font-weight: 750;
-    letter-spacing: .12em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 12px;
-  }
-  section { padding: 84px 0; }
+  a { color: var(--rose); }
+  ::selection { background: var(--rose); color: #241019; }
+  :focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; border-radius: 4px; }
 
-  /* --- Scroll reveal ---------------------------------------------------- */
-  .reveal {
-    opacity: 0; transform: translateY(22px);
-    transition: opacity .7s cubic-bezier(.22,.61,.36,1),
-                transform .7s cubic-bezier(.22,.61,.36,1);
-    transition-delay: var(--d, 0ms);
-  }
-  .reveal.in { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .reveal { opacity: 1; transform: none; transition: none; }
-    .ticker-row { animation: none !important; }
-  }
+  .col { width: min(var(--col), 100% - 40px); margin-inline: auto; }
 
-  /* --- Nav --------------------------------------------------------------- */
-  nav.top {
-    position: sticky; top: 0; z-index: 40;
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
+  /* --- Channel header ---------------------------------------------------- */
+  .chrome {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(20,15,25,.86);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid transparent; transition: border-color .3s;
   }
-  nav.top.stuck { border-bottom-color: var(--border); }
-  .nav-in {
-    max-width: 1040px; margin: 0 auto; padding: 13px 24px;
-    display: flex; align-items: center; gap: 18px;
+  .chrome.stuck { border-bottom-color: var(--edge); }
+  .chrome-in {
+    width: min(var(--col), 100% - 40px); margin-inline: auto;
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
   }
-  .brand { font-weight: 800; letter-spacing: -.02em; font-size: 16.5px;
-           color: var(--text); text-decoration: none; }
-  .nav-links { display: flex; gap: 4px; margin-left: auto; }
-  .nav-links a {
-    color: var(--muted); text-decoration: none; font-size: 14px;
-    padding: 7px 11px; border-radius: 8px;
+  .hash { font-family: var(--mono); color: var(--mute); font-size: 15px; }
+  .room { font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+  .presence {
+    font-family: var(--mono); font-size: 11.5px; color: var(--sage);
+    display: inline-flex; align-items: center; gap: 6px; margin-left: 2px;
   }
-  .nav-links a:hover { color: var(--text); background: var(--surface-alt); }
-  .nav-cta {
-    background: var(--accent); color: var(--on-accent) !important;
-    padding: 8px 15px !important; border-radius: 9px; font-weight: 650;
+  .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--sage);
+         box-shadow: 0 0 0 3px rgba(111,227,166,.16); }
+  .chrome .get {
+    margin-left: auto; font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    text-decoration: none; color: #2A0F1C; background: var(--rose);
+    padding: 8px 15px; border-radius: 8px;
   }
-  .nav-cta:hover { background: var(--accent-hov) !important; }
-  @media (max-width: 720px) { .nav-links a:not(.nav-cta) { display: none; } }
+  .chrome .get:hover { background: #FF87B6; }
 
-  /* --- Hero -------------------------------------------------------------- */
-  header { position: relative; text-align: center; padding: 96px 0 30px; overflow: hidden; }
-  .aurora {
-    position: absolute; inset: -30% -10% auto -10%; height: 620px; z-index: -1;
-    background:
-      radial-gradient(46% 50% at 22% 34%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
-      radial-gradient(42% 46% at 78% 26%, rgba(124,58,237,.24), transparent 70%);
-    filter: blur(46px); opacity: .85;
-    animation: drift 22s ease-in-out infinite alternate;
+  /* --- Pinned message = the hero ------------------------------------------ */
+  .pinned { padding: 44px 0 8px; }
+  .pin-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 14px;
   }
-  @keyframes drift {
-    from { transform: translate3d(-2%, 0, 0) scale(1); }
-    to   { transform: translate3d(3%, 3%, 0) scale(1.09); }
+  .pin {
+    border: 1px solid var(--edge); border-left: 3px solid var(--rose);
+    background: linear-gradient(180deg, var(--panel), #1A1422);
+    border-radius: 4px 14px 14px 4px; padding: 30px 30px 26px;
   }
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 999px; padding: 6px 14px 6px 8px;
-    font-size: 13px; color: var(--muted); margin-bottom: 24px;
+  .wordmark {
+    font-family: var(--serif); font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 40, "WONK" 1;
+    font-size: clamp(40px, 8.4vw, 66px); font-weight: 600;
+    line-height: .98; letter-spacing: -.026em; margin: 0 0 14px;
   }
-  .badge b { color: var(--accent); font-weight: 700; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: #2ecc8f;
-         box-shadow: 0 0 0 3px color-mix(in srgb, #2ecc8f 22%, transparent); }
-  h1 {
-    font-size: clamp(42px, 7.4vw, 78px); margin: 0 0 4px;
-    letter-spacing: -.035em; font-weight: 820; line-height: 1.03;
-  }
-  h1 .rose { color: var(--accent); }
-  .sub { color: var(--muted); max-width: 560px; margin: 18px auto 34px; font-size: 17px; }
+  .wordmark em { font-style: italic; color: var(--rose); font-variation-settings: "SOFT" 60, "WONK" 1; }
+  .pin p { margin: 0 0 22px; color: var(--mute); font-size: 16.5px; max-width: 48ch; }
+  .pin p b { color: var(--text); font-weight: 600; }
 
-  .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 9px;
-    padding: 13px 26px; border-radius: 11px;
-    font-size: 15.5px; font-weight: 650; text-decoration: none;
-    background: var(--surface); color: var(--text); border: 1px solid var(--border);
-    transition: transform .14s ease, background .14s ease, border-color .14s ease;
+  .grab { display: flex; gap: 10px; flex-wrap: wrap; }
+  .dl {
+    display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+    padding: 12px 20px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--edge);
+    transition: transform .15s, background .15s, border-color .15s;
   }
-  .btn:hover { transform: translateY(-2px); background: var(--surface-alt); }
-  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-  .btn.primary:hover { background: var(--accent-hov); border-color: var(--accent-hov); }
-  .btn svg { width: 19px; height: 19px; fill: currentColor; }
-  .meta { color: var(--muted); font-size: 13.5px; min-height: 20px; margin-top: 14px; }
+  .dl:hover { transform: translateY(-2px); background: #2F2439; border-color: #45375608; }
+  .dl.on { background: var(--rose); color: #2A0F1C; border-color: var(--rose); }
+  .dl.on:hover { background: #FF87B6; border-color: #FF87B6; }
+  .dl svg { width: 18px; height: 18px; fill: currentColor; }
+  .fine { font-family: var(--mono); font-size: 11.5px; color: var(--mute);
+          margin-top: 14px; letter-spacing: .01em; }
 
-  /* --- Ticker: what it actually notices ---------------------------------- */
-  .ticker { margin: 46px 0 8px; overflow: hidden;
-            mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-            -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
-  .ticker-row { display: flex; gap: 10px; width: max-content; animation: slide 46s linear infinite; }
-  @keyframes slide { to { transform: translateX(-50%); } }
-  .chip {
-    display: flex; align-items: center; gap: 8px; white-space: nowrap;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 999px; padding: 8px 16px; font-size: 13.5px; color: var(--muted);
+  /* --- Transcript --------------------------------------------------------- */
+  .day { padding: 34px 0 90px; }
+  .divider {
+    display: flex; align-items: center; gap: 14px; margin: 44px 0 26px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--mute);
   }
-  .chip b { color: var(--text); font-weight: 600; }
-
-  /* --- Shot -------------------------------------------------------------- */
-  .shot { margin: 44px 0 12px; }
-  /* Every screenshot on the page, wherever it sits. Scoping this to specific
-     wrappers is how the feature rows ended up 1400px tall — the images fell
-     back to their natural size. */
-  .shot img, .feature img {
-    width: 100%; height: auto; display: block;
-    border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
-  }
-  .caption { text-align: center; color: var(--muted); font-size: 13.5px; margin-top: 14px; }
-
-  /* --- Steps ------------------------------------------------------------- */
-  .steps { display: grid; gap: 18px; grid-template-columns: repeat(3, 1fr); }
-  .step {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 15px; padding: 24px;
-    transition: transform .3s ease, border-color .3s ease;
-  }
-  .step:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
-  .step .ico {
-    width: 26px; height: 26px; display: block; fill: none;
-    stroke: var(--accent); stroke-width: 1.7;
-    stroke-linecap: round; stroke-linejoin: round;
-  }
-  .step .n { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: .1em; }
-  .step h3 { margin: 12px 0 6px; font-size: 17px; }
-  .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
-
-  /* --- Alternating feature rows ------------------------------------------ */
-  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: 46px;
-             align-items: center; margin-bottom: 76px; }
-  .feature:last-child { margin-bottom: 0; }
-  .feature.flip .copy { order: 2; }
-  .feature h3 { font-size: clamp(21px, 2.7vw, 27px); margin: 0 0 10px;
-                letter-spacing: -.02em; font-weight: 760; }
-  .feature p { color: var(--muted); margin: 0 0 14px; font-size: 15.5px; }
-  .feature ul { list-style: none; padding: 0; margin: 0; }
-  .feature li { position: relative; padding-left: 22px; margin-bottom: 8px;
-                color: var(--muted); font-size: 14.5px; }
-  .feature li::before {
-    content: ""; position: absolute; left: 4px; top: 9px;
-    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  .divider::before, .divider::after {
+    content: ""; height: 1px; background: var(--edge); flex: 1;
   }
 
-  /* --- Setup ------------------------------------------------------------- */
-  .setup { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
-  .stepcard {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 15px; padding: 24px; position: relative;
+  .msg { display: grid; grid-template-columns: 52px 1fr; gap: 12px; margin-bottom: 16px; }
+  .at { font-family: var(--mono); font-size: 11.5px; color: #6B5C78;
+        padding-top: 9px; text-align: right; letter-spacing: -.02em; }
+  .bubble {
+    background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 4px 13px 13px 13px; padding: 11px 15px; font-size: 15.5px;
   }
-  .stepcard .num {
-    width: 30px; height: 30px; border-radius: 50%;
-    display: grid; place-items: center; font-size: 13.5px; font-weight: 800;
-    background: var(--accent); color: var(--on-accent); margin-bottom: 14px;
-  }
-  .stepcard h3 { margin: 0 0 6px; font-size: 16.5px; }
-  .stepcard p { margin: 0; color: var(--muted); font-size: 14px; }
-  .stepcard code {
-    background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: 5px; padding: 1px 5px; font-size: 12.5px;
+  .bubble .tick { color: var(--sage); font-family: var(--mono); font-size: 11px; margin-left: 6px; }
+
+  /* Her replies: opposite side, and the only warm-filled surface on the page */
+  .msg.hers { grid-template-columns: 1fr 52px; }
+  .msg.hers .at { order: 2; text-align: left; }
+  .msg.hers .bubble {
+    order: 1; justify-self: end; max-width: 82%;
+    background: var(--rose-dim); border-color: #5E2B45;
+    border-radius: 13px 4px 13px 13px; color: #FFDCE9;
   }
 
-  /* --- Trust ------------------------------------------------------------- */
-  .trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .tcard { background: var(--surface); border: 1px solid var(--border);
-           border-radius: 15px; padding: 22px; }
-  .tcard h4 { margin: 12px 0 6px; font-size: 15.5px; }
-  .tcard p { margin: 0; color: var(--muted); font-size: 14px; }
-  .tcard svg { width: 22px; height: 22px; fill: none; stroke: var(--accent);
-               stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  /* An activity card — the thing the app actually sends */
+  .card {
+    background: var(--panel); border: 1px solid var(--edge);
+    border-left: 3px solid var(--accent, var(--rose));
+    border-radius: 3px 12px 12px 3px; padding: 13px 16px; max-width: 430px;
+  }
+  .card .who {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .05em;
+    color: var(--accent, var(--rose)); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .card .what { font-weight: 600; font-size: 15.5px; letter-spacing: -.008em; }
+  .card .where { color: var(--mute); font-size: 13.5px; margin-top: 2px; }
+  .card .bar {
+    display: flex; gap: 16px; margin-top: 10px; padding-top: 9px;
+    border-top: 1px solid var(--edge);
+    font-family: var(--mono); font-size: 11.5px; color: var(--mute);
+  }
+  .card.redacted { border-left-color: #5B5266; }
+  .card.redacted .what { color: var(--mute); font-style: italic; }
+  .blocks { display: flex; gap: 5px; margin-top: 9px; }
+  .blocks i { height: 9px; border-radius: 3px; background: #372E44; display: block; }
 
-  ul.features { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 34px; }
-  ul.features li { margin: 0 0 11px; break-inside: avoid; font-size: 14.5px; color: var(--muted); }
-  ul.features b { font-weight: 650; color: var(--text); }
+  /* Narrator asides — the machine explaining itself between messages */
+  .aside {
+    margin: 30px 0 32px; padding-left: 64px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.75; color: var(--mute);
+  }
+  .aside b { color: var(--text); font-weight: 500; }
+  .aside .rule { display: block; width: 26px; height: 1px; background: var(--rose); margin-bottom: 12px; }
 
-  /* --- FAQ --------------------------------------------------------------- */
+  .typing { display: inline-flex; gap: 4px; align-items: center; padding: 3px 2px; }
+  .typing i {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--mute); display: block;
+    animation: bob 1.25s ease-in-out infinite;
+  }
+  .typing i:nth-child(2) { animation-delay: .16s; }
+  .typing i:nth-child(3) { animation-delay: .32s; }
+  @keyframes bob { 0%,60%,100% { opacity: .3; transform: none; }
+                   30% { opacity: 1; transform: translateY(-3px); } }
+
+  /* --- Sections outside the transcript ------------------------------------- */
+  .beat { padding: 76px 0; }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--rose); display: block; margin-bottom: 12px;
+  }
+  h2 {
+    font-family: var(--serif); font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 40, "WONK" 1;
+    font-size: clamp(29px, 5vw, 42px); font-weight: 600; line-height: 1.06;
+    letter-spacing: -.022em; margin: 0 0 12px;
+  }
+  h2 em { font-style: italic; color: var(--rose); }
+  .say { color: var(--mute); margin: 0 0 30px; max-width: 52ch; font-size: 16px; }
+
+  .shots { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  .shots figure { margin: 0; }
+  .shots img {
+    width: 100%; height: auto; display: block; cursor: zoom-in;
+    border: 1px solid var(--edge); border-radius: 11px;
+  }
+  .shots figcaption {
+    font-family: var(--mono); font-size: 11.5px; color: var(--mute); margin-top: 9px;
+  }
+  .shots figcaption b { color: var(--text); font-weight: 500; }
+  .shots .wide { grid-column: 1 / -1; }
+
+  /* Setup: three lines of a recipe, not three marketing cards */
+  .recipe { border-top: 1px solid var(--edge); }
+  .rstep {
+    display: grid; grid-template-columns: 52px 1fr; gap: 12px;
+    padding: 22px 0; border-bottom: 1px solid var(--edge);
+  }
+  .rstep .n { font-family: var(--mono); font-size: 12px; color: var(--rose); padding-top: 3px; }
+  .rstep h3 { margin: 0 0 5px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .rstep p { margin: 0; color: var(--mute); font-size: 15px; }
+  .rstep b { color: var(--text); font-weight: 600; }
+
+  .plain { list-style: none; padding: 0; margin: 0; }
+  .plain li {
+    padding: 13px 0; border-bottom: 1px solid var(--edge);
+    color: var(--mute); font-size: 15px;
+  }
+  .plain li b { color: var(--text); font-weight: 600; }
+
   details {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 16px 20px; margin-bottom: 10px;
+    border-bottom: 1px solid var(--edge); padding: 15px 0;
   }
   details summary {
-    cursor: pointer; font-weight: 650; font-size: 15px; list-style: none;
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    cursor: pointer; list-style: none; font-weight: 600; font-size: 16px;
+    display: flex; justify-content: space-between; gap: 14px; align-items: center;
   }
   details summary::-webkit-details-marker { display: none; }
-  details summary::after { content: "+"; color: var(--accent); font-size: 19px; font-weight: 700; }
-  details[open] summary::after { content: "–"; }
-  details p { margin: 12px 0 0; color: var(--muted); font-size: 14.5px; }
+  details summary::after { content: "+"; color: var(--rose); font-family: var(--mono); }
+  details[open] summary::after { content: "−"; }
+  details p { margin: 11px 0 0; color: var(--mute); font-size: 15px; }
 
-  .note {
-    background: var(--accent-soft); border: 1px solid var(--border);
-    border-radius: 12px; padding: 18px 20px; font-size: 14.5px; color: var(--text);
+  .oss {
+    border: 1px solid var(--edge); border-radius: 14px; padding: 26px;
+    background: var(--panel); display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
   }
-  .note b { font-weight: 700; }
+  .oss svg.mk { width: 30px; height: 30px; fill: var(--text); flex: none; }
+  .oss div { flex: 1 1 300px; }
+  .oss b { display: block; font-size: 16.5px; margin-bottom: 3px; }
+  .oss span { color: var(--mute); font-size: 15px; }
+  .oss .dl { padding: 10px 16px; font-size: 14px; }
 
-  /* --- Click-to-zoom ------------------------------------------------------ */
-  .zoomable { cursor: zoom-in; }
-  #lightbox {
-    position: fixed; inset: 0; z-index: 50; display: none;
-    align-items: center; justify-content: center; padding: 24px; cursor: zoom-out;
-    background: rgba(10,6,12,.88);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  footer {
+    border-top: 1px solid var(--edge); padding: 26px 0 70px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12px; color: var(--mute);
   }
-  #lightbox.open { display: flex; }
-  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px;
+  footer a { color: var(--mute); text-decoration: none; }
+  footer a:hover { color: var(--rose); }
+  footer nav { display: flex; gap: 16px; flex-wrap: wrap; }
+
+  /* --- Motion: messages land, one after another --------------------------- */
+  .rise { opacity: 0; transform: translateY(12px); }
+  .rise.in {
+    opacity: 1; transform: none;
+    transition: opacity .5s cubic-bezier(.22,.61,.36,1),
+                transform .5s cubic-bezier(.22,.61,.36,1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .rise { opacity: 1; transform: none; transition: none; }
+    .typing i { animation: none; opacity: .6; }
+  }
+
+  @media (max-width: 620px) {
+    .msg, .msg.hers, .rstep { grid-template-columns: 42px 1fr; }
+    .msg.hers .bubble { max-width: 100%; }
+    .aside { padding-left: 54px; }
+    .shots { grid-template-columns: 1fr; }
+    .pin { padding: 24px 22px; }
+  }
+
+  /* --- Overlays ------------------------------------------------------------ */
+  #lightbox, #changelog {
+    position: fixed; inset: 0; display: none; align-items: center;
+    justify-content: center; padding: 22px; background: rgba(10,6,12,.9);
+    backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  }
+  #lightbox { z-index: 50; cursor: zoom-out; }
+  #changelog { z-index: 60; }
+  #lightbox.open, #changelog.open { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 11px;
                   border: 1px solid rgba(255,255,255,.14); }
-  #lightbox .close {
-    position: absolute; top: 18px; right: 22px; width: 40px; height: 40px;
-    border-radius: 50%; border: 1px solid rgba(255,255,255,.18);
-    background: rgba(255,255,255,.06); color: #fff; font-size: 22px; cursor: pointer;
-  }
+  #lightbox .x { position: absolute; top: 16px; right: 20px; width: 38px; height: 38px;
+                 border-radius: 50%; border: 1px solid rgba(255,255,255,.2);
+                 background: rgba(255,255,255,.06); color: #fff; font-size: 20px; cursor: pointer; }
 
-  /* --- Changelog panel ---------------------------------------------------- */
-  #changelog {
-    position: fixed; inset: 0; z-index: 60; display: none;
-    align-items: center; justify-content: center; padding: 24px;
-    background: rgba(10,6,12,.7);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  .cl {
+    background: var(--ink); border: 1px solid var(--edge); border-radius: 15px;
+    width: min(680px, 100%); max-height: min(78vh, 740px);
+    display: flex; flex-direction: column; overflow: hidden;
   }
-  #changelog.open { display: flex; }
-  .cl-panel {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
-    width: min(720px,100%); max-height: min(78vh,760px);
-    display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow);
+  .cl-top {
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+    border-bottom: 1px solid var(--edge); background: var(--panel); flex-wrap: wrap;
   }
-  .cl-head { display: flex; align-items: center; justify-content: space-between;
-             gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border);
-             background: var(--surface); flex-wrap: wrap; }
-  .cl-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
-  .cl-head .right { display: flex; align-items: center; gap: 8px; }
-  .cl-head .btn { padding: 8px 14px; font-size: 13.5px; border-radius: 9px; }
-  .cl-head .btn svg { width: 15px; height: 15px; }
-  .cl-x { width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
-          border: 1px solid var(--border); background: var(--bg);
-          color: var(--muted); font-size: 18px; }
-  .cl-x:hover { color: var(--text); background: var(--surface-alt); }
-  .cl-body { overflow-y: auto; padding: 6px 22px 22px; }
-  .cl-rel { padding: 20px 0; border-bottom: 1px solid var(--border); }
-  .cl-rel:last-child { border-bottom: none; }
-  .cl-tag { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-  .cl-tag b { font-size: 16px; }
-  .cl-tag .pill { font-size: 11.5px; font-weight: 700; letter-spacing: .3px;
-                  color: var(--on-accent); background: var(--accent);
-                  padding: 2px 8px; border-radius: 999px; }
-  .cl-tag time { color: var(--muted); font-size: 13px; }
-  .cl-md { font-size: 14px; }
-  .cl-md h3 { font-size: 14.5px; margin: 16px 0 6px; font-weight: 700; }
-  .cl-md p { margin: 0 0 10px; }
-  .cl-md ul { margin: 0 0 10px; padding-left: 20px; }
-  .cl-md li { margin: 0 0 5px; }
-  .cl-md code { background: var(--surface-alt); border: 1px solid var(--border);
-                border-radius: 5px; padding: 1px 5px; font-size: 12.5px; }
-  .cl-empty { color: var(--muted); padding: 26px 0; text-align: center; }
-
-  /* --- Open source ------------------------------------------------------- */
-  .oss { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-         background: var(--surface); border: 1px solid var(--border);
-         border-radius: 15px; padding: 24px 26px; }
-  .oss .mark { flex: 0 0 auto; width: 34px; height: 34px; fill: var(--text); }
-  .oss .copy { flex: 1 1 320px; }
-  .oss .copy b { display: block; font-size: 16.5px; margin-bottom: 3px; }
-  .oss .copy span { color: var(--muted); font-size: 14.5px; }
-  .oss .go { display: flex; gap: 10px; flex-wrap: wrap; }
-
-  footer { border-top: 1px solid var(--border); margin-top: 40px;
-           padding: 26px 0 64px; color: var(--muted); font-size: 14px; }
-  .foot-row { display: flex; align-items: center; justify-content: space-between;
-              gap: 18px; flex-wrap: wrap; }
-  .foot-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-  .foot-links span { color: var(--border); user-select: none; }
-  footer a { color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 6px; }
-  footer a:hover { color: var(--text); background: var(--surface-alt); }
-  .built a { color: var(--text); padding: 0; }
-  .built a:hover { color: var(--accent); background: none; }
-
-  @media (max-width: 860px) {
-    section { padding: 62px 0; }
-    .steps, .setup, .trust { grid-template-columns: 1fr; }
-    .feature { grid-template-columns: 1fr; gap: 26px; margin-bottom: 54px; }
-    .feature.flip .copy { order: 0; }
-    ul.features { columns: 1; }
-    .foot-row { justify-content: center; text-align: center; }
-  }
+  .cl-top h3 { margin: 0; font-family: var(--serif); font-size: 19px; font-weight: 600; }
+  .cl-top .dl { margin-left: auto; padding: 8px 13px; font-size: 13px; }
+  .cl-x { width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: 17px;
+          border: 1px solid var(--edge); background: var(--ink); color: var(--mute); }
+  .cl-x:hover { color: var(--text); }
+  .cl-body { overflow-y: auto; padding: 4px 20px 20px; }
+  .rel { padding: 18px 0; border-bottom: 1px solid var(--edge); }
+  .rel:last-child { border-bottom: none; }
+  .rel-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .rel-h b { font-family: var(--mono); font-size: 15px; }
+  .rel-h .now { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+                background: var(--rose); color: #2A0F1C; padding: 2px 7px; border-radius: 20px; }
+  .rel-h time { font-family: var(--mono); font-size: 11.5px; color: var(--mute); }
+  .md { font-size: 14.5px; }
+  .md h3 { font-size: 14.5px; margin: 14px 0 5px; font-weight: 600; }
+  .md p { margin: 0 0 9px; color: var(--mute); }
+  .md ul { margin: 0 0 9px; padding-left: 19px; color: var(--mute); }
+  .md li { margin-bottom: 4px; }
+  .md code { font-family: var(--mono); font-size: 12.5px; background: var(--panel-2);
+             border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px; }
+  .empty { color: var(--mute); text-align: center; padding: 24px 0;
+           font-family: var(--mono); font-size: 13px; }
 </style>
 </head>
 <body>
 
-<nav class="top" id="topnav">
-  <div class="nav-in">
-    <a class="brand" href="#top">Overshare</a>
-    <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#tour">Features</a>
-      <a href="#setup">Setup</a>
-      <a href="#privacy">Privacy</a>
-      <a class="nav-cta" href="#top">Download</a>
-    </div>
+<div class="chrome" id="chrome">
+  <div class="chrome-in">
+    <span class="hash">#</span><span class="room">us</span>
+    <span class="presence"><span class="pip"></span>he's online</span>
+    <a class="get" href="#get">Get the app</a>
   </div>
-</nav>
+</div>
 
-<div class="wrap" id="top">
-  <header>
-    <div class="aurora" aria-hidden="true"></div>
-
-    <div class="badge reveal"><span class="dot"></span>
-      <span><b>v1.1.0</b> · free forever · macOS &amp; Windows</span></div>
-
-    <h1 class="reveal" style="--d:60ms">
-      Tell her everything.<br><span class="rose">Without typing a word.</span>
-    </h1>
-
-    <p class="sub reveal" style="--d:130ms">
-      A tiny menu-bar app that watches what you're doing and sends your partner
-      a warm little update about it — in real time, in detail, so you don't
-      have to.
-    </p>
-
-    <div class="buttons reveal" style="--d:200ms">
-      <a class="btn primary" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest">
-        <svg viewBox="0 0 384 512" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-        <span>Download for Mac</span></a>
-      <a class="btn" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest">
-        <svg viewBox="0 0 448 512" aria-hidden="true"><path d="M0 93.7l183.6-25.3v177.4H0V93.7zm0 324.6l183.6 25.3V268.4H0v149.9zm203.8 28L448 480V268.4H203.8v177.9zm0-380.6v180.1H448V32L203.8 65.7z"/></svg>
-        <span>Download for Windows</span></a>
-    </div>
-    <p class="meta reveal" id="meta" style="--d:260ms">free · open source · macOS &amp; Windows</p>
-  </header>
-
-  <!-- What it actually sees, in its own words -->
-  <div class="ticker reveal" aria-hidden="true">
-    <div class="ticker-row" id="ticker"></div>
-  </div>
-
-  <div class="shot reveal">
-    <img class="zoomable" src="screenshots/settings-setup.png"
-         alt="Overshare's settings window on the Setup page: a Discord webhook field with a green Connected check, and a Send a test message button.">
-    <p class="caption">Paste one link. It checks it for you. That's the setup.</p>
-  </div>
-
-  <!-- ------------------------------------------------------------------- -->
-  <section id="how">
-    <span class="eyebrow reveal">The idea</span>
-    <h2 class="reveal">You're already doing things.<br>She just never hears about them.</h2>
-    <p class="lede reveal">
-      Overshare sits in your menu bar and does the telling for you. It sees what's
-      in front of you, turns it into a sentence worth reading, and sends it on.
-    </p>
-
-    <div class="steps">
-      <div class="step reveal">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M2.2 12 Q12 4.2 21.8 12 Q12 19.8 2.2 12 Z"/><circle cx="12" cy="12" r="2.9"/>
-        </svg>
-        <p class="n" style="margin:10px 0 0">01</p>
-        <h3>It notices</h3>
-        <p>The app you're in, the file you're editing, the tab you're reading, the
-           song playing behind it — and the moment you wander off.</p>
+<div class="col" id="get">
+  <!-- The pinned message is the hero: the product's own vernacular. -->
+  <section class="pinned">
+    <p class="pin-label rise">📌 Pinned message</p>
+    <div class="pin rise">
+      <h1 class="wordmark">She knows.<br><em>All of it.</em></h1>
+      <p>Overshare sits in your menu bar, watches what you're doing, and tells
+         your partner about it — all day, in detail. <b>You don't type any of it.</b></p>
+      <div class="grab">
+        <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest">
+          <svg viewBox="0 0 384 512" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+          <span>Download for Mac</span></a>
+        <a class="dl" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest">
+          <svg viewBox="0 0 448 512" aria-hidden="true"><path d="M0 93.7l183.6-25.3v177.4H0V93.7zm0 324.6l183.6 25.3V268.4H0v149.9zm203.8 28L448 480V268.4H203.8v177.9zm0-380.6v180.1H448V32L203.8 65.7z"/></svg>
+          <span>Download for Windows</span></a>
       </div>
-      <div class="step reveal" style="--d:110ms">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M11 2.6 Q12 9.2 18.6 10.4 Q12 11.6 11 18.2 Q10 11.6 3.4 10.4 Q10 9.2 11 2.6 Z"/>
-          <path d="M18 14.4 Q18.4 17.2 21.2 17.6 Q18.4 18 18 20.8 Q17.6 18 14.8 17.6 Q17.6 17.2 18 14.4 Z" fill="currentColor"/>
-        </svg>
-        <p class="n" style="margin:10px 0 0">02</p>
-        <h3>It writes</h3>
-        <p>A warm one-liner, not a log entry. Free cloud AI, a model running on
-           your own machine, or plain templates with no AI at all.</p>
-      </div>
-      <div class="step reveal" style="--d:220ms">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.6 6.6 L12 13.2 L20.4 6.6"/>
-        </svg>
-        <p class="n" style="margin:10px 0 0">03</p>
-        <h3>She gets it</h3>
-        <p>A rich card in Discord or Telegram, with links and thumbnails. She can
-           reply, react, and ask for a photo — and you're told every time.</p>
-      </div>
+      <p class="fine" id="fine">free · open source · macOS &amp; Windows</p>
     </div>
   </section>
 
-  <!-- ------------------------------------------------------------------- -->
-  <section id="tour">
-    <span class="eyebrow reveal">A closer look</span>
-    <h2 class="reveal">Everything has a dial.</h2>
-    <p class="lede reveal">
-      Seven pages, and the window checks its own work. Changes apply while the
-      app is running — nothing needs restarting.
-    </p>
+  <!-- The transcript. Everything the product does, shown as what it sent. -->
+  <main class="day">
+    <div class="divider rise">Today</div>
 
-    <div class="feature">
-      <div class="copy reveal">
-        <h3>Pick a brain, or none at all</h3>
-        <p>The one-liners can be written by a free cloud model, one running
-           locally on your own machine, or nothing at all.</p>
-        <ul>
-          <li>Paste a key and it's verified before you leave the field</li>
-          <li>The model list comes from your own account, not a hardcoded menu</li>
-          <li>Ollama runs offline — your activity never leaves the computer</li>
-          <li>Turn AI off entirely and it still works, just plainer</li>
-        </ul>
-      </div>
-      <div class="reveal" style="--d:120ms">
-        <img class="zoomable" src="screenshots/settings-ai-dark.png"
-             alt="The AI page: provider options for templates, Groq, Ollama and Claude, with a verified key and a model picker.">
-      </div>
-    </div>
+    <div class="msg rise"><div class="at">08:31</div>
+      <div class="bubble">good morning 🌅 he's up<span class="tick">✓ sent</span></div></div>
 
-    <div class="feature flip">
-      <div class="copy reveal">
-        <h3>Some things are nobody's business</h3>
-        <p>This app reads your screen, so it ships knowing what not to look at.
-           Password managers and private windows are hidden out of the box.</p>
-        <ul>
-          <li>Incognito and private windows, on every major browser</li>
-          <li>Any app, site, or word you add yourself</li>
-          <li>Hidden activity is kept out of the recaps too, so it can't
-              resurface there later</li>
-          <li>One switch pauses the whole app from the menu bar</li>
-        </ul>
-      </div>
-      <div class="reveal" style="--d:120ms">
-        <img class="zoomable" src="screenshots/settings-privacy-dark.png"
-             alt="The Privacy page: a blocklist for apps, sites and words, plus switches for the camera and screen.">
-      </div>
-    </div>
+    <div class="msg rise"><div class="at">09:04</div>
+      <div class="card" style="--accent:#7AA2FF">
+        <div class="who">Cursor</div>
+        <div class="what">app.py</div>
+        <div class="where">in-detail — he's been at it since nine</div>
+        <div class="bar"><span>⏱ 42 min</span><span>💻 coding</span></div>
+      </div></div>
 
-    <div class="feature">
-      <div class="copy reveal">
-        <h3>A nightly recap and a weekly wrapped</h3>
-        <p>Where the day went, what you watched, the soundtrack, the late
-           nights — summarised and sent on a schedule you set.</p>
-        <ul>
-          <li>Top apps, most-watched, tracks on repeat, streaks</li>
-          <li>Good-morning and goodnight bookends</li>
-          <li>Missed one because the machine was off? It sends when you're back</li>
-        </ul>
-      </div>
-      <div class="reveal" style="--d:120ms">
-        <img class="zoomable" src="screenshots/settings-recaps.png"
-             alt="The Recaps page: nightly recap, weekly wrapped and good-morning sections, each with its own schedule.">
-      </div>
-    </div>
+    <div class="aside rise"><span class="rule"></span>
+      He didn't write either of those. The app read the window title, worked out
+      what it meant, and sent it. <b>It does this all day.</b></div>
 
-    <div class="feature flip">
-      <div class="copy reveal">
-        <h3>As clingy as you want it</h3>
-        <p>Start with a preset and never think about it again, or take the
-           sliders apart until the pace is exactly right.</p>
-        <ul>
-          <li>Relaxed, Balanced, or Clingy in one click</li>
-          <li>How often it looks, how long before it announces, how quiet is “away”</li>
-          <li>A heartbeat that says “still on this, ~12 min”</li>
-        </ul>
-      </div>
-      <div class="reveal" style="--d:120ms">
-        <img class="zoomable" src="screenshots/settings-activity.png"
-             alt="The Activity page: Relaxed, Balanced and Clingy presets above sliders for timing.">
-      </div>
+    <div class="msg rise"><div class="at">11:47</div>
+      <div class="card" style="--accent:#FF5C5C">
+        <div class="who">YouTube</div>
+        <div class="what">a 40-minute video essay about nothing</div>
+        <div class="where">youtube.com · ▶ watch along</div>
+        <div class="bar"><span>⏱ 18 min</span><span>🎧 Jai Paul — Jasmine</span></div>
+      </div></div>
+
+    <div class="msg hers rise"><div class="at">11:49</div>
+      <div class="bubble">i KNEW you weren't working</div></div>
+
+    <div class="msg hers rise"><div class="at">11:49</div>
+      <div class="bubble">what's the song 👀</div></div>
+
+    <div class="aside rise"><span class="rule"></span>
+      She can reply, react, and ask for things — a photo, a screenshot, what
+      you're listening to. <b>You're told every time she looks.</b></div>
+
+    <!-- The signature: the product demonstrating its own blocklist. -->
+    <div class="msg rise"><div class="at">14:20</div>
+      <div class="card redacted">
+        <div class="who" style="color:#8A7D96">Private</div>
+        <div class="what">something private 🔒</div>
+        <div class="blocks">
+          <i style="width:76px"></i><i style="width:44px"></i><i style="width:98px"></i>
+        </div>
+        <div class="bar"><span>hidden by your blocklist</span></div>
+      </div></div>
+
+    <div class="aside rise"><span class="rule"></span>
+      That one was his bank. Password managers and private windows are hidden
+      before they're ever described — and kept out of the recaps, so they can't
+      turn up there later. <b>You choose what else goes on the list.</b></div>
+
+    <div class="msg rise"><div class="at">23:58</div>
+      <div class="card" style="--accent:#FFC978">
+        <div class="who">Today, in full</div>
+        <div class="what">6h 12m at the desk</div>
+        <div class="where">Cursor 3h 40m · YouTube 1h 06m · Discord 48m</div>
+        <div class="bar"><span>🎧 19 tracks</span><span>🌙 second late night</span></div>
+      </div></div>
+
+    <div class="msg hers rise"><div class="at">00:02</div>
+      <div class="bubble">go to sleep</div></div>
+
+    <div class="msg rise"><div class="at">02:14</div>
+      <div class="bubble">still up 🌙<span class="tick">✓ sent</span></div></div>
+
+    <div class="msg hers rise"><div class="at">02:14</div>
+      <div class="bubble"><span class="typing" aria-label="typing"><i></i><i></i><i></i></span></div></div>
+
+    <div class="aside rise"><span class="rule"></span>
+      A recap every night, a wrapped every week. If the machine was off when one
+      was due, it sends when you're back — <b>a day never quietly goes missing.</b></div>
+  </main>
+
+  <!-- Step out of the metaphor: the actual app. -->
+  <section class="beat" id="app">
+    <span class="kicker rise">The app itself</span>
+    <h2 class="rise">Everything above has <em>a dial.</em></h2>
+    <p class="say rise">Eight pages, and the window checks its own work — it verifies
+       your webhook as you type and lists the AI models your key can actually reach.
+       Changes apply while it's running.</p>
+    <div class="shots">
+      <figure class="wide rise">
+        <img src="screenshots/settings-setup.png"
+             alt="The Setup page: a Discord webhook field showing a green Connected check, with an optional Telegram section below.">
+        <figcaption><b>Setup</b> — paste one link. It goes green when it works.</figcaption>
+      </figure>
+      <figure class="rise">
+        <img src="screenshots/settings-privacy-dark.png"
+             alt="The Privacy page: a blocklist for apps, sites and words, above the camera and screen switches.">
+        <figcaption><b>Privacy</b> — the blocklist, and what she may look at.</figcaption>
+      </figure>
+      <figure class="rise">
+        <img src="screenshots/settings-ai-dark.png"
+             alt="The AI page: provider options for templates, Groq, Ollama and Claude, with a verified key.">
+        <figcaption><b>AI</b> — free, local, paid, or none at all.</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- ------------------------------------------------------------------- -->
-  <section id="setup">
-    <span class="eyebrow reveal">Getting started</span>
-    <h2 class="reveal">Three steps, about two minutes.</h2>
-    <p class="lede reveal">No terminal, no Python, no config files to edit.</p>
-
-    <div class="setup">
-      <div class="stepcard reveal">
-        <div class="num">1</div>
+  <section class="beat">
+    <span class="kicker rise">Getting it running</span>
+    <h2 class="rise">Two minutes, <em>no terminal.</em></h2>
+    <div class="recipe rise">
+      <div class="rstep"><div class="n">01</div><div>
         <h3>Install it</h3>
-        <p>Download and drag it to Applications, or run the Windows installer.
-           The first launch needs a <b>right-click → Open</b> on macOS, or
-           <b>More info → Run anyway</b> on Windows — it isn't signed by a paid
-           developer account.</p>
-      </div>
-      <div class="stepcard reveal" style="--d:110ms">
-        <div class="num">2</div>
+        <p>Drag it to Applications, or run the Windows installer. First launch needs
+           <b>right-click → Open</b> on macOS, or <b>More info → Run anyway</b> on
+           Windows — it isn't signed by a paid developer account.</p></div></div>
+      <div class="rstep"><div class="n">02</div><div>
         <h3>Paste one link</h3>
-        <p>Click the 💌 in your menu bar → <b>Settings…</b> In Discord:
-           right-click a channel → Edit Channel → Integrations → Webhooks →
-           <b>Copy Webhook URL</b>. Paste it. It goes green when it works.</p>
-      </div>
-      <div class="stepcard reveal" style="--d:220ms">
-        <div class="num">3</div>
-        <h3>That's it</h3>
-        <p>It starts telling her straight away. Everything else — the AI, the
-           recaps, what's off-limits — is optional and already has a sensible
-           default.</p>
-      </div>
+        <p>In Discord, right-click a channel → Edit Channel → Integrations → Webhooks →
+           <b>Copy Webhook URL</b>. Paste it into Setup. Telegram works too, or both
+           at once.</p></div></div>
+      <div class="rstep"><div class="n">03</div><div>
+        <h3>Nothing</h3>
+        <p>It starts telling her straight away. The AI, the recaps, the blocklist —
+           all optional, all already sensible.</p></div></div>
     </div>
   </section>
 
-  <!-- ------------------------------------------------------------------- -->
-  <section id="privacy">
-    <span class="eyebrow reveal">Where your data goes</span>
-    <h2 class="reveal">Nowhere near us.</h2>
-    <p class="lede reveal">
-      There's no account, no server of ours in the middle, and nothing to sign
-      up for. It talks to your chat app and nothing else.
-    </p>
-
-    <div class="trust">
-      <div class="tcard reveal">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/>
-          <path d="M8 10.5 a4 4 0 0 1 8 0"/>
-        </svg>
-        <h4>It stays on your machine</h4>
-        <p>Settings and history live in one folder on this computer. Delete it
-           and nothing of you remains.</p>
-      </div>
-      <div class="tcard reveal" style="--d:110ms">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3 L20 6.5 V12 c0 5-3.4 8-8 9 -4.6-1-8-4-8-9 V6.5 Z"/>
-          <path d="M9 12 l2 2 4-4"/>
-        </svg>
-        <h4>You choose the blocklist</h4>
-        <p>Password managers and private windows are hidden by default. Add
-           whatever else you'd rather keep to yourself.</p>
-      </div>
-      <div class="tcard reveal" style="--d:220ms">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/><path d="M12 7 v5 l3.5 2"/>
-        </svg>
-        <h4>Off whenever you like</h4>
-        <p>One click in the menu bar pauses everything. She's told the updates
-           stopped, not what you were doing.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ------------------------------------------------------------------- -->
-  <section>
-    <span class="eyebrow reveal">And the rest</span>
-    <h2 class="reveal">The small stuff that makes it.</h2>
-    <ul class="features reveal">
-      <li><b>Per-site smarts</b> — YouTube, Twitch, Reddit, GitHub and friends get their own emoji, colour and phrasing.</li>
-      <li><b>Now playing</b> — “watching X while Y plays”, even when Spotify's in the background.</li>
-      <li><b>Watch and listen along</b> — she gets a link straight to whatever you're on.</li>
-      <li><b>Peek on demand</b> — she can ask for a webcam photo or a screenshot, and you're pinged every time.</li>
-      <li><b>Two-way</b> — with a bot, her replies and reactions come back to you as notifications.</li>
-      <li><b>Tone presets</b> — cutesy, chill, or detailed. She picks.</li>
-      <li><b>Discord and Telegram</b> — either, or both at once.</li>
-      <li><b>Light and dark</b> — follows your system, or pin it.</li>
+  <section class="beat" id="privacy">
+    <span class="kicker rise">Where it all goes</span>
+    <h2 class="rise">To her. <em>And nowhere else.</em></h2>
+    <p class="say rise">There's no account, no server of ours in the middle, and nothing
+       to sign up for. It talks to your chat app and stops there.</p>
+    <ul class="plain rise">
+      <li><b>It stays on your machine.</b> Settings and history live in one folder. Delete it and nothing of you remains.</li>
+      <li><b>The blocklist ships on.</b> Password managers and private windows are hidden before you've configured anything.</li>
+      <li><b>Peeking is loud.</b> She can't look at your camera or screen without you being told, and either can be switched off.</li>
+      <li><b>One click stops everything.</b> Pause from the menu bar. She sees that updates stopped, not what you're doing.</li>
     </ul>
   </section>
 
-  <!-- ------------------------------------------------------------------- -->
-  <section>
-    <div class="oss reveal">
-      <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-      <div class="copy">
-        <b>Free and open source</b>
-        <span>This app reads your screen, so you shouldn't have to take my word
-        for what it does — every line is on GitHub, MIT licensed. Issues and
-        pull requests welcome.</span>
-      </div>
-      <div class="go">
-        <a class="btn" href="https://github.com/iota-x/overshare">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-          <span>View the source</span></a>
-        <a class="btn" href="https://github.com/iota-x/overshare/blob/main/CONTRIBUTING.md">Contribute</a>
-      </div>
+  <section class="beat">
+    <span class="kicker rise">Reasonable questions</span>
+    <h2 class="rise">Yes, it's <em>a bit much.</em></h2>
+    <div class="rise">
+      <details><summary>Does she need to install anything?</summary>
+        <p>No — just Discord or Telegram, which she almost certainly already has.
+           Everything runs on your computer.</p></details>
+      <details><summary>Is this healthy?</summary>
+        <p>It started because someone said “you never tell me anything”, and it's
+           meant for two people who both find it funny. There's a pause button and
+           a blocklist for the moments you don't.</p></details>
+      <details><summary>What does it cost?</summary>
+        <p>Nothing. The app is free, Groq hands out free API keys, and Ollama runs
+           on your own machine. Only Claude bills you, and it's optional.</p></details>
+      <details><summary>Why does macOS say it can't verify it?</summary>
+        <p>Because it isn't signed by a paid Apple developer account, which costs
+           $99 a year. Right-click → <b>Open</b> once and macOS remembers.</p></details>
+      <details><summary>Will it slow my computer down?</summary>
+        <p>No. It reads a couple of window titles every few seconds, and you can
+           make it check less often.</p></details>
     </div>
   </section>
 
-  <!-- ------------------------------------------------------------------- -->
-  <section>
-    <span class="eyebrow reveal">Questions</span>
-    <h2 class="reveal">Fair enough.</h2>
-    <div class="reveal">
-      <details>
-        <summary>Does she need to install anything?</summary>
-        <p>No. She just needs Discord or Telegram, which she probably already
-           has. Everything runs on your computer.</p>
-      </details>
-      <details>
-        <summary>Is this… a bit much?</summary>
-        <p>Yes. That's the point. It started because someone said “you never
-           tell me anything”, and it's meant to be used by two people who both
-           think it's funny. There's a pause button and a blocklist for the
-           moments you don't.</p>
-      </details>
-      <details>
-        <summary>Does it cost anything?</summary>
-        <p>No. The app is free and the AI can be too — Groq gives out free keys,
-           and Ollama runs on your own machine at no cost. Only Claude bills you,
-           and it's optional.</p>
-      </details>
-      <details>
-        <summary>Why does macOS say it can't verify the app?</summary>
-        <p>Because it isn't signed by a paid Apple developer account, which
-           costs $99 a year. Right-click the app and choose <b>Open</b> once and
-           macOS remembers. On Windows it's <b>More info → Run anyway</b>.</p>
-      </details>
-      <details>
-        <summary>Can she see my bank details?</summary>
-        <p>Not by default. Password managers and private windows are hidden out
-           of the box, and you can add any app, site or word to the blocklist.
-           Hidden activity is kept out of the recaps too.</p>
-      </details>
-      <details>
-        <summary>Will it slow my computer down?</summary>
-        <p>No. It reads a couple of window titles every few seconds. You can
-           make it check less often on the Activity page if you'd rather.</p>
-      </details>
-    </div>
-  </section>
-
-  <section style="padding-top:0">
-    <div class="note reveal">
-      <b>Heads up on first launch.</b> The app isn't signed by a paid developer
-      account, so macOS will say it “could not verify” it — right-click the app
-      and choose <b>Open</b>, once. On Windows, click <b>More info → Run
-      anyway</b>. Everything is
-      <a href="https://github.com/iota-x/overshare">open source</a> if you'd
-      rather read it first.
+  <section class="beat">
+    <div class="oss rise">
+      <svg class="mk" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      <div><b>Read it before you run it</b>
+        <span>This app watches your screen. You shouldn't take anyone's word for
+        what it does with that — every line is on GitHub, MIT licensed.</span></div>
+      <a class="dl" href="https://github.com/iota-x/overshare">View the source</a>
     </div>
   </section>
 
   <footer>
-    <div class="foot-row">
-      <div class="built">Built by <a href="https://github.com/iota-x">iota</a></div>
-      <nav class="foot-links">
-        <a href="https://github.com/iota-x/overshare">About</a>
-        <span>·</span>
-        <a href="https://github.com/iota-x/overshare/issues">Support</a>
-        <span>·</span>
-        <a href="#privacy">Privacy</a>
-        <span>·</span>
-        <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">Terms</a>
-        <span>·</span>
-        <a href="https://github.com/iota-x/overshare/releases" id="changelog-link">Changelog</a>
-      </nav>
-    </div>
+    <span>Built by <a href="https://github.com/iota-x">iota</a></span>
+    <nav>
+      <a href="https://github.com/iota-x/overshare">Source</a>
+      <a href="https://github.com/iota-x/overshare/issues">Issues</a>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">MIT</a>
+      <a href="https://github.com/iota-x/overshare/releases" id="cl-link">Changelog</a>
+    </nav>
   </footer>
 </div>
 
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot">
-  <button class="close" aria-label="Close">&times;</button>
-  <img alt="">
+  <button class="x" aria-label="Close">&times;</button><img alt="">
 </div>
 
-<div id="changelog" role="dialog" aria-modal="true" aria-labelledby="cl-title">
-  <div class="cl-panel">
-    <div class="cl-head">
-      <h3 id="cl-title">What's new</h3>
-      <div class="right">
-        <a class="btn" href="https://github.com/iota-x/overshare/releases" target="_blank" rel="noopener">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-          <span>View on GitHub</span></a>
-        <button class="cl-x" aria-label="Close">&times;</button>
-      </div>
+<div id="changelog" role="dialog" aria-modal="true" aria-labelledby="clt">
+  <div class="cl">
+    <div class="cl-top">
+      <h3 id="clt">What's new</h3>
+      <a class="dl" href="https://github.com/iota-x/overshare/releases" target="_blank" rel="noopener">On GitHub</a>
+      <button class="cl-x" aria-label="Close">&times;</button>
     </div>
-    <div class="cl-body"><p class="cl-empty">Loading releases…</p></div>
+    <div class="cl-body"><p class="empty">Loading releases…</p></div>
   </div>
 </div>
 
 <script>
-  // --- Scroll reveal. IntersectionObserver rather than a scroll handler, so
-  // it costs nothing while idle; each element animates once and is released.
+  // Messages land one after another as you reach them — the page's only
+  // orchestrated motion, and the thing the transcript is actually about.
   (function () {
-    var items = document.querySelectorAll('.reveal');
+    var items = document.querySelectorAll('.rise');
     if (!('IntersectionObserver' in window)) {
-      items.forEach(function (el) { el.classList.add('in'); });
-      return;
+      items.forEach(function (e) { e.classList.add('in'); }); return;
     }
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -727,181 +573,116 @@
         e.target.classList.add('in');
         io.unobserve(e.target);
       });
-    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.08 });
-    items.forEach(function (el) { io.observe(el); });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: .06 });
+    items.forEach(function (e) { io.observe(e); });
   })();
 
-  // Hairline under the nav only once the page has actually moved.
   (function () {
-    var nav = document.getElementById('topnav');
-    var onScroll = function () { nav.classList.toggle('stuck', window.scrollY > 8); };
-    addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    var bar = document.getElementById('chrome');
+    var f = function () { bar.classList.toggle('stuck', scrollY > 6); };
+    addEventListener('scroll', f, { passive: true }); f();
   })();
 
-  // The ticker: doubled so the -50% loop is seamless.
+  // Download links resolve to the newest release, so tagging a version updates
+  // the page without anyone editing it.
   (function () {
-    var row = document.getElementById('ticker');
-    var items = [
-      ['💻', 'coding in Cursor — app.py'],
-      ['📺', 'watching a 40-minute video essay'],
-      ['🎧', 'Jai Paul — Jasmine'],
-      ['🐙', 'reading a pull request'],
-      ['🎮', 'four hours into a game'],
-      ['🤖', 'arguing with ChatGPT'],
-      ['🌙', 'still up at 2am'],
-      ['🙂', 'stepped away'],
-    ];
-    var html = items.map(function (i) {
-      return '<div class="chip"><span>' + i[0] + '</span><b>' + i[1] + '</b></div>';
-    }).join('');
-    row.innerHTML = html + html;
-  })();
-
-  // Download buttons point at the newest release, so tagging a version
-  // updates this page without anyone editing it.
-  (function () {
-    var mac = document.getElementById('dl-mac');
-    var win = document.getElementById('dl-win');
-    var meta = document.getElementById('meta');
-
-    if (/Windows/i.test(navigator.userAgent)) {
-      win.classList.add('primary');
-      mac.classList.remove('primary');
-    }
-
+    var mac = document.getElementById('dl-mac'), win = document.getElementById('dl-win');
+    var fine = document.getElementById('fine');
+    if (/Windows/i.test(navigator.userAgent)) { win.classList.add('on'); mac.classList.remove('on'); }
     fetch('https://api.github.com/repos/iota-x/overshare/releases/latest')
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function (rel) {
-        var mb = function (b) { return Math.round(b / 1048576) + ' MB'; };
-        var found = {};
+        var mb = function (b) { return Math.round(b / 1048576) + ' MB'; }, got = {};
         (rel.assets || []).forEach(function (a) {
-          if (/\.dmg$/i.test(a.name)) { mac.href = a.browser_download_url; found.mac = mb(a.size); }
-          if (/\.exe$/i.test(a.name)) { win.href = a.browser_download_url; found.win = mb(a.size); }
+          if (/\.dmg$/i.test(a.name)) { mac.href = a.browser_download_url; got.mac = mb(a.size); }
+          if (/\.exe$/i.test(a.name)) { win.href = a.browser_download_url; got.win = mb(a.size); }
         });
         var bits = [rel.tag_name, 'free', 'open source'];
-        if (found.mac || found.win) {
-          bits.push([found.mac && 'Mac ' + found.mac, found.win && 'Windows ' + found.win]
-                    .filter(Boolean).join(' · '));
-        }
-        meta.textContent = bits.join(' · ');
-        var badge = document.querySelector('.badge b');
-        if (badge && rel.tag_name) badge.textContent = rel.tag_name;
-      })
-      .catch(function () { /* keep the static fallback text and links */ });
+        if (got.mac || got.win) bits.push([got.mac && 'mac ' + got.mac,
+                                           got.win && 'win ' + got.win].filter(Boolean).join(' · '));
+        fine.textContent = bits.join(' · ');
+      }).catch(function () {});
   })();
 
-  // Click any screenshot to see it full size — they carry real UI detail
-  // that's unreadable at page scale.
+  // Screenshots open full size — they carry detail that dies at page scale.
   (function () {
-    var box = document.getElementById('lightbox');
-    var full = box.querySelector('img');
-
-    function open(src, alt) {
-      full.src = src; full.alt = alt || '';
-      box.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      box.querySelector('.close').focus();
-    }
-    function close() {
-      box.classList.remove('open');
-      document.body.style.overflow = '';
-      full.removeAttribute('src');
-    }
-    document.querySelectorAll('.zoomable').forEach(function (img) {
-      img.addEventListener('click', function () { open(img.currentSrc || img.src, img.alt); });
-    });
-    box.addEventListener('click', close);
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && box.classList.contains('open')) close();
-    });
-  })();
-
-  // The changelog reads GitHub's releases and renders them here, so following
-  // "what changed" doesn't mean leaving for a repo page.
-  (function () {
-    var panel = document.getElementById('changelog');
-    var body = panel.querySelector('.cl-body');
-    var link = document.getElementById('changelog-link');
-    var loaded = false;
-
-    // Release notes are ours, but they still get escaped before any formatting
-    // is applied — never build HTML out of fetched text directly.
-    function esc(s) {
-      return s.replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    var box = document.getElementById('lightbox'), img = box.querySelector('img');
+    function shut() { box.classList.remove('open'); document.body.style.overflow = '';
+                      img.removeAttribute('src'); }
+    document.querySelectorAll('.shots img').forEach(function (t) {
+      t.addEventListener('click', function () {
+        img.src = t.currentSrc || t.src; img.alt = t.alt;
+        box.classList.add('open'); document.body.style.overflow = 'hidden';
+        box.querySelector('.x').focus();
       });
-    }
+    });
+    box.addEventListener('click', shut);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && box.classList.contains('open')) shut();
+    });
+  })();
+
+  // The changelog renders GitHub's releases here, so "what changed" doesn't
+  // mean leaving for a repo page.
+  (function () {
+    var panel = document.getElementById('changelog'), body = panel.querySelector('.cl-body');
+    var link = document.getElementById('cl-link'), loaded = false;
+
+    // Our own text, but still escaped before any formatting is applied — never
+    // build HTML straight out of fetched content.
+    function esc(s) { return s.replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
     function inline(s) {
-      return esc(s)
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
+      return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
-                 '<a href="$2" target="_blank" rel="noopener">$1</a>')
-        .replace(/(^|[\s(])((?:https?:\/\/)[^\s<)]+)/g,
-                 '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        .replace(/(^|[\s(])((?:https?:\/\/)[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
     }
     function md(src) {
       var out = [], list = null, para = [];
-      function flushList() { if (list) { out.push('<ul>' + list.join('') + '</ul>'); list = null; } }
-      function flushPara() {
-        // Consecutive lines are one paragraph, as markdown says — otherwise
-        // hard-wrapped prose renders as a stack of fragments.
-        if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para = []; }
-      }
+      function fl() { if (list) { out.push('<ul>' + list.join('') + '</ul>'); list = null; } }
+      function fp() { // consecutive lines are one paragraph, as markdown says
+        if (para.length) { out.push('<p>' + inline(para.join(' ')) + '</p>'); para = []; } }
       (src || '').split('\n').forEach(function (raw) {
         var line = raw.replace(/\s+$/, '');
-        var bullet = line.match(/^\s*[-*]\s+(.*)$/);
-        if (bullet) { flushPara(); list = list || []; list.push('<li>' + inline(bullet[1]) + '</li>'); return; }
-        var head = line.match(/^(#{1,6})\s+(.*)$/);
-        if (head) { flushPara(); flushList(); out.push('<h3>' + inline(head[2]) + '</h3>'); return; }
-        if (!line.trim()) { flushPara(); flushList(); return; }
-        flushList(); para.push(line.trim());
+        var b = line.match(/^\s*[-*]\s+(.*)$/);
+        if (b) { fp(); list = list || []; list.push('<li>' + inline(b[1]) + '</li>'); return; }
+        var h = line.match(/^(#{1,6})\s+(.*)$/);
+        if (h) { fp(); fl(); out.push('<h3>' + inline(h[2]) + '</h3>'); return; }
+        if (!line.trim()) { fp(); fl(); return; }
+        fl(); para.push(line.trim());
       });
-      flushPara(); flushList();
-      return out.join('');
-    }
-    function render(releases) {
-      if (!releases.length) { body.innerHTML = '<p class="cl-empty">No releases yet.</p>'; return; }
-      body.innerHTML = releases.map(function (r, i) {
-        var when = r.published_at
-          ? new Date(r.published_at).toLocaleDateString(undefined,
-              { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-        return '<div class="cl-rel"><div class="cl-tag"><b>' + esc(r.tag_name || '') + '</b>' +
-               (i === 0 ? '<span class="pill">LATEST</span>' : '') +
-               (when ? '<time>' + esc(when) + '</time>' : '') +
-               '</div><div class="cl-md">' + md(r.body) + '</div></div>';
-      }).join('');
+      fp(); fl(); return out.join('');
     }
     function load() {
-      if (loaded) return;
-      loaded = true;
+      if (loaded) return; loaded = true;
       fetch('https://api.github.com/repos/iota-x/overshare/releases?per_page=10')
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (list) { render(list.filter(function (r) { return !r.draft; })); })
-        .catch(function () {
-          loaded = false;   // let a later open retry a rate-limited request
-          body.innerHTML = '<p class="cl-empty">Couldn\'t load the releases just ' +
-                           'now — the button above has them all.</p>';
-        });
+        .then(function (list) {
+          list = list.filter(function (r) { return !r.draft; });
+          if (!list.length) { body.innerHTML = '<p class="empty">No releases yet.</p>'; return; }
+          body.innerHTML = list.map(function (r, i) {
+            var when = r.published_at ? new Date(r.published_at).toLocaleDateString(undefined,
+              { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+            return '<div class="rel"><div class="rel-h"><b>' + esc(r.tag_name || '') + '</b>' +
+              (i === 0 ? '<span class="now">NOW</span>' : '') +
+              (when ? '<time>' + esc(when) + '</time>' : '') +
+              '</div><div class="md">' + md(r.body) + '</div></div>';
+          }).join('');
+        })
+        .catch(function () { loaded = false;
+          body.innerHTML = '<p class="empty">Couldn\'t reach GitHub — the button above has them all.</p>'; });
     }
-    function open(e) {
-      if (e) e.preventDefault();
-      panel.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      panel.querySelector('.cl-x').focus();
-      load();
-    }
-    function close() {
-      panel.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    if (link) link.addEventListener('click', open);
-    panel.querySelector('.cl-x').addEventListener('click', close);
-    panel.addEventListener('click', close);
-    panel.querySelector('.cl-panel').addEventListener('click', function (e) { e.stopPropagation(); });
+    function open(e) { if (e) e.preventDefault();
+      panel.classList.add('open'); document.body.style.overflow = 'hidden';
+      panel.querySelector('.cl-x').focus(); load(); }
+    function shut() { panel.classList.remove('open'); document.body.style.overflow = ''; }
+    link.addEventListener('click', open);
+    panel.querySelector('.cl-x').addEventListener('click', shut);
+    panel.addEventListener('click', shut);
+    panel.querySelector('.cl').addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && panel.classList.contains('open')) close();
+      if (e.key === 'Escape' && panel.classList.contains('open')) shut();
     });
   })();
 </script>
