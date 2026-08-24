@@ -11,10 +11,13 @@ them, and the tray app can log them on startup.
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from ... import checkup, config, log
+from ... import checkup, collectors, config, log
 from ..widgets import button
 from .base import Page
 
@@ -83,6 +86,12 @@ class HealthPage(Page):
         copy = button("Copy report")
         copy.clicked.connect(self._copy)
         line.addWidget(copy)
+        if sys.platform == "darwin":
+            # Updating the app revokes this every time, so it's the one thing
+            # here worth a button rather than a sentence.
+            grant = button("Fix Accessibility")
+            grant.clicked.connect(self._grant)
+            line.addWidget(grant)
         line.addStretch(1)
         self._results.add_widget(bar)
         self._results.add_widget(self._list)
@@ -184,3 +193,17 @@ class HealthPage(Page):
         if url:
             QApplication.clipboard().setText(url)
             self.ctx.say("invite link copied")
+
+    def _grant(self) -> None:
+        """Ask macOS for the permission, and open the pane either way.
+
+        The prompt only appears if the app isn't already trusted, and macOS
+        shows it once per launch — so the pane is opened as well, which is what
+        actually helps when the entry is there but stale after an update.
+        """
+        collectors.ask_for_permission()
+        subprocess.Popen([
+            "open",
+            "x-apple.systempreferences:com.apple.preference.security"
+            "?Privacy_Accessibility"])
+        self.ctx.say("re-grant Overshare, then quit and reopen it")

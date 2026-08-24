@@ -515,6 +515,10 @@ class InDetailApp(rumps.App):
                     log.write("accessibility: not granted",
                               "window titles are unavailable, so updates lose "
                               "their detail")
+                    # macOS's own dialog, with a button straight to the pane.
+                    # Shown at most once per launch by the OS, so this can't
+                    # turn into a thing that nags.
+                    collectors.ask_for_permission()
                     rumps.notification(
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "

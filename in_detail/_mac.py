@@ -12,6 +12,8 @@ from AppKit import NSWorkspace
 import Quartz
 from ApplicationServices import (
     AXIsProcessTrusted,
+    AXIsProcessTrustedWithOptions,
+    kAXTrustedCheckOptionPrompt,
     AXUIElementCreateApplication,
     AXUIElementCopyAttributeValue,
 )
@@ -51,6 +53,22 @@ _CATEGORY_BY_BUNDLE = {
 def permission_ok() -> bool:
     """Accessibility permission (needed for window titles)."""
     return bool(AXIsProcessTrusted())
+
+
+def ask_for_permission() -> bool:
+    """Ask macOS to show its own Accessibility prompt.
+
+    The prompting variant of the same check. It puts up the system dialog with
+    a button that goes straight to the right pane, which is the difference
+    between "go and find this in System Settings" and one click.
+
+    macOS shows it at most once per app per launch, so calling it when the
+    permission is noticed missing costs nothing when it's already granted.
+    """
+    try:
+        return bool(AXIsProcessTrustedWithOptions({kAXTrustedCheckOptionPrompt: True}))
+    except Exception:
+        return permission_ok()
 
 
 def _idle_seconds() -> float:
