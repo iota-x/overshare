@@ -20,7 +20,7 @@ class Snapshot:
     url: str = ""
     category: str = "other"
     music: str = ""           # what's playing in the background
-    music_url: str = ""       # shareable track link (so she can listen along)
+    music_url: str = ""       # shareable track link (so they can listen along)
     idle_seconds: float = 0.0
     extras: dict = field(default_factory=dict)
 

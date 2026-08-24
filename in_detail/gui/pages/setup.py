@@ -99,8 +99,8 @@ class SetupPage(Page):
 
         # --- Two-way -----------------------------------------------------------
         two_way = self.add_card(
-            "Let her reply  ·  optional",
-            "With a bot token her replies, reactions and commands reach you back. "
+            "Let them reply  ·  optional",
+            "With a bot token their replies, reactions and commands reach you back. "
             "Leave this blank to stay send-only.",
         )
 
@@ -114,9 +114,9 @@ class SetupPage(Page):
         two_way.add_raw(self._bot_status)
 
         row, _ = text_row(
-            CFG, "HER_USER_ID", "Her Discord user ID",
-            "So only she can trigger anything. Turn on Developer Mode in Discord, "
-            "then right-click her name → Copy User ID.",
+            CFG, "PARTNER_USER_ID", "Their Discord user ID",
+            "So only they can trigger anything. Turn on Developer Mode in Discord, "
+            "then right-click their name → Copy User ID.",
             placeholder="e.g. 41234567890123456", width=220,
         )
         two_way.add_row(row)
@@ -131,18 +131,18 @@ class SetupPage(Page):
 
         row, _ = text_row(
             CFG, "BOT_PREFIX", "Command prefix",
-            "What she types before a command — !peek, !screen, !say.",
+            "What they type before a command — !peek, !screen, !say.",
             placeholder="!", width=70,
         )
         two_way.add_row(row)
 
-        # --- Her ----------------------------------------------------------------
-        her = self.add_card("Her", "Used in the good-morning and goodnight lines.")
+        # --- Your partner ----------------------------------------------------------------
+        partner = self.add_card("Your partner", "Used in the good-morning and goodnight lines.")
         row, _ = text_row(
-            CFG, "HER_NAME", "What to call her", "",
-            placeholder="her name", width=220,
+            CFG, "PARTNER_NAME", "What to call them", "",
+            placeholder="their name", width=220,
         )
-        her.add_row(row)
+        partner.add_row(row)
 
         # Probes are created once and reused, so a superseded check is dropped
         # rather than racing the one after it.

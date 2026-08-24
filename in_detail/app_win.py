@@ -3,10 +3,10 @@
 Everything platform-specific (reading activity, notifications, the tray UI) is
 here or in `_win.py`; the state machine, sender, recaps, and Discord bot are the
 shared modules used on both OSes. Camera/screen peeks (`!peek`/`!screen`/`!live`)
-and the daily auto-selfie are macOS-only (no Windows capture backend yet) — she
-gets a clear message instead of silence if she asks for one. Everything else
+and the daily auto-selfie are macOS-only (no Windows capture backend yet) — your
+partner gets a clear message instead of silence if they ask for one. Everything else
 introduced alongside the macOS app (reactions, sound board, !say, !remind, pet
-names, permission requests, the love-o-meter, screen-time/her-time in the tray,
+names, permission requests, the love-o-meter, screen-time/their-time in the tray,
 and Settings) has a Windows equivalent here.
 """
 
@@ -29,12 +29,12 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    her = settings.get("pet_name") or config.HER_NAME or "love"
+    name = settings.get("pet_name") or config.PARTNER_NAME or "love"
     return random.choice([
-        f"good morning {her} ☀️ hope you slept well",
-        f"morning {her} 🌅 thinking of you already",
+        f"good morning {name} ☀️ hope you slept well",
+        f"morning {name} 🌅 thinking of you already",
         f"gm my love ☀️ have the best day",
-        f"good morning {her} 💛 miss you",
+        f"good morning {name} 💛 miss you",
     ])
 
 
@@ -77,11 +77,11 @@ class WinApp:
 
         menu = pystray.Menu(
             pystray.MenuItem(lambda i: f"📊 Today: {self._screentime_text}", None, enabled=False),
-            pystray.MenuItem(lambda i: f"🕐 Her time: {self._hertime_text}", None, enabled=False),
+            pystray.MenuItem(lambda i: f"🕐 Their time: {self._hertime_text}", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(lambda i: "Resume" if self.paused else "Pause", self._toggle_pause),
             pystray.MenuItem("Set mood…", self._set_mood),
-            pystray.MenuItem("Reply to her…", self._reply),
+            pystray.MenuItem("Reply to them…", self._reply),
             pystray.MenuItem("Ask permission…", self._ask_permission),
             # default=True is what makes a left-click on the tray icon do
             # anything at all: pystray dispatches an icon click to the item
@@ -157,7 +157,7 @@ class WinApp:
         if not companion.enabled() or not config.DISCORD_HOME_CHANNEL_ID:
             self._notify("Two-way not set up", "Add DISCORD_BOT_TOKEN in .env.")
             return
-        val = self._ask("Reply", "Send a message to her:")
+        val = self._ask("Reply", "Send a message to them:")
         if val and val.strip():
             companion.reply_text(config.DISCORD_HOME_CHANNEL_ID, val.strip())
 
@@ -165,12 +165,12 @@ class WinApp:
         if not companion.enabled() or not config.DISCORD_HOME_CHANNEL_ID:
             self._notify("Two-way not set up", "Add DISCORD_BOT_TOKEN in .env.")
             return
-        val = self._ask("Ask permission", "What do you want to ask her permission for?")
+        val = self._ask("Ask permission", "What do you want to ask permission for?")
         if val and val.strip():
             asked = val.strip()
             companion.ask_permission(config.DISCORD_HOME_CHANNEL_ID, asked)
             self.day.permissions_asked += 1
-            self._notify("🙏 asked her", asked)
+            self._notify("🙏 asked them", asked)
 
     def _open_settings(self, _icon, _item) -> None:
         # The settings window is a Qt app in its own process — pystray already
@@ -306,9 +306,9 @@ class WinApp:
         companion.reply_text(cid, t)
 
     def _peek_ping(self, what: str) -> None:
-        """Let him know she's looking (unless he turned notices off)."""
+        """Say that they're looking, unless the notices were turned off."""
         if config.PEEK_NOTIFY:
-            self._notify("📸 she's peeking", what)
+            self._notify("📸 they're peeking", what)
 
     def _answer_peek(self, channel_id, source: str) -> None:
         if not config.PEEK_ENABLED:
@@ -322,11 +322,11 @@ class WinApp:
             if not capture.webcam_available():
                 companion.reply_text(channel_id, "no camera set up on his end 😔")
                 return
-            self._peek_ping("she asked for a webcam photo")
+            self._peek_ping("they asked for a webcam photo")
             path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
             caption = "📸 caught him 🤳"
         else:
-            self._peek_ping("she asked for a screenshot")
+            self._peek_ping("they asked for a screenshot")
             path = capture.snap_screen()
             caption = "🖥️ his screen right now"
         if path:
@@ -353,7 +353,7 @@ class WinApp:
             grab = lambda: capture.snap_webcam(mirror=_mirror)
         else:
             grab = capture.snap_screen
-        self._peek_ping(f"she started a live {'camera' if source == 'cam' else 'screen'} view")
+        self._peek_ping(f"they started a live {'camera' if source == 'cam' else 'screen'} view")
         companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
 
     def _maybe_auto_selfie(self) -> None:
@@ -383,7 +383,7 @@ class WinApp:
     def _schedule_reminder(self, seconds: int, message: str) -> None:
         def fire():
             self._reminders.discard(timer)
-            self._notify("💛 from her", message)
+            self._notify("💛 from them", message)
 
         timer = threading.Timer(seconds, fire)
         timer.daemon = True
@@ -398,16 +398,16 @@ class WinApp:
                 break
             if kind == "message":
                 name, text = payload
-                self.day.messages_from_her += 1
+                self.day.messages_from_partner += 1
                 self._notify(f"💌 {name}", text)
             elif kind == "reaction":
-                self._notify("💛 she reacted", str(payload))
+                self._notify("💛 they reacted", str(payload))
             elif kind == "poke":
                 self.day.pokes += 1
                 self._notify("👉 poke!", f"{payload} is thinking of you")
             elif kind == "miss":
                 self.day.pokes += 1
-                self._notify("🥺 she misses you", f"{payload} misses you")
+                self._notify("🥺 they miss you", f"{payload} misses you")
             elif kind == "callme":
                 self.day.pokes += 1
                 self._notify("📞 call me", f"{payload} wants you to call")
@@ -430,7 +430,7 @@ class WinApp:
                 threading.Thread(target=sound.play, args=(payload,), daemon=True).start()
             elif kind == "say":
                 _cid, spoken = payload
-                self._notify("🔊 she said", spoken)
+                self._notify("🔊 they said", spoken)
                 threading.Thread(target=self._speak, args=(spoken,), daemon=True).start()
             elif kind == "remind":
                 _cid, secs, message = payload
@@ -439,7 +439,7 @@ class WinApp:
                 approved, asked = payload
                 if approved:
                     self.day.permissions_approved += 1
-                self._notify("✅ she said yes" if approved else "❌ she said no", asked)
+                self._notify("✅ they said yes" if approved else "❌ they said no", asked)
             elif kind == "greet":
                 which, nm = payload
                 self._notify("☀️ good morning" if which == "gm" else "🌙 goodnight", f"from {nm}")
@@ -470,7 +470,7 @@ class WinApp:
     def _send_worker(self, decision: Decision) -> None:
         # Runs on its own thread, in a windowed build with no stderr. Without
         # this, a summarizer or network failure took the whole update with it
-        # and left no trace anywhere — the app looked healthy and she got
+        # and left no trace anywhere — the app looked healthy and your partner got
         # nothing.
         try:
             msg = summarize(decision.snapshot, decision.minutes, decision.kind)
@@ -569,7 +569,7 @@ class WinApp:
             return
         self._config_stamp = stamp
         config.reload()
-        settings._cache = None       # her preferences may have changed too
+        settings._cache = None       # their preferences may have changed too
         # A bot token pasted into the settings window arrives long after
         # companion.start() ran and found nothing. Without this the bot stays
         # offline until the app is restarted, with no hint as to why.
@@ -587,7 +587,7 @@ class WinApp:
             # Each stage is isolated so one bad poll can't kill the loop — but
             # they used to be `except: pass`, which meant a _tick() that threw
             # on every pass sent nothing, for ever, in complete silence. That is
-            # exactly the shape of "it's running and she gets nothing".
+            # exactly the shape of "it's running and they get nothing".
             for name, step in (("poll_config", self._poll_config),
                                ("collect", self._collect_into_latest),
                                ("tick", self._tick)):

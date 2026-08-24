@@ -2,7 +2,7 @@
 
 Rules, in plain english:
   - When you switch to something new, wait until it's stuck around for
-    STABILIZE seconds (so flicking between windows doesn't spam her).
+    STABILIZE seconds (so flicking between windows doesn't spam them).
   - Don't send change-updates closer together than MIN_GAP.
   - If nothing changes, send a "still doing X" heartbeat every HEARTBEAT.
   - When you go idle for IDLE_THRESHOLD, say you stepped away — once — and say
@@ -52,7 +52,7 @@ class Tracker:
                 hour = _dt.datetime.now().hour
                 kind = "night" if (hour >= 22 or hour < 5) else "away"
                 return Decision(True, kind, 0, snap)
-            return Decision(False)  # already told her, stay quiet
+            return Decision(False)  # already told them, stay quiet
 
         just_back = False
         back_kind = "back"

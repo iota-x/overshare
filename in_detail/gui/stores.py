@@ -4,7 +4,7 @@ The app has always had two kinds of setting and they stay separate:
 
   * :class:`Cfg`      — install configuration (webhook, keys, timings). Backed by
     ``config.json``, read through ``config.<NAME>``.
-  * :class:`Runtime`  — the things she flips day to day (tone, mood, camera
+  * :class:`Runtime`  — the things they flip day to day (tone, mood, camera
     permission). Backed by ``settings.json``, and already shared with the menu
     bar's checkmarks.
 
@@ -27,7 +27,7 @@ class Cfg:
 
 
 class Runtime:
-    """Her live preferences — lowercase keys in settings.json."""
+    """Your partner's live preferences — lowercase keys in settings.json."""
 
     def get(self, key: str):
         return settings.get(key)

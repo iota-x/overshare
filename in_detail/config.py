@@ -67,10 +67,18 @@ def _load_env() -> None:
 # --- Typed lookups across overlay → env → default ----------------------------
 # The overlay holds real types; the environment only ever holds strings. Each
 # helper accepts both, so a value reads the same whichever layer supplied it.
-def _get_str(name: str, default: str = "") -> str:
+def _get_str(name: str, default: str = "", *, was: str = "") -> str:
+    """`was` is the key's previous name, still honoured so an existing .env or
+    config.json written before a rename keeps working."""
     val = _overlay.get(name)
+    if val is None and was:
+        val = _overlay.get(was)
     if val is None:
-        val = os.environ.get(name, default)
+        val = os.environ.get(name)
+    if val is None and was:
+        val = os.environ.get(was)
+    if val is None:
+        val = default
     return str(val).strip()
 
 
@@ -114,20 +122,20 @@ def _apply() -> None:
     g["TELEGRAM_BOT_TOKEN"] = _get_str("TELEGRAM_BOT_TOKEN")
     g["TELEGRAM_CHAT_ID"] = _get_str("TELEGRAM_CHAT_ID")
 
-    # The Discord webhook she'll receive updates through.
+    # The Discord webhook your partner receives updates through.
     g["DISCORD_WEBHOOK_URL"] = _get_str("DISCORD_WEBHOOK_URL")
     # Display name / avatar the webhook posts as.
     g["WEBHOOK_USERNAME"] = _get_str("WEBHOOK_USERNAME", "in detail 💬")
     g["WEBHOOK_AVATAR_URL"] = _get_str("WEBHOOK_AVATAR_URL")
 
     # --- Two-way (optional Discord bot) --------------------------------------
-    # A bot token lets her replies + reactions reach your machine as
+    # A bot token lets their replies + reactions reach your machine as
     # notifications. Leave blank to stay send-only.
     g["DISCORD_BOT_TOKEN"] = _get_str("DISCORD_BOT_TOKEN")
-    # Command prefix for the bot (she can also change it live with "<prefix>prefix >").
+    # Command prefix for the bot (they can also change it live with "<prefix>prefix >").
     g["BOT_PREFIX"] = _get_str("BOT_PREFIX", "!")
     # Restrict listening to specific channel(s) — comma-separated IDs. Best set
-    # to the channel your update cards post to (so her reactions are caught).
+    # to the channel your update cards post to (so their reactions are caught).
     # Blank = listen everywhere the bot can see.
     channel_id = _get_str("DISCORD_CHANNEL_ID")
     g["DISCORD_CHANNEL_ID"] = channel_id
@@ -139,24 +147,26 @@ def _apply() -> None:
         home = channel_id.split(",")[0].strip()
     g["DISCORD_HOME_CHANNEL_ID"] = home
 
-    # Only react to HER (so other server members — or your own actions — don't
+    # Only react to your partner (so other server members — or your own actions — don't
     # trigger anything). Comma-separated to allow more than one.
-    her_ids = _get_str("HER_USER_ID")
-    g["HER_USER_ID"] = her_ids
-    g["HER_USER_IDS"] = {u.strip() for u in her_ids.split(",") if u.strip()}
-    # The one to DM the cards to (first id above), when she picks DM delivery.
-    g["HER_PRIMARY_ID"] = her_ids.split(",")[0].strip() if her_ids else ""
+    # Named HER_* until v1.3.3. The old names are still read, so nobody's .env
+    # or config.json breaks over a wording change.
+    ids = _get_str("PARTNER_USER_ID", was="HER_USER_ID")
+    g["PARTNER_USER_ID"] = ids
+    g["PARTNER_USER_IDS"] = {u.strip() for u in ids.split(",") if u.strip()}
+    # The one to DM the cards to (first id above), when they pick DM delivery.
+    g["PARTNER_PRIMARY_ID"] = ids.split(",")[0].strip() if ids else ""
 
-    # Scheduled "good morning <her>" to the channel (even while you sleep).
+    # Scheduled "good morning <name>" to the channel (even while you sleep).
     g["GM_ENABLED"] = _get_bool("GM_ENABLED", True)
     g["GM_TIME"] = _get_str("GM_TIME", "08:30")   # HH:MM local
-    g["HER_NAME"] = _get_str("HER_NAME")          # for the good-morning line
+    g["PARTNER_NAME"] = _get_str("PARTNER_NAME", was="HER_NAME")   # good-morning line
 
     # --- Peek (camera / screen on demand) ------------------------------------
-    # Let her grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
+    # Let them grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
     # live-ish view (`!live`). Set false to disable all of it.
     g["PEEK_ENABLED"] = _get_bool("PEEK_ENABLED", True)
-    # Notify you every time she peeks, so it's never silent.
+    # Notify you every time they peek, so it's never silent.
     g["PEEK_NOTIFY"] = _get_bool("PEEK_NOTIFY", True)
     # Live-view (`!live`) burst length and how often the frame refreshes.
     g["LIVE_SECONDS"] = _get_int("LIVE_SECONDS", 20)
@@ -230,7 +240,7 @@ def _apply() -> None:
     g["PRIVACY_APPS"] = _get_str("PRIVACY_APPS", "")
     g["PRIVACY_SITES"] = _get_str("PRIVACY_SITES", "")
     g["PRIVACY_WORDS"] = _get_str("PRIVACY_WORDS", "")
-    # What she sees instead.
+    # What they see instead.
     g["PRIVACY_LABEL"] = _get_str("PRIVACY_LABEL", "something private 🔒")
 
     # --- Appearance ----------------------------------------------------------
@@ -303,7 +313,7 @@ def missing_requirements() -> list[str]:
     """Return a list of human-readable problems that would stop us working."""
     problems: list[str] = []
     if not DISCORD_WEBHOOK_URL:
-        problems.append("DISCORD_WEBHOOK_URL is not set (she won't get anything)")
+        problems.append("DISCORD_WEBHOOK_URL is not set (nothing can be sent)")
     if active_provider() == "anthropic" and not ANTHROPIC_API_KEY:
         problems.append(
             "AI_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set "

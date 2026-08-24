@@ -9,8 +9,8 @@ from .base import Page
 
 class PeekPage(Page):
     title = "Privacy"
-    blurb = ("What never leaves this machine, and what she's allowed to look at "
-             "when she asks.")
+    blurb = ("What never leaves this machine, and what they're allowed to look at "
+             "when they ask.")
     nav = "Privacy"
     icon = "lock"
 
@@ -71,7 +71,7 @@ class PeekPage(Page):
         body.add_row(row)
 
         row, _ = text_row(
-            CFG, "PRIVACY_LABEL", "She sees instead", "",
+            CFG, "PRIVACY_LABEL", "They see instead", "",
             placeholder="something private \U0001F512", width=250)
         body.add_row(row)
 
@@ -89,7 +89,7 @@ class PeekPage(Page):
 
         # --- Per-source ----------------------------------------------------------
         self._sources = self.add_card(
-            "What she can look at",
+            "What they can look at",
             "These two are also on the menu-bar menu, for a quick flip mid-call.")
         row, _ = toggle_row(
             RUNTIME, "camera_enabled", "Webcam photos",
@@ -100,7 +100,7 @@ class PeekPage(Page):
         row, _ = toggle_row(
             RUNTIME, "screen_enabled", "Screenshots",
             "Sends whatever is on screen at that moment — including anything you'd "
-            "rather she didn't see.", dark=dark)
+            "rather they didn't see.", dark=dark)
         self._sources.add_row(row)
 
         row, _ = toggle_row(
@@ -120,8 +120,8 @@ class PeekPage(Page):
         # --- Being told ------------------------------------------------------------
         told = self.add_card("Being told about it")
         row, _ = toggle_row(
-            CFG, "PEEK_NOTIFY", "Ping me every time she looks",
-            "Off means she can look without you being notified. The camera light "
+            CFG, "PEEK_NOTIFY", "Ping me every time they look",
+            "Off means they can look without you being notified. The camera light "
             "still comes on regardless.", dark=dark)
         told.add_row(row)
 

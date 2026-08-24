@@ -57,18 +57,18 @@ class DailyLog:
     last_active: str = ""
     recap_posted: bool = False
 
-    # --- love-o-meter: how much she reached out today -----------------------
+    # --- love-o-meter: how much they reached out today -----------------------
     pokes: int = 0                  # !poke / !miss / !callme / !break / !food
-    messages_from_her: int = 0      # anything she just typed (not a command)
+    messages_from_partner: int = 0      # anything they just typed (not a command)
     peeks: int = 0                  # !peek / !screen / !live
-    permissions_asked: int = 0      # times he asked her permission for something
-    permissions_approved: int = 0   # of those, how many she said yes to
+    permissions_asked: int = 0      # times you asked their permission for something
+    permissions_approved: int = 0   # of those, how many were a yes
 
     def love_score(self) -> int:
         """A small, made-up score so the recap has something fun to show off."""
         return (
             self.pokes * 2
-            + self.messages_from_her * 3
+            + self.messages_from_partner * 3
             + self.peeks
             + self.permissions_approved * 2
         )
@@ -124,6 +124,12 @@ def load(date: str | None = None) -> DailyLog:
     if p.exists():
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
+            # Files written before the field was renamed. Unknown keys are
+            # dropped below, so without this today's tally would silently reset
+            # to zero the first time the new build ran.
+            for was, now in (("messages_from_her", "messages_from_partner"),):
+                if was in data and now not in data:
+                    data[now] = data.pop(was)
             valid = {f.name for f in fields(DailyLog)}
             return DailyLog(**{k: v for k, v in data.items() if k in valid})
         except Exception:

@@ -42,20 +42,21 @@ _MOMENTS = {
 }
 
 _SYSTEM = (
-    "You write short, warm, casual status updates that a guy sends to his "
-    "girlfriend so she always knows what he's up to on his computer. "
+    "You write short, warm, casual status updates that someone sends to their "
+    "partner, so their partner always knows what they're up to on their computer. "
     "Voice: first person, texting-casual, lowercase is fine, affectionate but "
     "not over the top. At most one emoji, often zero. ONE short line only. "
     "No preamble, no quotes, no explanation — output only the message itself.\n"
-    "ACCURACY MATTERS MORE THAN ANYTHING. She trusts this to be literally true. "
+    "ACCURACY MATTERS MORE THAN ANYTHING. They trust this to be literally true. "
     "Use ONLY the facts in the context below. Never infer, upgrade, embellish, or "
-    "guess an activity. Do NOT say he is watching, streaming, playing, calling, on "
+    "guess an activity. Do NOT say the writer is watching, streaming, playing, "
+    "calling, on "
     "a call, or with anyone — unless the context explicitly states it. Do not name "
     "a video, stream, game, or person that isn't given. Be specific only with "
     "details actually provided (a video title, a file, a site name). "
     "For a chat or voice app like Discord when no further detail is given, say only "
-    "that he's on it (e.g. 'on discord') — never invent a stream, a channel topic, "
-    "or who he's with. When details are thin, stay general ('on his mac', 'on "
+    "only that they're on it (e.g. 'on discord') — never invent a stream, a topic, "
+    "or who they're with. When details are thin, stay general ('on my mac', 'on "
     "discord') rather than guessing. If background music is listed you may weave it "
     "in. When in doubt, under-describe — say less, never more than the facts."
 )
@@ -64,7 +65,7 @@ _TONES = {
     "cutesy": "Lean extra cute and affectionate — playful, warm, a pet name is "
               "welcome, an emoji or two is fine.",
     "chill": "Keep it super laid-back and minimal — lowercase, casual, few words.",
-    "detailed": "Include a little more specific detail about exactly what he's doing.",
+    "detailed": "Include a little more specific detail about exactly what you're doing.",
 }
 
 
@@ -75,7 +76,7 @@ def _system() -> str:
 
 
 def _conversation(snap: Snapshot) -> tuple[str, str]:
-    """The Discord channel/DM and server she'd actually care about, if any."""
+    """The Discord channel/DM and server they'd actually care about, if any."""
     from .notifier import _discord_channel
     if snap.category == "discord":
         return _discord_channel(snap.window_title)
@@ -121,11 +122,11 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     elif kind == "back":
         lines.append("note: just came back to the desk after being away")
     elif kind == "morning":
-        lines.append("note: just started the day at the computer — a warm good-morning to her")
+        lines.append("note: just started the day at the computer — a warm good-morning to them")
     elif kind == "night":
-        lines.append("note: winding down for the night — a soft goodnight to her")
+        lines.append("note: winding down for the night — a soft goodnight to them")
     elif kind == "all_yours":
-        lines.append("note: just finished work for the day — tell her you're all hers now, affectionately")
+        lines.append("note: just finished work for the day — tell them you're all theirs now, affectionately")
     return "\n".join(lines)
 
 
@@ -139,7 +140,7 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
     detail = snap.tab_title or snap.window_title
     where = snap.app
     if detail.strip().lower() == where.strip().lower():
-        detail = ""  # "on Discord — Discord" tells her nothing
+        detail = ""  # "on Discord — Discord" tells them nothing
     channel, server = _conversation(snap)
     if channel:
         base = f"on {where} in {channel}"
@@ -165,7 +166,7 @@ def _clean(text: str) -> str:
     """Strip quotes / extra lines the model might wrap around the message.
 
     Reasoning models (gpt-oss, qwen3, deepseek-r1) narrate inside <think> blocks
-    before answering. Taking the first line blindly would send her the model's
+    before answering. Taking the first line blindly would send them the model's
     scratchpad, so drop those blocks before picking the line."""
     text = re.sub(r"(?is)<(think|reasoning)>.*?</\1>", " ", text or "")
     text = re.sub(r"(?is)^\s*<(think|reasoning)>.*$", " ", text)  # unclosed block
@@ -240,7 +241,7 @@ def _chat_openai(base_url: str, api_key: str, model: str, system: str, user: str
 
     The budget is deliberately generous: the reasoning models these free hosts
     now serve spend most of their tokens thinking, and a tight cap means the
-    visible answer never gets written and she gets an empty card."""
+    visible answer never gets written and they get an empty card."""
     import requests
 
     body = {
@@ -281,7 +282,7 @@ def _via_groq(snap: Snapshot, minutes: int, kind: str) -> str:
 
 
 _RECAP_SYSTEM = (
-    "You write ONE warm, casual sentence for your girlfriend, summarizing how "
+    "You write ONE warm, casual sentence for your partner, summarizing how "
     "your time on the computer went based on the stats you're given. First "
     "person, affectionate, relaxed. At most one emoji. Output only the sentence."
 )
@@ -312,7 +313,7 @@ def summarize(snap: Snapshot, minutes: int = 0, kind: str = "change") -> str:
         return _template(snap, minutes, kind)
 
     # Exact mode: send only what's literally detected, no AI phrasing at all.
-    # For when she needs the status to be beyond-doubt accurate.
+    # For when they need the status to be beyond-doubt accurate.
     from . import settings
     if settings.get("exact_status"):
         return _template(snap, minutes, kind)

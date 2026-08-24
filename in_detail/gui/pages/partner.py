@@ -1,4 +1,4 @@
-"""Her — the day-to-day preferences, the same ones she can change from Discord."""
+"""Partner — the day-to-day preferences, the same ones they can change from Discord."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from .base import Page
 
 _DESTINATIONS = [
     ("channel", "The channel"),
-    ("dm", "Her DMs"),
+    ("dm", "Their DMs"),
     ("both", "Both"),
 ]
 
@@ -18,15 +18,15 @@ _TONES = [
     ("default", "Default — warm and plain"),
     ("cutesy", "Cutesy — emoji and pet names"),
     ("chill", "Chill — short and low-key"),
-    ("detailed", "Detailed — tells her everything"),
+    ("detailed", "Detailed — tells them everything"),
 ]
 
 
-class HerPage(Page):
-    title = "Her preferences"
-    blurb = ("Everything on this page she can also change herself from Discord — "
+class PartnerPage(Page):
+    title = "Partner preferences"
+    blurb = ("Everything on this page they can also change themselves from Discord — "
              "this is just the same set of dials, in one place.")
-    nav = "Her"
+    nav = "Partner"
     icon = "heart"
 
     def build(self) -> None:
@@ -43,8 +43,8 @@ class HerPage(Page):
         # --- Names ------------------------------------------------------------
         names = self.add_card("Names & status")
         row, _ = text_row(
-            RUNTIME, "pet_name", "What the bot calls her",
-            "Overrides her name in the good-morning and goodnight lines.",
+            RUNTIME, "pet_name", "What the bot calls them",
+            "Overrides their name in the good-morning and goodnight lines.",
             placeholder="babe", width=200)
         names.add_row(row)
 
@@ -61,8 +61,8 @@ class HerPage(Page):
         names.add_row(row)
 
         row, _ = text_row(
-            RUNTIME, "her_timezone", "Her timezone",
-            "An IANA name like America/New_York, so the menu can show her local "
+            RUNTIME, "her_timezone", "Their timezone",
+            "An IANA name like America/New_York, so the menu can show their local "
             "time. Blank to hide it.",
             placeholder="America/New_York", width=220)
         names.add_row(row)

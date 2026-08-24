@@ -1,11 +1,11 @@
-"""Post one card of every kind, so you can see exactly what she'll see.
+"""Post one card of every kind, so you can see exactly what they'll see.
 
     python -m in_detail.selftest              # dry run: print the cards here
-    python -m in_detail.selftest --post       # actually send them to her channel
+    python -m in_detail.selftest --post       # actually send them to their channel
     python -m in_detail.selftest --live       # one card for what you're doing now
 
 Formatting bugs used to only show up when a real activity happened to hit the
-broken path — hours or days later, in her channel. This makes every path
+broken path — hours or days later, in their channel. This makes every path
 reproducible on demand.
 """
 
@@ -77,7 +77,7 @@ def _render(label: str, snap: Snapshot, minutes: int, use_ai: bool) -> dict:
 
 
 def _health() -> int:
-    """Report anything that would stop her from getting good updates."""
+    """Report anything that would stop good updates from going out."""
     problems = list(config.missing_requirements())
     if not collectors.accessibility_ok():
         problems.append("no Accessibility permission — window titles will be blank")
@@ -134,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.post:
         print(f"\ndry run — nothing sent. {len(embeds)} card(s) rendered.")
-        print("re-run with --post to send them to her channel for real.")
+        print("re-run with --post to send them to their channel for real.")
         return 1 if problems else 0
 
     print(f"\nsending {len(embeds)} card(s)…")

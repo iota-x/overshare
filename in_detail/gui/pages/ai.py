@@ -24,7 +24,7 @@ _PROVIDERS = [
 
 class AIPage(Page):
     title = "AI"
-    blurb = "How your activity gets turned into a sentence she'd actually enjoy reading."
+    blurb = "How your activity gets turned into a sentence they'd actually enjoy reading."
     nav = "AI"
     icon = "sparkle"
 

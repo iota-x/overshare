@@ -75,7 +75,7 @@ def _discord_channel(title: str) -> tuple[str, str]:
     if "|" in t:
         left, right = (part.strip() for part in t.split("|", 1))
         if left.lower() == "discord":
-            # '(1466) Discord | @her' — the conversation is the interesting half.
+            # '(1466) Discord | @sam' — the conversation is the interesting half.
             return right, ""
         return left, right
     return t, ""
@@ -240,7 +240,7 @@ def _build_embed(snap, minutes: int) -> dict:
     if minutes >= 1:
         fields.append({"name": "⏱ for", "value": f"{minutes} min", "inline": True})
 
-    # Watch-along: for video sites, invite her to join.
+    # Watch-along: for video sites, invite them to join.
     site = sites.lookup(url)
     if site and site.verb == "watching" and url.startswith("http"):
         fields.append({"name": "▶️ watch along", "value": f"[join me on {site.name}]({url})", "inline": False})

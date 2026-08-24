@@ -81,7 +81,7 @@ class RecapsPage(Page):
         selfie_body = Group()
         row, _ = toggle_row(
             RUNTIME, "selfie_enabled", "Automatic check-in selfie",
-            "One webcam photo a day, sent without her having to ask.",
+            "One webcam photo a day, sent without them having to ask.",
             dark=dark, on_change=selfie_body.setEnabled)
         extras.add_row(row)
         row, _ = time_row(RUNTIME, "selfie_time", "Selfie at", "")
@@ -92,7 +92,7 @@ class RecapsPage(Page):
         question_body = Group()
         row, _ = toggle_row(
             RUNTIME, "daily_question_enabled", "Question of the day",
-            "A small prompt for her to answer, once a day.",
+            "A small prompt for them to answer, once a day.",
             dark=dark, on_change=question_body.setEnabled)
         extras.add_row(row)
         row, _ = time_row(RUNTIME, "daily_question_time", "Question at", "")

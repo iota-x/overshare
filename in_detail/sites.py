@@ -87,7 +87,7 @@ def lookup_title(title: str) -> Site | None:
     """Recognise the site from a tab title, for when there's no URL to go on.
 
     Only the first and last segments count: a video *called* "I love Netflix"
-    is not Netflix, but "… - YouTube" and "Discord | @her" are."""
+    is not Netflix, but "… - YouTube" and "Discord | @sam" are."""
     t = re.sub(r"^\(\d+\)\s*", "", (title or "").strip()).lower()
     if not t:
         return None

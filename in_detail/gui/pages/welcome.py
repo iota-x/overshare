@@ -26,8 +26,8 @@ _STEPS = [
     ("sparkle", "It writes",
      "A warm one-liner, not a log entry. Free AI, a model running on this "
      "computer, or plain templates with no AI at all."),
-    ("envelope", "She gets it",
-     "A rich card in Discord or Telegram, with links and thumbnails. She can "
+    ("envelope", "They get it",
+     "A rich card in Discord or Telegram, with links and thumbnails. They can "
      "reply, react, and ask for a photo — and you're told every time."),
 ]
 
@@ -76,7 +76,7 @@ class WelcomePage(Page):
 
         column = QVBoxLayout()
         column.setSpacing(4)
-        line = QLabel("Tell her everything.")
+        line = QLabel("Tell them everything.")
         line.setObjectName("HeroTitle")
         column.addWidget(line)
         line = QLabel("Without typing a word.")

@@ -1,6 +1,6 @@
-"""Runtime settings she can toggle from Discord (persisted to data/settings.json).
+"""Runtime settings your partner can toggle from Discord (persisted to data/settings.json).
 
-Shared across threads in one process: the bot thread writes (when she toggles),
+Shared across threads in one process: the bot thread writes (when they toggle),
 the app/notifier reads (when delivering). Simple dict ops — safe enough here.
 """
 
@@ -21,12 +21,12 @@ from . import config
 # camera_device: pin a specific macOS camera by name (substring match, e.g.
 #   "FaceTime") so a virtual cam like OBS can't hijack `!peek`. "" = auto-pick
 #   the first non-virtual camera.
-# pet_name: what she wants the bot to call her (set with !petname), overrides
-#   config.HER_NAME in good-morning/goodnight lines when set.
+# pet_name: what they want the bot to call them (set with !petname), overrides
+#   config.PARTNER_NAME in good-morning/goodnight lines when set.
 # mood_emoji: replaces the menu-bar glyph when set (blank = default 💌).
 # selfie_enabled/selfie_time: a once-daily automatic webcam check-in photo.
 # daily_question_enabled/daily_question_time: a once-daily "question of the day".
-# her_timezone: IANA name (e.g. "America/New_York") to show her local time.
+# her_timezone: IANA name (e.g. "America/New_York") to show their local time.
 _DEFAULTS = {
     # Master switch. Lives here rather than in memory so the menu bar and the
     # settings window always agree, and so a pause survives a restart — pausing
@@ -72,7 +72,7 @@ def get(key: str):
 
 
 def peek_source_enabled(source: str) -> bool:
-    """Is she allowed to use this peek source right now? source: 'cam' | 'screen'."""
+    """Are they allowed to use this peek source right now? source: 'cam' | 'screen'."""
     key = "camera_enabled" if source == "cam" else "screen_enabled"
     return bool(get(key))
 

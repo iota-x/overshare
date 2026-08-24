@@ -5,7 +5,7 @@ from .advanced import AdvancedPage
 from .ai import AIPage
 from .base import Context, Page
 from .health import HealthPage
-from .her import HerPage
+from .partner import PartnerPage
 from .peek import PeekPage
 from .recaps import RecapsPage
 from .setup import SetupPage
@@ -18,7 +18,7 @@ PAGES = [
     AIPage,
     PeekPage,
     RecapsPage,
-    HerPage,
+    PartnerPage,
     HealthPage,
     AdvancedPage,
 ]
