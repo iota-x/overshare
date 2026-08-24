@@ -4,6 +4,7 @@ from .activity import ActivityPage
 from .advanced import AdvancedPage
 from .ai import AIPage
 from .base import Context, Page
+from .health import HealthPage
 from .her import HerPage
 from .peek import PeekPage
 from .recaps import RecapsPage
@@ -18,6 +19,7 @@ PAGES = [
     PeekPage,
     RecapsPage,
     HerPage,
+    HealthPage,
     AdvancedPage,
 ]
 

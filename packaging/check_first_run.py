@@ -89,6 +89,44 @@ def check_launcher_is_async():
     print(f"launcher: returns in {elapsed:.3f}s and still reports a dead child")
 
 
+def check_health_page():
+    """The Health page must survive being refreshed twice — it rebuilds rows."""
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+    from in_detail.gui.main import SettingsWindow
+    from in_detail.gui import theme
+
+    app = QApplication.instance() or QApplication([])
+    app.setStyleSheet(theme.qss(True))
+    w = SettingsWindow(dark=True)
+    titles = [w._nav.item(i).text() for i in range(w._nav.count())]
+    assert "Health" in titles, f"Health page missing from the sidebar ({titles})"
+    page = w._stack.widget(titles.index("Health"))
+    page.on_show()
+    page.on_show()
+    print(f"health: page builds and re-runs; {len(page._checks)} checks")
+
+
+def check_late_token_starts_the_bot():
+    """A token pasted after startup must bring the bot up without a restart."""
+    import time
+    from in_detail import companion, config, settings
+
+    started = []
+    with mock.patch.object(companion, "_run", lambda: started.append("ran")):
+        companion._thread = None
+        with mock.patch.object(config, "DISCORD_BOT_TOKEN", ""):
+            companion.start()
+        assert started == [], "started a bot with no token"
+
+        with mock.patch.object(config, "DISCORD_BOT_TOKEN", "tok"):
+            companion.start()
+        time.sleep(0.3)
+    assert started == ["ran"], "a token pasted later never started the bot"
+    print("companion: a late token brings the bot online")
+
+
 if sys.platform.startswith("win"):
     from in_detail.app_win import WinApp
     check_first_run(WinApp, "windows")
@@ -98,4 +136,6 @@ else:
     check_first_run(InDetailApp, "macos")
 
 check_launcher_is_async()
+check_late_token_starts_the_bot()
+check_health_page()
 print("OK")

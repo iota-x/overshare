@@ -649,6 +649,13 @@ class InDetailApp(rumps.App):
         self._config_stamp = stamp
         config.reload()
         settings._cache = None       # her preferences may have changed too
+        # A bot token pasted into the settings window arrives long after
+        # companion.start() ran and found nothing. Without this the bot stays
+        # offline until the app is restarted, with no hint as to why.
+        try:
+            companion.start()
+        except Exception as e:
+            log.exception("companion: could not start after a config change", e)
         # The settings window can pause too, so adopt whatever it decided.
         if bool(settings.get("paused")) != self.paused:
             self.paused = bool(settings.get("paused"))
