@@ -29,7 +29,6 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    from . import settings
     her = settings.get("pet_name") or config.HER_NAME or "love"
     return random.choice([
         f"good morning {her} ☀️ hope you slept well",
@@ -98,7 +97,6 @@ class WinApp:
 
     # --- UI helpers ---------------------------------------------------------
     def _tooltip(self) -> str:
-        from . import settings
         accent = settings.get("mood_emoji") or "💌"
         if self.paused:
             return f"overshare — paused ({accent})"
@@ -146,7 +144,6 @@ class WinApp:
         self._refresh()
 
     def _set_mood(self, _icon, _item) -> None:
-        from . import settings
         val = self._ask("Mood", "Your mood / status (blank to clear):", settings.get("mood") or "")
         if val is not None:
             settings.set("mood", val.strip())
@@ -247,7 +244,6 @@ class WinApp:
         return (now.hour, now.minute) >= (hh, mm)
 
     def _maybe_daily_question(self) -> None:
-        from . import settings
         if not (settings.get("daily_question_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
             return
         today = _dt.date.today().isoformat()
@@ -267,7 +263,6 @@ class WinApp:
         self._screentime_text = (" · ".join(f"{k} {recap._hms(v)}" for k, v in apps))[:70]
 
     def _update_her_time(self) -> None:
-        from . import settings
         tz = settings.get("her_timezone")
         if not tz:
             self._hertime_text = "not set"
@@ -305,7 +300,6 @@ class WinApp:
             self._notify("📸 she's peeking", what)
 
     def _answer_peek(self, channel_id, source: str) -> None:
-        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
@@ -333,7 +327,6 @@ class WinApp:
             )
 
     def _answer_live(self, channel_id, source: str) -> None:
-        from . import settings
         if not config.PEEK_ENABLED:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
@@ -353,7 +346,6 @@ class WinApp:
         companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
 
     def _maybe_auto_selfie(self) -> None:
-        from . import settings
         if not (settings.get("selfie_enabled") and companion.enabled() and config.DISCORD_HOME_CHANNEL_ID):
             return
         today = _dt.date.today().isoformat()
@@ -364,7 +356,6 @@ class WinApp:
             threading.Thread(target=self._send_auto_selfie, daemon=True).start()
 
     def _send_auto_selfie(self) -> None:
-        from . import settings
         if not (config.PEEK_ENABLED and settings.peek_source_enabled("cam") and capture.webcam_available()):
             return
         path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))

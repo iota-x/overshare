@@ -49,6 +49,20 @@ jobs:
           AI_ENABLED: "false"
         run: python -m in_detail.selftest
 
+      # v1.2.0 shipped a tray app that crashed on the first line of __init__,
+      # because a function-local `from . import settings` shadowed the
+      # module-level one. Byte-compiling and the selftest both passed — nothing
+      # had ever constructed the class. So now something does.
+      - name: Start the menu-bar app
+        if: runner.os == 'macOS'
+        run: |
+          python -c "
+          from in_detail.app import InDetailApp
+          app = InDetailApp()
+          app.timer.stop()
+          print('menu-bar app constructs, paused =', app.paused)
+          "
+
       - name: Build the settings window
         # Offscreen Qt, so this works on a headless runner. Walks every page,
         # which is what catches a broken layout or a bad widget binding.
