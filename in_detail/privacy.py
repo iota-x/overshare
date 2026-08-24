@@ -30,6 +30,27 @@ _INCOGNITO_MARKERS = (
     "(private)",          # Firefox on some locales
 )
 
+# Built-in categories, so the common cases don't depend on anyone thinking to
+# type them. Each is a switch on the Privacy page; the free-text lists sit
+# alongside for whatever these miss.
+_PASSWORD_MANAGERS = (
+    "1password", "bitwarden", "keepass", "lastpass", "dashlane", "nordpass",
+    "proton pass", "protonpass", "keychain access", "enpass", "roboform",
+    "authy", "keeper password",
+)
+
+# Substring matches against the address, so "bank" covers hdfcbank, bankofamerica
+# and any local bank with the word in its domain. It will never be complete —
+# the Sites field exists for the rest.
+_FINANCE = (
+    "bank", "paypal", "stripe.com", "coinbase", "binance", "kraken.com",
+    "revolut", "monzo", "wise.com", "venmo", "cash.app", "chase.com",
+    "wellsfargo", "citi.com", "hsbc", "barclays", "santander", "amex.com",
+    "americanexpress", "schwab", "fidelity.com", "vanguard", "robinhood",
+    "etrade", "paytm", "phonepe", "razorpay", "zerodha", "groww.in",
+    "irs.gov", "hmrc", "turbotax", "quickbooks", "xero.com",
+)
+
 
 def _terms(raw: str) -> list[str]:
     return [t.strip().lower() for t in (raw or "").split(",") if t.strip()]
@@ -54,6 +75,16 @@ def is_private(snap: Snapshot) -> bool:
 
     # An app is matched on its name *and* its bundle id / exe, so "1password"
     # catches both "1Password 7" and "com.1password.1password".
+    if config.PRIVACY_HIDE_PASSWORDS and \
+            _hit((snap.app, snap.bundle_id), list(_PASSWORD_MANAGERS)):
+        return True
+    # Money shows up as a site far more often than as an app, but a desktop
+    # banking or tax client should be caught too.
+    if config.PRIVACY_HIDE_FINANCE and \
+            _hit((snap.url, snap.app, snap.tab_title), list(_FINANCE)):
+        return True
+
+    # Whatever the built-in categories miss.
     if _hit((snap.app, snap.bundle_id), _terms(config.PRIVACY_APPS)):
         return True
     if _hit((snap.url,), _terms(config.PRIVACY_SITES)):

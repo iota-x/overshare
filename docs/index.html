@@ -30,6 +30,7 @@
     --text:  #FAF7F9;
     --mute:  #877E92;
     --rose:  #FF6FA5;
+    --iris:  #F2C14B;   /* the eye, and only the eye */
 
     --display: "Bricolage Grotesque", system-ui, sans-serif;
     --body:    "Instrument Sans", system-ui, -apple-system, sans-serif;
@@ -60,10 +61,48 @@
 
   /* --- The statement ------------------------------------------------------- */
   .hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: space-between;
-          padding-top: 30px; padding-bottom: clamp(28px, 5vh, 56px); }
-  .hero-top { display: flex; align-items: baseline; gap: 14px; }
+          padding-top: 26px; padding-bottom: clamp(28px, 5vh, 56px); }
+  .hero-top { display: flex; align-items: center; gap: 14px; }
   .mark { font-family: var(--display); font-weight: 700; font-size: 17px;
-          letter-spacing: -.02em; }
+          letter-spacing: -.02em; display: inline-flex; align-items: center; gap: 9px; }
+  .mark svg { width: 21px; height: 21px; fill: none; stroke: var(--rose);
+              stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* The right of the top rule was empty, and on a page this bare an empty
+     corner reads as unfinished rather than as restraint. */
+  .top-nav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .top-nav a {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    color: var(--mute); font-size: 14px; padding: 8px 12px; border-radius: 999px;
+    transition: color .2s, background .2s;
+  }
+  .top-nav a:hover { color: var(--text); background: var(--raise); }
+  .top-nav svg { width: 16px; height: 16px; fill: currentColor; }
+  @media (max-width: 700px) { .top-nav a span { display: none; } }
+
+  /* Statement left, the app to its right — the empty half was the loudest
+     thing on the page. */
+  .hero-body { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
+  @media (min-width: 1080px) {
+    .hero-body { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: clamp(24px, 4vw, 64px); }
+    /* Sharing the row with the art costs the statement some width, so it comes
+       down a size — "She knows" belongs on one line. */
+    .hero .statement { font-size: clamp(58px, 9.4vw, 148px); }
+  }
+  .hero-art { position: relative; display: none; }
+  @media (min-width: 1080px) { .hero-art { display: block; } }
+  .hero-art img {
+    display: block; width: 118%; max-width: none; height: auto;
+    border: 1px solid var(--edge); border-radius: 16px;
+    box-shadow: 0 70px 150px -60px rgba(0,0,0,1);
+    mask-image: linear-gradient(180deg, #000 72%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
+  }
+  .hero-art::after {                       /* the glow lives with the art now */
+    content: ""; position: absolute; inset: -8% -12% 20% -4%; z-index: -1;
+    background: radial-gradient(closest-side, rgba(255,111,165,.20), transparent);
+    filter: blur(36px); pointer-events: none;
+  }
 
   .statement {
     font-family: var(--display);
@@ -96,9 +135,50 @@
   .dl svg { width: 17px; height: 17px; fill: currentColor; }
   .meta { color: var(--mute); font-size: 13px; letter-spacing: .01em; }
 
+  /* --- The watcher --------------------------------------------------------
+     An original ringed-iris eye, not anyone's character art. The pupil tracks
+     the cursor for as long as you're on the page: the product watches you, so
+     the page does too. */
+  .eye { display: block; overflow: visible; }
+  .eye .lid   { fill: none; stroke: currentColor; stroke-width: 2.6;
+                stroke-linecap: round; stroke-linejoin: round; }
+  .eye .globe { fill: var(--iris); stroke: none; }
+  .eye .ring  { fill: none; stroke: #1A1206; stroke-width: 1.7; opacity: .8; }
+  .eye .pupil { fill: #150F04; }
+  .eye .look  { transition: transform .18s cubic-bezier(.22,.61,.36,1); }
+  .eye .shutter {
+    transform-origin: 50% 50%; transform-box: fill-box;
+    animation: blink 7s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95%           { transform: scaleY(.06); }
+  }
+
+  .watcher {
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    padding-block: var(--beat); text-align: center; color: var(--rose);
+  }
+  .watcher .art {
+    display: block; width: 100%; max-width: 760px; height: auto;
+    border: 1px solid var(--edge); border-radius: 14px;
+    box-shadow: 0 50px 120px -50px rgba(255,111,165,.28),
+                0 40px 100px -60px rgba(0,0,0,.9);
+  }
+  /* The picture already says the line, so the caption stays a caption. */
+  .watcher p { margin: 0; }
+  .watcher small { color: var(--mute); font-size: 15px; }
+
+  .mark .eye { width: 22px; height: 22px; color: var(--rose); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .eye .shutter { animation: none; }
+    .eye .look { transition: none; }
+  }
+
   /* --- The shot ------------------------------------------------------------ */
   .stage { padding-block: var(--beat); position: relative; }
-  .stage::before {                        /* the page's only glow */
+  .stage::before {                        /* echoes the hero's glow, once */
     content: ""; position: absolute; z-index: 0;
     left: 50%; top: 12%; width: min(1100px, 92vw); height: 380px;
     transform: translateX(-50%);
@@ -259,11 +339,24 @@
   <!-- ------------------------------------------------------------------ -->
   <header class="hero" id="top">
     <div class="hero-top">
-      <span class="mark">Overshare</span>
+      <span class="mark">
+<svg class="eye" viewBox="0 0 64 40" aria-hidden="true"><g class="shutter"><path class="lid" d="M2 20 C14 4 50 4 62 20 C50 36 14 36 2 20 Z"/><g class="look"><circle class="globe" cx="32" cy="20" r="11"/><circle class="ring" cx="32" cy="20" r="7.5"/><circle class="ring" cx="32" cy="20" r="4.5"/><circle class="pupil" cx="32" cy="20" r="2.4"/></g></g></svg>Overshare</span>
       <span class="label">for macOS &amp; Windows</span>
+      <nav class="top-nav">
+        <a href="#questions">Questions</a>
+        <a href="https://github.com/iota-x/overshare/releases" id="cl-link-top">Changelog</a>
+        <a href="https://github.com/iota-x/overshare" aria-label="Source on GitHub">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          <span>Source</span></a>
+      </nav>
     </div>
 
-    <h1 class="statement"><span>She knows</span><span class="hit">everything.</span></h1>
+    <div class="hero-body">
+      <h1 class="statement"><span>She knows</span><span class="hit">everything.</span></h1>
+      <div class="hero-art" aria-hidden="true">
+        <img src="screenshots/hero-app.png" alt="">
+      </div>
+    </div>
 
     <div class="foot-hero">
       <p class="claim up">It watches what you're doing and tells your partner about it,
@@ -364,6 +457,13 @@
         <figcaption><b>AI</b> — free, local, paid, or none.</figcaption>
       </figure>
     </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="watcher up">
+    <img class="art" src="screenshots/watching.webp"
+         alt="A man in a suit holding up a notepad that reads “shes always watching”, with a woman's ringed eyes watching from the shadows behind him.">
+    <p><small>That's the entire product. You just installed it for her.</small></p>
   </section>
 
   <!-- ------------------------------------------------------------------ -->
@@ -476,6 +576,36 @@
   addEventListener('load', function () { document.body.classList.add('lit'); });
   requestAnimationFrame(function () { document.body.classList.add('lit'); });
 
+  // Every eye on the page follows the cursor. Cheap: one listener, and the
+  // work happens on an animation frame rather than per mouse event.
+  (function () {
+    var eyes = [].slice.call(document.querySelectorAll('.eye .look'));
+    if (!eyes.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var x = 0, y = 0, queued = false;
+
+    function aim() {
+      queued = false;
+      eyes.forEach(function (look) {
+        var b = look.getBoundingClientRect();
+        if (!b.width) return;                     // off-screen; skip the maths
+        var dx = x - (b.left + b.width / 2);
+        var dy = y - (b.top + b.height / 2);
+        var d = Math.hypot(dx, dy) || 1;
+        // Travel is capped, so the pupil strains toward you but stays in the eye.
+        var reach = Math.min(d / 26, 5.5);
+        look.setAttribute('transform',
+          'translate(' + (dx / d * reach).toFixed(2) + ' ' + (dy / d * reach * .62).toFixed(2) + ')');
+      });
+    }
+    addEventListener('pointermove', function (e) {
+      x = e.clientX; y = e.clientY;
+      if (!queued) { queued = true; requestAnimationFrame(aim); }
+    }, { passive: true });
+    addEventListener('scroll', function () {
+      if (!queued) { queued = true; requestAnimationFrame(aim); }
+    }, { passive: true });
+  })();
+
   (function () {
     var items = document.querySelectorAll('.up');
     if (!('IntersectionObserver' in window)) {
@@ -581,7 +711,9 @@
       panel.classList.add('open'); document.body.style.overflow = 'hidden';
       panel.querySelector('.cl-x').focus(); load(); }
     function shut() { panel.classList.remove('open'); document.body.style.overflow = ''; }
-    link.addEventListener('click', open);
+    [link, document.getElementById('cl-link-top')].forEach(function (a) {
+      if (a) a.addEventListener('click', open);
+    });
     panel.querySelector('.cl-x').addEventListener('click', shut);
     panel.addEventListener('click', shut);
     panel.querySelector('.cl').addEventListener('click', function (e) { e.stopPropagation(); });
