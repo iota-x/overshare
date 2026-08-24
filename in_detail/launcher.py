@@ -33,6 +33,27 @@ def is_open() -> bool:
     return _child is not None and _child.poll() is None
 
 
+def _let_child_take_focus(pid: int) -> None:
+    """Windows: hand the settings process our right to come to the front.
+
+    Windows refuses SetForegroundWindow to a process that isn't already the
+    foreground one — it's the anti-focus-stealing rule, and it applies to a
+    child we just spawned. So the window opened *behind* whatever the reader was
+    looking at, which on a settings window you opened deliberately reads as not
+    opening at all.
+
+    The tray process does hold the foreground right at this moment (the shell
+    grants it when its icon is clicked), and this passes that right along.
+    """
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+        ctypes.windll.user32.AllowSetForegroundWindow(pid)
+    except Exception as e:
+        log.exception("settings: could not hand over focus", e)
+
+
 def _watch(child: subprocess.Popen, on_fail) -> None:
     """Notice a child that dies on startup, and say so somewhere.
 
@@ -83,6 +104,7 @@ def open_settings(on_fail=None) -> None:
     cmd = _command()
     log.write("settings: launching", " ".join(cmd))
     _child = subprocess.Popen(cmd, env=env)
+    _let_child_take_focus(_child.pid)
     threading.Thread(target=_watch, args=(_child, on_fail), daemon=True).start()
 
 

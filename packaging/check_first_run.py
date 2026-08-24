@@ -91,6 +91,26 @@ def check_launcher_is_async():
     print(f"launcher: returns in {elapsed:.3f}s and still reports a dead child")
 
 
+def check_window_comes_forward():
+    """The settings window must end up shown, unminimised, and not left pinned."""
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    from in_detail.gui.main import SettingsWindow, _come_to_the_front
+    from in_detail.gui import theme
+
+    app = QApplication.instance() or QApplication([])
+    app.setStyleSheet(theme.qss(True))
+    w = SettingsWindow(dark=True)
+    _come_to_the_front(w)
+    assert w.isVisible(), "settings window never became visible"
+    assert not (w.windowState() & Qt.WindowState.WindowMinimized), "opened minimised"
+    assert not (w.windowFlags() & Qt.WindowType.WindowStaysOnTopHint), \
+        "left pinned above every other window"
+    print("window: comes forward, and isn't left on top")
+
+
 def check_health_page():
     """The Health page must survive being refreshed twice — it rebuilds rows."""
     import os
@@ -139,5 +159,6 @@ else:
 
 check_launcher_is_async()
 check_late_token_starts_the_bot()
+check_window_comes_forward()
 check_health_page()
 print("OK")

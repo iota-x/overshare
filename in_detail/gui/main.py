@@ -183,6 +183,39 @@ def _become_a_normal_app() -> None:
         pass
 
 
+def _come_to_the_front(window) -> None:
+    """Get this window in front of whatever the reader was looking at.
+
+    raise_() and activateWindow() are enough on macOS. On Windows they are not:
+    a process that isn't already in the foreground can't put itself there, and a
+    freshly spawned child never is. launcher._let_child_take_focus hands this
+    process the right on the way in; this then uses it.
+
+    The topmost flip is the belt-and-braces part — it works even when the
+    foreground right didn't survive the trip, and it's immediately undone so the
+    window doesn't sit pinned over everything.
+    """
+    window.setWindowState(
+        (window.windowState() & ~Qt.WindowState.WindowMinimized)
+        | Qt.WindowState.WindowActive)
+    window.show()
+    window.raise_()
+    window.activateWindow()
+
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        flags = window.windowFlags()
+        window.setWindowFlags(flags | Qt.WindowType.WindowStaysOnTopHint)
+        window.show()
+        window.setWindowFlags(flags)
+        window.show()
+        window.raise_()
+        window.activateWindow()
+    except Exception:
+        pass
+
+
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("Overshare")
@@ -207,9 +240,7 @@ def main() -> int:
             window.setGeometry(old.geometry())
             window.select_page(old.current_page())
         live["window"] = window
-        window.show()
-        window.raise_()
-        window.activateWindow()
+        _come_to_the_front(window)
         if old is not None:
             old.close()
             old.deleteLater()   # deferred, so we're not deleting mid-signal
