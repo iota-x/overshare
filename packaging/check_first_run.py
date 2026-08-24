@@ -267,6 +267,51 @@ def check_update_guardrails():
     print("updates: refuses bad hosts and bad checksums, keeps verified ones")
 
 
+def check_login_item():
+    """The login item must go on and off, and never resurrect a quit app."""
+    import tempfile
+    from pathlib import Path
+
+    from in_detail import startup
+
+    assert not startup.available(), "a source checkout offered a login item"
+
+    tmp = Path(tempfile.mkdtemp())
+    if sys.platform.startswith("win"):
+        exe = tmp / "Overshare.exe"
+        exe.write_text("stub")
+        env = {"APPDATA": str(tmp / "roaming")}
+    else:
+        exe = tmp / "Overshare.app" / "Contents" / "MacOS" / "Overshare"
+        exe.parent.mkdir(parents=True)
+        exe.write_text("stub")
+        env = {}
+
+    with mock.patch.object(sys, "frozen", True, create=True), \
+         mock.patch.object(sys, "executable", str(exe)), \
+         mock.patch.dict(os.environ, env):
+        assert startup.available(), "an installed build had no login item to offer"
+        if sys.platform.startswith("win"):
+            print("login item: offered on Windows (shortcut not written in CI)")
+            return
+
+        import plistlib
+        agent = startup._agent()
+        was = agent.exists()
+        backup = agent.read_bytes() if was else None
+        try:
+            assert startup.set_enabled(True) and startup.enabled()
+            data = plistlib.loads(agent.read_bytes())
+            assert data["RunAtLoad"] is True
+            assert "KeepAlive" not in data, \
+                "KeepAlive would restart the app after someone quits it"
+            assert startup.set_enabled(False) and not startup.enabled()
+        finally:
+            if backup is not None:
+                agent.write_bytes(backup)
+    print("login item: goes on and off, and won't resurrect a quit app")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -331,6 +376,7 @@ check_health_page()
 check_titles_toggle()
 check_no_duplicate_checks()
 check_update_guardrails()
+check_login_item()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

@@ -10,7 +10,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMessageBox,
                                QWidget)
 
-from ... import config, settings, uninstall, updates, version
+from ... import config, settings, startup, uninstall, updates, version
 from ..stores import CFG
 from ..probes import Prober
 from ..widgets import (Row, Switch, button, choice_row, text_row,
@@ -52,12 +52,25 @@ class AdvancedPage(Page):
         look.add_row(row)
 
         # --- Startup -------------------------------------------------------------
-        startup = self.add_card("Startup")
+        card = self.add_card("Startup")
+
+        # Windows ticked this at install time and gave you no way back; macOS
+        # never offered it at all. One switch, both platforms, changeable now
+        # rather than frozen at install.
+        if startup.available():
+            self._login = Switch(startup.enabled(), dark=dark)
+            self._login.toggled.connect(self._set_login_item)
+            card.add_row(Row(
+                "Start when I sign in",
+                "Opens on its own after a restart. Nothing is sent while it's "
+                "paused, so this is about being there, not about sharing more.",
+                self._login))
+
         row, _ = toggle_row(
             CFG, "START_PAUSED", "Start paused",
             "Launches asleep (😴 in the menu bar) until you un-pause it yourself.",
             dark=dark)
-        startup.add_row(row)
+        card.add_row(row)
 
         # --- Files ---------------------------------------------------------------
         files = self.add_card(
@@ -279,3 +292,11 @@ class AdvancedPage(Page):
             "Downloaded and checksum verified. The installer is opening — "
             "quit Overshare before running it.")
         updates.reveal(path)
+
+    def _set_login_item(self, on: bool) -> None:
+        if startup.set_enabled(on):
+            self.ctx.say("opens at sign-in" if on else "won't open at sign-in")
+            return
+        # Put the switch back rather than leaving it showing something untrue.
+        self._login.setChecked(startup.enabled())
+        self.ctx.say("couldn't change that — see the log")
