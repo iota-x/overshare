@@ -7,7 +7,7 @@ import sys
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from ... import config
-from ..stores import CFG
+from ..stores import CFG, RUNTIME
 from ..widgets import button, slider_row, toggle_row
 from .base import Page
 
@@ -34,6 +34,21 @@ class ActivityPage(Page):
 
     def build(self) -> None:
         dark = self.ctx.dark
+
+        # --- The master switch ----------------------------------------------
+        # Pausing used to be menu-bar-only and lived in memory, so it couldn't
+        # be reached from here and quietly resumed after a restart.
+        master = self.add_card(
+            "Sharing",
+            "The one switch that stops everything. She's told the updates "
+            "stopped, never what you were doing when they did.")
+        row, _ = toggle_row(
+            RUNTIME, "paused", "Pause sharing",
+            "Nothing goes out while this is on \u2014 no activity, no recaps, no "
+            "good-mornings. It stays paused until you turn it off, even if you "
+            "quit and reopen.",
+            dark=dark)
+        master.add_row(row)
 
         # --- What ---------------------------------------------------------------
         what = self.add_card("What gets shared")

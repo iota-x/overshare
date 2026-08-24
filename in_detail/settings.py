@@ -28,6 +28,10 @@ from . import config
 # daily_question_enabled/daily_question_time: a once-daily "question of the day".
 # her_timezone: IANA name (e.g. "America/New_York") to show her local time.
 _DEFAULTS = {
+    # Master switch. Lives here rather than in memory so the menu bar and the
+    # settings window always agree, and so a pause survives a restart — pausing
+    # then quitting should not quietly resume sharing tomorrow.
+    "paused": False,
     "card_destination": "channel",
     "tone": "default",
     "mood": "",

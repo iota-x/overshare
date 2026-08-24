@@ -53,7 +53,7 @@ def _load_icon() -> Image.Image:
 
 class WinApp:
     def __init__(self) -> None:
-        self.paused = config.START_PAUSED
+        self.paused = config.START_PAUSED or bool(settings.get("paused"))
         self.tracker = Tracker()
         self.day = history.load()
         self._ticks = 0
@@ -142,6 +142,7 @@ class WinApp:
     # --- menu callbacks -----------------------------------------------------
     def _toggle_pause(self, _icon, _item) -> None:
         self.paused = not self.paused
+        settings.set("paused", self.paused)
         self._refresh()
 
     def _set_mood(self, _icon, _item) -> None:
@@ -530,6 +531,9 @@ class WinApp:
         self._config_stamp = stamp
         config.reload()
         settings._cache = None       # her preferences may have changed too
+        # The settings window can pause too, so adopt whatever it decided.
+        if bool(settings.get("paused")) != self.paused:
+            self.paused = bool(settings.get("paused"))
         self._refresh()
 
     def _loop(self) -> None:

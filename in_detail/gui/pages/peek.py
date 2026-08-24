@@ -36,21 +36,35 @@ class PeekPage(Page):
             dark=dark)
         body.add_row(row)
 
-        row, _ = text_row(
-            CFG, "PRIVACY_APPS", "Apps",
-            "Comma separated, matched against the app's name and its bundle id \u2014 "
-            "so \u201c1password\u201d catches both.",
-            placeholder="1Password, Bitwarden, \u2026", stack=True)
+        row, _ = toggle_row(
+            CFG, "PRIVACY_HIDE_PASSWORDS", "Password managers",
+            "1Password, Bitwarden, KeePass, LastPass, Dashlane, Proton Pass, "
+            "Keychain Access and friends.",
+            dark=dark)
+        body.add_row(row)
+
+        row, _ = toggle_row(
+            CFG, "PRIVACY_HIDE_FINANCE", "Banking, money & tax",
+            "Banks, card issuers, brokers, crypto exchanges, payment apps and tax "
+            "sites. It can't know every bank in the world \u2014 add yours below if "
+            "it slips through.",
+            dark=dark)
         body.add_row(row)
 
         row, _ = text_row(
-            CFG, "PRIVACY_SITES", "Sites",
-            "Matched anywhere in the address \u2014 \u201cchase.com\u201d, or just \u201cbank\u201d.",
-            placeholder="chase.com, myclinic.org", stack=True)
+            CFG, "PRIVACY_APPS", "Also hide these apps",
+            "Comma separated, matched against the app's name and its bundle id.",
+            placeholder="Photos, Journal, \u2026", stack=True)
         body.add_row(row)
 
         row, _ = text_row(
-            CFG, "PRIVACY_WORDS", "Words in a title",
+            CFG, "PRIVACY_SITES", "\u2026 and these sites",
+            "Matched anywhere in the address \u2014 \u201cmyclinic.org\u201d, or just \u201cclinic\u201d.",
+            placeholder="myclinic.org, therapy", stack=True)
+        body.add_row(row)
+
+        row, _ = text_row(
+            CFG, "PRIVACY_WORDS", "\u2026 and any title containing",
             "Matched against window titles, tab titles and addresses. For a "
             "filename you'd rather wasn't announced.",
             placeholder="salary, diagnosis", stack=True)

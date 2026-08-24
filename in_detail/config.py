@@ -217,17 +217,18 @@ def _apply() -> None:
     # app reads your screen, and a password manager showing up in someone
     # else's chat is not a thing anyone should have to opt out of.
     g["PRIVACY_ENABLED"] = _get_bool("PRIVACY_ENABLED", True)
-    # Private/incognito windows, recognised by how browsers title them.
+    # Built-in categories. These are switches rather than lists you have to
+    # type, because the common cases shouldn't depend on anyone thinking of
+    # them — the lists in privacy.py hold what each one covers.
     g["PRIVACY_HIDE_INCOGNITO"] = _get_bool("PRIVACY_HIDE_INCOGNITO", True)
-    # Comma-separated, matched case-insensitively against the app name and its
-    # bundle id / exe.
-    g["PRIVACY_APPS"] = _get_str(
-        "PRIVACY_APPS",
-        "1Password,Bitwarden,KeePass,LastPass,Dashlane,Keychain Access,"
-        "Proton Pass,NordPass")
-    # Matched against the URL, so "chase.com" or just "bank" both work.
+    g["PRIVACY_HIDE_PASSWORDS"] = _get_bool("PRIVACY_HIDE_PASSWORDS", True)
+    g["PRIVACY_HIDE_FINANCE"] = _get_bool("PRIVACY_HIDE_FINANCE", True)
+
+    # Anything the categories above miss. All comma-separated and matched
+    # case-insensitively: apps against name and bundle id / exe, sites against
+    # the address, words against titles and the address.
+    g["PRIVACY_APPS"] = _get_str("PRIVACY_APPS", "")
     g["PRIVACY_SITES"] = _get_str("PRIVACY_SITES", "")
-    # Matched against window title, tab title and URL.
     g["PRIVACY_WORDS"] = _get_str("PRIVACY_WORDS", "")
     # What she sees instead.
     g["PRIVACY_LABEL"] = _get_str("PRIVACY_LABEL", "something private 🔒")

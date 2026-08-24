@@ -49,7 +49,7 @@ _PAUSED_ICON = "😴"
 class InDetailApp(rumps.App):
     def __init__(self) -> None:
         super().__init__(_ACTIVE_ICON, quit_button=None)
-        self.paused = config.START_PAUSED
+        self.paused = config.START_PAUSED or bool(settings.get("paused"))
         self.tracker = Tracker()
         self.day = history.load()
         self._ticks = 0
@@ -202,6 +202,7 @@ class InDetailApp(rumps.App):
     # --- menu callbacks -----------------------------------------------------
     def toggle_pause(self, _sender) -> None:
         self.paused = not self.paused
+        settings.set("paused", self.paused)
         self._apply_paused_ui()
 
     def toggle_camera(self, _sender) -> None:
@@ -635,6 +636,10 @@ class InDetailApp(rumps.App):
         self._config_stamp = stamp
         config.reload()
         settings._cache = None       # her preferences may have changed too
+        # The settings window can pause too, so adopt whatever it decided.
+        if bool(settings.get("paused")) != self.paused:
+            self.paused = bool(settings.get("paused"))
+            self._apply_paused_ui()
         self._sync_menu_states()
         if abs(self.timer.interval - config.POLL_INTERVAL) > 0.01:
             self.timer.interval = config.POLL_INTERVAL
