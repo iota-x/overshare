@@ -1,4 +1,4 @@
-"""Discord delivery — the webhook, and her DMs via the bot.
+"""Discord delivery — the webhook, and their DMs via the bot.
 
 This is the original sender, lifted out of notifier.py unchanged so the fan-out
 in __init__.py has something uniform to talk to.
@@ -49,7 +49,7 @@ def _post(payload: dict) -> bool:
 
 
 def send(content: str = "", embed: dict | None = None) -> bool:
-    """Send to wherever she's chosen: the channel, her DMs, or both."""
+    """Send to wherever they've chosen: the channel, their DMs, or both."""
     if not enabled():
         return False
     dest = settings.get("card_destination")  # channel | dm | both
@@ -62,11 +62,11 @@ def send(content: str = "", embed: dict | None = None) -> bool:
             payload["embeds"] = [embed]
         if payload:
             sent = _post(payload)
-    if dest in ("dm", "both") and config.HER_PRIMARY_ID:
+    if dest in ("dm", "both") and config.PARTNER_PRIMARY_ID:
         try:
             from .. import companion
             if companion.enabled():
-                companion.dm_user(config.HER_PRIMARY_ID, content, embed)
+                companion.dm_user(config.PARTNER_PRIMARY_ID, content, embed)
                 sent = True
         except Exception:
             pass

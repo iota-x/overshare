@@ -1,4 +1,4 @@
-"""Grab a still frame — webcam or screen — for her to peek at.
+"""Grab a still frame — webcam or screen — for your partner to peek at.
 
 macOS uses tiny external tools (no Python deps): `imagesnap` for the webcam,
 `screencapture` for the screen, `sips` to mirror a shot. Windows has no
@@ -32,7 +32,7 @@ _EXTRA_BINS = ("/opt/homebrew/bin", "/usr/local/bin")
 
 # Virtual cameras (OBS, etc.) register as capture devices and often become the
 # *default* imagesnap grabs — so a peek meant for the real Mac camera comes out
-# as OBS's canvas. Skip anything whose name looks virtual unless she's explicitly
+# as OBS's canvas. Skip anything whose name looks virtual unless it's explicitly
 # pinned it via the `camera_device` setting.
 _VIRTUAL_HINTS = ("obs", "virtual", "camtwist", "snap camera", "mmhmm", "e2esoft")
 
@@ -136,7 +136,7 @@ def list_cameras_mac() -> list[str]:
 
 
 def _preferred_camera() -> str:
-    """The camera name she's pinned via settings, or "" for auto-pick."""
+    """The camera name pinned via settings, or "" for auto-pick."""
     try:
         from . import settings
         return (settings.get("camera_device") or "").strip()

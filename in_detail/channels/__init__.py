@@ -34,7 +34,7 @@ def deliver(content: str = "", embed: dict | None = None) -> bool:
     """Send one card everywhere it should go. True if anywhere accepted it.
 
     A failure in one destination must not stop the others — losing Telegram
-    shouldn't cost her the Discord card too.
+    shouldn't cost them the Discord card too.
     """
     sent = False
     for channel in active():

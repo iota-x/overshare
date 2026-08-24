@@ -28,7 +28,7 @@ def _minutes(value: float) -> str:
 
 class ActivityPage(Page):
     title = "Activity"
-    blurb = "What she finds out about, and how quickly."
+    blurb = "What your partner finds out about, and how quickly."
     nav = "Activity"
     icon = "eye"
 
@@ -40,7 +40,7 @@ class ActivityPage(Page):
         # be reached from here and quietly resumed after a restart.
         master = self.add_card(
             "Sharing",
-            "The one switch that stops everything. She's told the updates "
+            "The one switch that stops everything. They're told the updates "
             "stopped, never what you were doing when they did.")
         row, _ = toggle_row(
             RUNTIME, "paused", "Pause sharing",
@@ -56,7 +56,7 @@ class ActivityPage(Page):
             CFG, "REPORT_TITLES", "Window and document titles",
             "The difference between “on Notion” and “on Notion — Q3 planning”. "
             "This is what reads the channel you're in on Discord, the document "
-            "you have open, the video you're watching. Turn it off and she gets "
+            "you have open, the video you're watching. Turn it off and they get "
             "the app name and nothing else.",
             dark=dark)
         what.add_row(row)
@@ -111,7 +111,7 @@ class ActivityPage(Page):
 
         row, self._sliders["MIN_GAP"] = slider_row(
             CFG, "MIN_GAP", "Wait between updates", 0.0, 60.0,
-            "A floor between messages, so a burst of switching doesn't flood her.",
+            "A floor between messages, so a burst of switching doesn't flood them.",
             step=1.0, suffix="s")
         pace.add_row(row)
 

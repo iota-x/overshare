@@ -35,12 +35,12 @@ _WORK_CATEGORIES = {"coding", "terminal"}
 
 
 def _good_morning_line() -> str:
-    her = settings.get("pet_name") or config.HER_NAME or "love"
+    name = settings.get("pet_name") or config.PARTNER_NAME or "love"
     return random.choice([
-        f"good morning {her} ☀️ hope you slept well",
-        f"morning {her} 🌅 thinking of you already",
+        f"good morning {name} ☀️ hope you slept well",
+        f"morning {name} 🌅 thinking of you already",
         f"gm my love ☀️ have the best day",
-        f"good morning {her} 💛 miss you",
+        f"good morning {name} 💛 miss you",
     ])
 
 _ACTIVE_ICON = "💌"
@@ -72,16 +72,16 @@ class InDetailApp(rumps.App):
         self.status_item.set_callback(None)  # display-only
         self.screentime_item = rumps.MenuItem("📊 Today: —")
         self.screentime_item.set_callback(None)
-        self.hertime_item = rumps.MenuItem("🕐 Her time: —")
+        self.hertime_item = rumps.MenuItem("🕐 Their time: —")
         self.hertime_item.set_callback(None)
         self.pause_item = rumps.MenuItem("Pause", callback=self.toggle_pause)
         self.send_item = rumps.MenuItem("Send update now", callback=self.send_now)
-        self.reply_item = rumps.MenuItem("Reply to her…", callback=self.reply_to_her)
+        self.reply_item = rumps.MenuItem("Reply to them…", callback=self.reply_to_her)
         self.mood_item = rumps.MenuItem("Set mood…", callback=self.set_mood)
         self.ask_item = rumps.MenuItem("Ask permission…", callback=self.ask_her_permission)
         self.recap_item = rumps.MenuItem("Send daily recap now", callback=self.recap_now)
         self.weekly_item = rumps.MenuItem("Send weekly wrap now", callback=self.weekly_now)
-        # Live privacy switches: whether she can pull a camera / screen view.
+        # Live privacy switches: whether they can pull a camera / screen view.
         # Checkmark = allowed. config.PEEK_ENABLED is the master off-switch.
         self.camera_item = rumps.MenuItem("Allow camera peeks", callback=self.toggle_camera)
         self.screen_item = rumps.MenuItem("Allow screen peeks", callback=self.toggle_screen)
@@ -252,7 +252,7 @@ class InDetailApp(rumps.App):
         def fire(timer) -> None:
             timer.stop()
             self._reminders.discard(timer)
-            self._notify("💛 from her", "", message)
+            self._notify("💛 from them", "", message)
             self._flash()
 
         timer = rumps.Timer(fire, seconds)
@@ -280,7 +280,7 @@ class InDetailApp(rumps.App):
             NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
         except Exception:
             pass
-        win = rumps.Window(message="Send a message to her:", title="Reply",
+        win = rumps.Window(message="Send a message to them:", title="Reply",
                            ok="Send", cancel="Cancel", dimensions=(320, 90))
         resp = win.run()
         if resp.clicked and resp.text.strip():
@@ -295,7 +295,7 @@ class InDetailApp(rumps.App):
             NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
         except Exception:
             pass
-        win = rumps.Window(message="What do you want to ask her permission for?",
+        win = rumps.Window(message="What do you want to ask permission for?",
                            title="Ask permission", ok="Ask", cancel="Cancel",
                            dimensions=(320, 90))
         resp = win.run()
@@ -303,7 +303,7 @@ class InDetailApp(rumps.App):
             asked = resp.text.strip()
             companion.ask_permission(config.DISCORD_HOME_CHANNEL_ID, asked)
             self.day.permissions_asked += 1
-            self._notify("🙏 asked her", "", asked)
+            self._notify("🙏 asked them", "", asked)
             self._flash()
 
     def set_mood(self, _sender) -> None:
@@ -348,9 +348,9 @@ class InDetailApp(rumps.App):
         companion.reply_text(channel_id, t)
 
     def _peek_ping(self, what: str) -> None:
-        """Let him know she's looking (unless he turned notices off)."""
+        """Say that they're looking, unless the notices were turned off."""
         if config.PEEK_NOTIFY:
-            self._notify("📸 she's peeking", "", what)
+            self._notify("📸 they're peeking", "", what)
             self._flash()
 
     def _answer_peek(self, channel_id, source: str) -> None:
@@ -365,11 +365,11 @@ class InDetailApp(rumps.App):
             if not capture.webcam_available():
                 companion.reply_text(channel_id, "no camera tool set up on his end 😔")
                 return
-            self._peek_ping("she asked for a webcam photo")
+            self._peek_ping("they asked for a webcam photo")
             path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
             caption = "📸 caught him 🤳"
         else:
-            self._peek_ping("she asked for a screenshot")
+            self._peek_ping("they asked for a screenshot")
             path = capture.snap_screen()
             caption = "🖥️ his screen right now"
         if path:
@@ -396,7 +396,7 @@ class InDetailApp(rumps.App):
             grab = lambda: capture.snap_webcam(mirror=_mirror)
         else:
             grab = capture.snap_screen
-        self._peek_ping(f"she started a live {'camera' if source == 'cam' else 'screen'} view")
+        self._peek_ping(f"they started a live {'camera' if source == 'cam' else 'screen'} view")
         companion.live_feed(channel_id, grab, config.LIVE_SECONDS, config.LIVE_INTERVAL)
 
     def _maybe_good_morning(self) -> None:
@@ -466,14 +466,14 @@ class InDetailApp(rumps.App):
     def _update_her_time(self) -> None:
         tz = settings.get("her_timezone")
         if not tz:
-            self.hertime_item.title = "🕐 Her time: not set"
+            self.hertime_item.title = "🕐 Their time: not set"
             return
         try:
             from zoneinfo import ZoneInfo
             now = _dt.datetime.now(ZoneInfo(tz))
-            self.hertime_item.title = f"🕐 Her time: {now.strftime('%-I:%M %p').lower()}"
+            self.hertime_item.title = f"🕐 Their time: {now.strftime('%-I:%M %p').lower()}"
         except Exception:
-            self.hertime_item.title = "🕐 Her time: invalid timezone"
+            self.hertime_item.title = "🕐 Their time: invalid timezone"
 
     # --- daily recap --------------------------------------------------------
     def _rollover_if_new_day(self) -> None:
@@ -547,7 +547,7 @@ class InDetailApp(rumps.App):
             self._all_yours_date = today
 
     def _drain_companion(self) -> None:
-        """Handle her incoming messages/reactions (runs even while paused)."""
+        """Handle their incoming messages/reactions (runs even while paused)."""
         while True:
             try:
                 kind, payload = companion.events.get_nowait()
@@ -555,11 +555,11 @@ class InDetailApp(rumps.App):
                 break
             if kind == "message":
                 name, text = payload
-                self.day.messages_from_her += 1
+                self.day.messages_from_partner += 1
                 self._notify(f"💌 {name}", "", text)
                 self._flash()
             elif kind == "reaction":
-                self._notify("💛 she reacted", "", str(payload))
+                self._notify("💛 they reacted", "", str(payload))
                 self._flash()
             elif kind == "poke":
                 self.day.pokes += 1
@@ -567,7 +567,7 @@ class InDetailApp(rumps.App):
                 self._flash()
             elif kind == "miss":
                 self.day.pokes += 1
-                self._notify("🥺 she misses you", "", f"{payload} misses you")
+                self._notify("🥺 they miss you", "", f"{payload} misses you")
                 self._flash()
             elif kind == "callme":
                 self.day.pokes += 1
@@ -602,7 +602,7 @@ class InDetailApp(rumps.App):
                 self._flash()
             elif kind == "say":
                 _cid, spoken = payload
-                self._notify("🔊 she said", "", spoken)
+                self._notify("🔊 they said", "", spoken)
                 self._flash()
                 # Speaking blocks until done, so keep it off the main loop.
                 threading.Thread(target=self._say_aloud, args=(spoken,), daemon=True).start()
@@ -613,7 +613,7 @@ class InDetailApp(rumps.App):
                 approved, asked = payload
                 if approved:
                     self.day.permissions_approved += 1
-                title = "✅ she said yes" if approved else "❌ she said no"
+                title = "✅ they said yes" if approved else "❌ they said no"
                 self._notify(title, "", asked)
                 self._flash()
             elif kind == "cmd_activity":
@@ -648,7 +648,7 @@ class InDetailApp(rumps.App):
             return
         self._config_stamp = stamp
         config.reload()
-        settings._cache = None       # her preferences may have changed too
+        settings._cache = None       # their preferences may have changed too
         # A bot token pasted into the settings window arrives long after
         # companion.start() ran and found nothing. Without this the bot stays
         # offline until the app is restarted, with no hint as to why.
@@ -685,7 +685,7 @@ class InDetailApp(rumps.App):
             self._update_screentime()
             self._update_her_time()
 
-        # Bot presence (throttled) + scheduled good-morning to her.
+        # Bot presence (throttled) + scheduled good-morning to them.
         if companion.enabled():
             if self._ticks % 10 == 0 and snap.idle_seconds < config.IDLE_THRESHOLD:
                 companion.set_presence(self._presence_label(snap))

@@ -64,14 +64,14 @@ def _stats_text(log: DailyLog) -> str:
     if log.tracks:
         parts.append(f"had music on for a while ({len(log.tracks)} tracks)")
     if log.love_score():
-        parts.append(f"she reached out {log.pokes + log.messages_from_her + log.peeks} times today")
+        parts.append(f"they reached out {log.pokes + log.messages_from_partner + log.peeks} times today")
     return "\n".join(parts)
 
 
 def _love_line(log: DailyLog) -> str:
     bits = []
-    if log.messages_from_her:
-        bits.append(f"{log.messages_from_her} msg" + ("s" if log.messages_from_her != 1 else ""))
+    if log.messages_from_partner:
+        bits.append(f"{log.messages_from_partner} msg" + ("s" if log.messages_from_partner != 1 else ""))
     if log.pokes:
         bits.append(f"{log.pokes} poke" + ("s" if log.pokes != 1 else ""))
     if log.peeks:
@@ -161,7 +161,7 @@ def catch_up(max_days: int = 3) -> int:
 
     So on startup, sweep the last few days and send anything that ended unposted.
     Only the most recent is actually sent — coming back from a week away
-    shouldn't dump seven cards in her channel — but the others are marked too,
+    shouldn't dump seven cards in their channel — but the others are marked too,
     so they can't pile up and arrive as a batch weeks later.
 
     Returns how many were sent (0 or 1).

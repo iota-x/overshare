@@ -165,7 +165,7 @@ def find_telegram_chat(token: str) -> Result:
 def check_bot_token(token: str) -> Result:
     token = (token or "").strip()
     if not token:
-        return Result(True, "Not set — send-only mode (she can't reply)")
+        return Result(True, "Not set — send-only mode (they can't reply)")
     try:
         r = requests.get(
             "https://discord.com/api/v10/users/@me",

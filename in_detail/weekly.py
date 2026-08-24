@@ -70,7 +70,7 @@ def _aggregate(logs: list[DailyLog]) -> dict:
     agg = {
         "active": 0.0, "by_app": {}, "youtube": {}, "sites": {}, "tracks": {},
         "days_active": 0, "late_nights": 0,
-        "pokes": 0, "messages_from_her": 0, "peeks": 0,
+        "pokes": 0, "messages_from_partner": 0, "peeks": 0,
         "permissions_asked": 0, "permissions_approved": 0,
     }
     for log in logs:
@@ -83,7 +83,7 @@ def _aggregate(logs: list[DailyLog]) -> dict:
         _merge(agg["sites"], log.sites)
         _merge(agg["tracks"], log.tracks)
         agg["pokes"] += log.pokes
-        agg["messages_from_her"] += log.messages_from_her
+        agg["messages_from_partner"] += log.messages_from_partner
         agg["peeks"] += log.peeks
         agg["permissions_asked"] += log.permissions_asked
         agg["permissions_approved"] += log.permissions_approved
@@ -97,7 +97,7 @@ def _aggregate(logs: list[DailyLog]) -> dict:
 
 
 def _love_score(agg: dict) -> int:
-    return agg["pokes"] * 2 + agg["messages_from_her"] * 3 + agg["peeks"] + agg["permissions_approved"] * 2
+    return agg["pokes"] * 2 + agg["messages_from_partner"] * 3 + agg["peeks"] + agg["permissions_approved"] * 2
 
 
 def _stats_text(agg: dict, missing: int = 0) -> str:
@@ -110,7 +110,7 @@ def _stats_text(agg: dict, missing: int = 0) -> str:
                      f"totals below cover only the days that were logged, so don't "
                      f"describe the week as quiet or lazy")
     if _love_score(agg):
-        parts.append(f"she reached out {agg['pokes'] + agg['messages_from_her'] + agg['peeks']} times this week")
+        parts.append(f"they reached out {agg['pokes'] + agg['messages_from_partner'] + agg['peeks']} times this week")
     apps = _top(agg["by_app"], 3)
     if apps:
         parts.append("top apps: " + ", ".join(f"{k} {_hms(v)}" for k, v in apps))
@@ -143,8 +143,8 @@ def build_message(logs: list[DailyLog], missing: int = 0,
                        "value": f"{missing} day(s) had no saved data", "inline": True})
     if _love_score(agg):
         love_bits = []
-        if agg["messages_from_her"]:
-            love_bits.append(f"{agg['messages_from_her']} messages")
+        if agg["messages_from_partner"]:
+            love_bits.append(f"{agg['messages_from_partner']} messages")
         if agg["pokes"]:
             love_bits.append(f"{agg['pokes']} pokes")
         if agg["peeks"]:

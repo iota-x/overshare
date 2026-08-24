@@ -50,7 +50,7 @@ def _speak_win(text: str, voice: str | None) -> bool:
         return False
     # The text/voice are passed as trailing process arguments, bound to $args
     # inside the script — never string-interpolated into the script itself, so
-    # there's no way for her message to be parsed as PowerShell code.
+    # there's no way for their message to be parsed as PowerShell code.
     script = (
         "Add-Type -AssemblyName System.Speech; "
         "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "

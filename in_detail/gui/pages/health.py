@@ -54,7 +54,7 @@ class _Line(QWidget):
 
 class HealthPage(Page):
     title = "Health"
-    blurb = "Everything that has to be true for an update to reach her."
+    blurb = "Everything that has to be true for an update to reach your partner."
     nav = "Health"
     icon = "sliders"
 
@@ -154,7 +154,7 @@ class HealthPage(Page):
             self._invite_btn.setEnabled(True)
         else:
             self._invite_label.setText(
-                "Paste a bot token on the Her page and this fills itself in.")
+                "Paste a bot token on the Partner page and this fills itself in.")
             self._invite_btn.setEnabled(False)
 
         lines = log.tail(10)

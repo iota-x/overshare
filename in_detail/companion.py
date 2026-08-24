@@ -1,6 +1,6 @@
 """The two-way half: a Discord bot that listens AND talks.
 
-Incoming (her → your Mac): messages, reactions, and commands become events the
+Incoming (partner → your machine): messages, reactions, and commands become events the
 menubar app drains on the main thread.
 Outgoing (your Mac → Discord): the app calls reply_text/reply_embed/set_presence,
 which are scheduled onto the bot's asyncio loop from any thread.
@@ -17,7 +17,7 @@ from . import config
 # (kind, payload) events for the app to drain on the main thread.
 events: "queue.Queue[tuple[str, object]]" = queue.Queue()
 
-# Open permission requests: her-facing card message_id -> what he asked for. She
+# Open permission requests: partner-facing card message_id -> what was asked for. Your partner
 # resolves one by reacting ✅/❌ on the card (or `!yes` / `!no` for the latest).
 _pending_perms: "dict[int, str]" = {}
 
@@ -120,9 +120,9 @@ def _in_channel(channel_id) -> bool:
 
 
 def _is_her(user_id) -> bool:
-    if not config.HER_USER_IDS:
+    if not config.PARTNER_USER_IDS:
         return True
-    return str(user_id) in config.HER_USER_IDS
+    return str(user_id) in config.PARTNER_USER_IDS
 
 
 # --- Outgoing (called from the app, any thread) -----------------------------
@@ -252,7 +252,7 @@ def dm_user(user_id, content: str = "", embed: dict | None = None) -> None:
 
 
 async def _ask_permission(channel_id, text: str) -> None:
-    """Post a request card she can approve/deny, and remember it for matching."""
+    """Post a request card they can approve/deny, and remember it for matching."""
     import discord
     try:
         ch = _client.get_channel(int(channel_id)) or await _client.fetch_channel(int(channel_id))
@@ -274,7 +274,7 @@ async def _ask_permission(channel_id, text: str) -> None:
 
 
 def ask_permission(channel_id, text: str) -> None:
-    """He asks her for permission to do something (from the menu bar)."""
+    """Ask your partner for permission to do something (from the menu bar)."""
     if channel_id and text:
         _schedule(_ask_permission(channel_id, text))
 

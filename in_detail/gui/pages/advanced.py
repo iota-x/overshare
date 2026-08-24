@@ -104,7 +104,7 @@ class AdvancedPage(Page):
         if uninstall.available():
             gone = self.add_card(
                 "Uninstall",
-                "Removes Overshare from this computer. She stops hearing "
+                "Removes Overshare from this computer. They stop hearing "
                 "anything the moment it closes.")
             self._wipe = QCheckBox("Also delete my settings and history")
             self._wipe.setObjectName("RowHelp")

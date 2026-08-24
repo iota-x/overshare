@@ -36,7 +36,7 @@ def _delivery() -> list[Check]:
     if not hook:
         out.append(Check(
             "Discord webhook", "bad", "not set",
-            "Setup → paste a webhook link. This is where her cards go.",
+            "Setup → paste a webhook link. This is where their cards go.",
             critical=True))
     elif not hook.startswith("https://"):
         out.append(Check("Discord webhook", "bad", "doesn't look like a URL",
@@ -102,7 +102,7 @@ def _activity() -> list[Check]:
             title = snap.tab_title or snap.window_title
             if not config.REPORT_TITLES:
                 out.append(Check("Titles", "off",
-                                 "turned off — she gets app names only",
+                                 "turned off — they get app names only",
                                  "Activity → Window and document titles."))
             elif title:
                 out.append(Check("Titles", "good", title[:70]))
@@ -167,8 +167,8 @@ def _bot() -> list[Check]:
 
     token = (config.DISCORD_BOT_TOKEN or "").strip()
     if not token:
-        return [Check("Her replies", "off",
-                      "no bot token — she can read cards but not reply. Optional.")]
+        return [Check("Their replies", "off",
+                      "no bot token — they can read cards but not reply. Optional.")]
 
     out = [Check("Bot token", "good", "set")]
 
@@ -187,8 +187,8 @@ def _bot() -> list[Check]:
         out.append(Check("Bot token", "warn", "doesn't look like a bot token",
                          "Bot tab → Reset Token, then copy the whole thing."))
     if not str(config.DISCORD_HOME_CHANNEL_ID or "").strip():
-        out.append(Check("Her channel", "warn", "no channel id",
-                         "Her → paste the channel the bot should listen in."))
+        out.append(Check("Their channel", "warn", "no channel id",
+                         "Partner → paste the channel the bot should listen in."))
     # There is no way to see the portal's intent switches from here, so this is
     # stated rather than measured — it's the single most common reason a bot
     # connects and then ignores every command.
