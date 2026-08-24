@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as _dt
 import json
 
-from . import config, notifier, sites, summarizer
+from . import config, notifier, sites, summarizer, timefmt
 from .history import DailyLog, load as _load_day
 from .recap import _hms, _top
 
@@ -128,7 +128,7 @@ def build_message(logs: list[DailyLog], missing: int = 0,
 
     end = end or _dt.date.today()
     start = end - _dt.timedelta(days=6)
-    span = f"{start.strftime('%b %-d')} – {end.strftime('%b %-d')}".lower()
+    span = f"{timefmt.day(start)} – {timefmt.day(end)}"
 
     def _lines(items, fmt):
         return "\n".join(fmt(k, v) for k, v in items) or "—"

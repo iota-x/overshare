@@ -15,7 +15,7 @@ import rumps
 
 import random
 
-from . import config
+from . import config, timefmt
 from . import capture
 from . import collectors
 from . import companion
@@ -358,20 +358,20 @@ class InDetailApp(rumps.App):
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
         if not settings.peek_source_enabled(source):
-            off = "his camera is" if source == "cam" else "screen sharing is"
+            off = "their camera is" if source == "cam" else "screen sharing is"
             companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam":
             if not capture.webcam_available():
-                companion.reply_text(channel_id, "no camera tool set up on his end 😔")
+                companion.reply_text(channel_id, "no camera tool set up on their end 😔")
                 return
             self._peek_ping("they asked for a webcam photo")
             path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
-            caption = "📸 caught him 🤳"
+            caption = "📸 caught them 🤳"
         else:
             self._peek_ping("they asked for a screenshot")
             path = capture.snap_screen()
-            caption = "🖥️ his screen right now"
+            caption = "🖥️ their screen right now"
         if path:
             companion.reply_file(channel_id, path, content=caption)
         else:
@@ -385,11 +385,11 @@ class InDetailApp(rumps.App):
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
         if not settings.peek_source_enabled(source):
-            off = "his camera is" if source == "cam" else "screen sharing is"
+            off = "their camera is" if source == "cam" else "screen sharing is"
             companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam" and not capture.webcam_available():
-            companion.reply_text(channel_id, "no camera tool set up on his end 😔")
+            companion.reply_text(channel_id, "no camera tool set up on their end 😔")
             return
         if source == "cam":
             _mirror = bool(settings.get("mirror_capture"))
@@ -471,7 +471,7 @@ class InDetailApp(rumps.App):
         try:
             from zoneinfo import ZoneInfo
             now = _dt.datetime.now(ZoneInfo(tz))
-            self.hertime_item.title = f"🕐 Their time: {now.strftime('%-I:%M %p').lower()}"
+            self.hertime_item.title = f"🕐 Their time: {timefmt.clock(now)}"
         except Exception:
             self.hertime_item.title = "🕐 Their time: invalid timezone"
 

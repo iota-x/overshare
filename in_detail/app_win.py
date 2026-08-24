@@ -21,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import capture, config, collectors, companion, history, log, notifier, questions, recap, settings, sites, sound, weekly
+from . import capture, config, collectors, companion, history, log, notifier, questions, recap, settings, sites, sound, weekly, timefmt
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -281,7 +281,7 @@ class WinApp:
         try:
             from zoneinfo import ZoneInfo
             now = _dt.datetime.now(ZoneInfo(tz))
-            self._hertime_text = now.strftime("%-I:%M %p").lower()
+            self._hertime_text = timefmt.clock(now)
         except Exception:
             self._hertime_text = "invalid timezone"
 
@@ -315,20 +315,20 @@ class WinApp:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
         if not settings.peek_source_enabled(source):
-            off = "his camera is" if source == "cam" else "screen sharing is"
+            off = "their camera is" if source == "cam" else "screen sharing is"
             companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam":
             if not capture.webcam_available():
-                companion.reply_text(channel_id, "no camera set up on his end 😔")
+                companion.reply_text(channel_id, "no camera set up on their end 😔")
                 return
             self._peek_ping("they asked for a webcam photo")
             path = capture.snap_webcam(mirror=bool(settings.get("mirror_capture")))
-            caption = "📸 caught him 🤳"
+            caption = "📸 caught them 🤳"
         else:
             self._peek_ping("they asked for a screenshot")
             path = capture.snap_screen()
-            caption = "🖥️ his screen right now"
+            caption = "🖥️ their screen right now"
         if path:
             companion.reply_file(channel_id, path, content=caption)
         else:
@@ -342,11 +342,11 @@ class WinApp:
             companion.reply_text(channel_id, "peeking is turned off right now 🤍")
             return
         if not settings.peek_source_enabled(source):
-            off = "his camera is" if source == "cam" else "screen sharing is"
+            off = "their camera is" if source == "cam" else "screen sharing is"
             companion.reply_text(channel_id, f"{off} turned off right now 🤍")
             return
         if source == "cam" and not capture.webcam_available():
-            companion.reply_text(channel_id, "no camera set up on his end 😔")
+            companion.reply_text(channel_id, "no camera set up on their end 😔")
             return
         if source == "cam":
             _mirror = bool(settings.get("mirror_capture"))

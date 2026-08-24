@@ -63,6 +63,12 @@ jobs:
           print('menu-bar app constructs, paused =', app.paused)
           "
 
+      # `%-I` is a glibc extension. It sat in notifier._timestamp(), in the
+      # path of every update, so Windows raised ValueError on every send for
+      # four releases — invisible, because the poll loop swallowed it.
+      - name: No platform-specific formats, no gendered pronouns
+        run: python packaging/check_portable.py
+
       # v1.2.x installed, started, and then sat in the tray with no window and
       # no way to reach one. Constructing the class wasn't enough to catch it —
       # nothing exercised the path a new user actually takes.
