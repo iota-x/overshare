@@ -149,3 +149,46 @@ def worth_finalizing(log: DailyLog) -> bool:
         and not log.recap_posted
         and log.active_minutes() >= config.RECAP_MIN_MINUTES
     )
+
+
+def catch_up(max_days: int = 3) -> int:
+    """Post recaps for days that ended while the app wasn't running.
+
+    The normal path finalises a day when the clock rolls past midnight *with the
+    app open*. That mostly holds on a Mac, which sleeps rather than shuts down —
+    but a Windows machine gets switched off for the night, so the rollover never
+    happens and yesterday's recap is simply lost. Nothing looks at that log again.
+
+    So on startup, sweep the last few days and send anything that ended unposted.
+    Only the most recent is actually sent — coming back from a week away
+    shouldn't dump seven cards in her channel — but the others are marked too,
+    so they can't pile up and arrive as a batch weeks later.
+
+    Returns how many were sent (0 or 1).
+    """
+    if not config.RECAP_ENABLED:
+        return 0
+
+    today = _dt.date.today()
+    pending: list[DailyLog] = []
+    for i in range(1, max_days + 1):
+        day = (today - _dt.timedelta(days=i)).isoformat()
+        if not (config.DATA_DIR / f"day-{day}.json").exists():
+            continue
+        log = _load_day(day)
+        if worth_finalizing(log):
+            pending.append(log)
+
+    if not pending:
+        return 0
+
+    pending.sort(key=lambda l: l.date, reverse=True)   # newest first
+    newest, older = pending[0], pending[1:]
+
+    for log in older:            # too stale to be worth sending; retire quietly
+        log.recap_posted = True
+        history.save(log)
+
+    newest.recap_posted = True   # mark before sending, so a crash can't double-post
+    history.save(newest)
+    return 1 if post(newest) else 0

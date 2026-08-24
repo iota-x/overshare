@@ -122,7 +122,22 @@
 
   footer {
     border-top: 1px solid var(--border); margin-top: 40px;
-    padding: 30px 0 60px; text-align: center; color: var(--muted); font-size: 13.5px;
+    padding: 26px 0 64px; color: var(--muted); font-size: 14px;
+  }
+  .foot-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+  }
+  .foot-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  /* The separators are decoration, so keep them out of the reading order. */
+  .foot-links span { color: var(--border); user-select: none; }
+  footer a { color: var(--muted); text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+  footer a:hover { color: var(--text); background: var(--surface-alt); }
+  .built a { color: var(--text); padding: 0; }
+  .built a:hover { color: var(--accent); background: none; }
+
+  @media (max-width: 640px) {
+    .foot-row { justify-content: center; text-align: center; }
   }
 
   @media (max-width: 760px) {
@@ -235,13 +250,20 @@
   </section>
 
   <footer>
-    <p>
-      <a href="https://github.com/iota-x/overshare">GitHub</a> ·
-      <a href="https://github.com/iota-x/overshare/releases">All releases</a> ·
-      <a href="https://github.com/iota-x/overshare/issues">Report a bug</a> ·
-      <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">MIT</a>
-    </p>
-    <p>Built because someone said “you never tell me anything”. 💛</p>
+    <div class="foot-row">
+      <div class="built">Built by <a href="https://github.com/iota-x">iota</a></div>
+      <nav class="foot-links">
+        <a href="https://github.com/iota-x/overshare">About</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/issues">Support</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare#privacy">Privacy</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/blob/main/LICENSE">Terms</a>
+        <span>·</span>
+        <a href="https://github.com/iota-x/overshare/releases">Changelog</a>
+      </nav>
+    </div>
   </footer>
 </div>
 

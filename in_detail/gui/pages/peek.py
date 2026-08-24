@@ -11,7 +11,8 @@ class PeekPage(Page):
     title = "Camera & screen"
     blurb = ("She can ask for a webcam photo or a screenshot on demand. These are "
              "the switches that decide whether that's possible at all.")
-    nav = "🔒  Privacy"
+    nav = "Privacy"
+    icon = "lock"
 
     def build(self) -> None:
         dark = self.ctx.dark

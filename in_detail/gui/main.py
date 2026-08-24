@@ -12,7 +12,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
     QApplication, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import config
-from . import theme
+from . import icons, theme
 from .pages import PAGES, Context
 
 _WINDOW_MIN = (940, 660)
@@ -35,6 +35,16 @@ def _prefers_dark() -> bool:
         return False
 
 
+def _use_dark() -> bool:
+    """The theme actually in force: the user's choice, or the system's."""
+    choice = str(getattr(config, "UI_THEME", "system") or "system").lower()
+    if choice == "dark":
+        return True
+    if choice == "light":
+        return False
+    return _prefers_dark()
+
+
 def _icon() -> QIcon:
     """The app icon, from the bundle when frozen and the repo when not."""
     root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
@@ -46,13 +56,13 @@ def _icon() -> QIcon:
 
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, dark: bool):
+    def __init__(self, dark: bool, retheme=None):
         super().__init__()
         self.setWindowTitle("Overshare")
         self.setMinimumSize(*_WINDOW_MIN)
         self.setWindowIcon(_icon())
 
-        self.ctx = Context(dark=dark, status=self._say)
+        self.ctx = Context(dark=dark, status=self._say, retheme=retheme)
 
         root = QWidget()
         self.setCentralWidget(root)
@@ -74,6 +84,8 @@ class SettingsWindow(QMainWindow):
             page = page_class(self.ctx)
             self._stack.addWidget(page)
             item = QListWidgetItem(page_class.nav or page_class.title)
+            if page_class.icon:
+                item.setIcon(icons.icon(page_class.icon, dark))
             self._nav.addItem(item)
 
         self._nav.currentRowChanged.connect(self._switch_page)
@@ -92,7 +104,7 @@ class SettingsWindow(QMainWindow):
         column.setContentsMargins(0, 20, 0, 12)
         column.setSpacing(0)
 
-        mark = QLabel("Overshare 💌")
+        mark = QLabel("Overshare")
         mark.setObjectName("WordMark")
         mark.setContentsMargins(18, 0, 18, 0)
         column.addWidget(mark)
@@ -105,6 +117,7 @@ class SettingsWindow(QMainWindow):
 
         self._nav = QListWidget()
         self._nav.setObjectName("NavList")
+        self._nav.setIconSize(QSize(19, 19))
         self._nav.setFrameShape(QListWidget.Shape.NoFrame)
         self._nav.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         column.addWidget(self._nav, 1)
@@ -125,6 +138,14 @@ class SettingsWindow(QMainWindow):
         return bar
 
     # --- behaviour --------------------------------------------------------------
+    def current_page(self) -> int:
+        return self._nav.currentRow()
+
+    def select_page(self, index: int) -> None:
+        """Keep the reader where they were across a theme rebuild."""
+        if 0 <= index < self._nav.count():
+            self._nav.setCurrentRow(index)
+
     def _switch_page(self, index: int) -> None:
         self._stack.setCurrentIndex(index)
         page = self._stack.currentWidget()
@@ -163,13 +184,31 @@ def main() -> int:
     app.setWindowIcon(_icon())
     _become_a_normal_app()
 
-    dark = _prefers_dark()
-    app.setStyleSheet(theme.qss(dark))
+    # Switching theme rebuilds the window rather than re-styling it in place.
+    # The palette reaches further than the stylesheet — the switches and status
+    # dots paint themselves, and the sidebar icons are baked per theme — so
+    # rebuilding is both shorter and the only version that can't leave a stray
+    # widget in the old colours.
+    live: dict = {}
 
-    window = SettingsWindow(dark)
-    window.show()
-    window.raise_()
-    window.activateWindow()
+    def rebuild() -> None:
+        old = live.get("window")
+        dark = _use_dark()
+        app.setStyleSheet(theme.qss(dark))
+
+        window = SettingsWindow(dark, retheme=lambda: QTimer.singleShot(0, rebuild))
+        if old is not None:
+            window.setGeometry(old.geometry())
+            window.select_page(old.current_page())
+        live["window"] = window
+        window.show()
+        window.raise_()
+        window.activateWindow()
+        if old is not None:
+            old.close()
+            old.deleteLater()   # deferred, so we're not deleting mid-signal
+
+    rebuild()
     return app.exec()
 
 

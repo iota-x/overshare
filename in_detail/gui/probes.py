@@ -60,6 +60,24 @@ def check_webhook(url: str) -> Result:
     )
 
 
+def send_telegram_test(token: str, chat_id: str) -> Result:
+    """Actually post, so you can confirm it lands in the right chat."""
+    token, chat_id = (token or "").strip(), (chat_id or "").strip()
+    if not (token and chat_id):
+        return Result(False, "Add the bot token and chat first")
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={"chat_id": chat_id,
+                  "text": "💌 test from Overshare — if you can see this, you're all set."},
+            timeout=_TIMEOUT)
+    except requests.RequestException as e:
+        return Result(False, f"Couldn't reach Telegram ({e.__class__.__name__})")
+    if r.status_code == 200:
+        return Result(True, "Sent — go check Telegram")
+    return Result(False, f"Telegram said {r.status_code}")
+
+
 def send_test_message(url: str, username: str = "") -> Result:
     """Actually post, so you can confirm it lands where you expect."""
     url = (url or "").strip()
@@ -77,6 +95,71 @@ def send_test_message(url: str, username: str = "") -> Result:
     if r.status_code == 429:
         return Result(False, "Discord is rate-limiting; try again in a moment")
     return Result(False, f"Discord said {r.status_code}")
+
+
+def check_telegram(token: str, chat_id: str) -> Result:
+    """Validate the bot, and that it can actually reach that chat."""
+    token, chat_id = (token or "").strip(), (chat_id or "").strip()
+    if not token:
+        return Result(False, "No bot token yet — get one from @BotFather")
+    try:
+        me = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=_TIMEOUT)
+    except requests.RequestException as e:
+        return Result(False, f"Couldn't reach Telegram ({e.__class__.__name__})")
+    if me.status_code in (401, 404):
+        return Result(False, "Telegram rejected that bot token")
+    if me.status_code != 200:
+        return Result(False, f"Telegram said {me.status_code}")
+    name = (me.json().get("result") or {}).get("username", "the bot")
+
+    if not chat_id:
+        return Result(
+            False,
+            f"@{name} works — now send it a message and press “Find my chat”")
+    try:
+        chat = requests.get(f"https://api.telegram.org/bot{token}/getChat",
+                            params={"chat_id": chat_id}, timeout=_TIMEOUT)
+    except requests.RequestException as e:
+        return Result(False, f"Couldn't reach Telegram ({e.__class__.__name__})")
+    if chat.status_code != 200:
+        return Result(False, "That chat id isn't one this bot can post to")
+    info = chat.json().get("result") or {}
+    who = info.get("title") or info.get("username") or info.get("first_name") or chat_id
+    return Result(True, f"@{name} → {who}")
+
+
+def find_telegram_chat(token: str) -> Result:
+    """Read the bot's recent updates to discover who's talking to it.
+
+    Telegram has no way to look up "the chat with this person" — the id only
+    appears once someone messages the bot. So rather than making people hunt
+    for a numeric id, they message the bot and we read it back off getUpdates.
+    """
+    token = (token or "").strip()
+    if not token:
+        return Result(False, "Add the bot token first")
+    try:
+        r = requests.get(f"https://api.telegram.org/bot{token}/getUpdates",
+                         params={"limit": 20}, timeout=_TIMEOUT)
+    except requests.RequestException as e:
+        return Result(False, f"Couldn't reach Telegram ({e.__class__.__name__})")
+    if r.status_code != 200:
+        return Result(False, f"Telegram said {r.status_code}")
+
+    seen: dict[str, str] = {}
+    for update in r.json().get("result", []):
+        msg = update.get("message") or update.get("channel_post") or {}
+        chat = msg.get("chat") or {}
+        if chat.get("id") is not None:
+            label = chat.get("title") or chat.get("username") or chat.get("first_name") or ""
+            seen[str(chat["id"])] = label
+    if not seen:
+        return Result(
+            False,
+            "Nothing yet — open Telegram, send the bot any message, then try again")
+    chat_id, label = next(iter(seen.items()))
+    return Result(True, f"Found {label or chat_id}", options=list(seen),
+                  detail={"chat_id": chat_id})
 
 
 def check_bot_token(token: str) -> Result:
@@ -179,7 +262,14 @@ class Prober(QObject):
             except Exception as e:                      # never kill the thread
                 result = Result(False, f"Check failed ({e.__class__.__name__})")
             if generation == self._generation:
-                # Queued across threads, so the slot runs on the UI thread.
-                self.finished.emit(result)
+                try:
+                    # Queued across threads, so the slot runs on the UI thread.
+                    self.finished.emit(result)
+                except RuntimeError:
+                    # The window owning this Prober was destroyed while the
+                    # check was still running — closing it, or switching theme,
+                    # which rebuilds the whole window. There's nobody left to
+                    # tell, and Qt raises rather than no-ops on a dead object.
+                    pass
 
         threading.Thread(target=work, daemon=True).start()

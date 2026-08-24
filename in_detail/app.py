@@ -141,6 +141,8 @@ class InDetailApp(rumps.App):
 
         # Background collector keeps self._latest fresh without blocking the UI.
         threading.Thread(target=self._collect_loop, daemon=True).start()
+        # Anything that came due while the app was closed — see recap.catch_up.
+        threading.Thread(target=self._catch_up, daemon=True).start()
 
         self.timer = rumps.Timer(self.tick, config.POLL_INTERVAL)
         self.timer.start()
@@ -488,6 +490,18 @@ class InDetailApp(rumps.App):
         history.save(prev)
         self.day = history.load(today)
         self._worked_today = False  # fresh day
+
+    def _catch_up(self) -> None:
+        """Send what the schedule missed while we weren't running."""
+        try:
+            recap.catch_up()
+        except Exception:
+            pass
+        try:
+            if weekly.due():
+                weekly.post()
+        except Exception:
+            pass
 
     def _post_recap(self, force: bool = False) -> None:
         if not force:

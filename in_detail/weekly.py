@@ -38,13 +38,18 @@ def _week_id(d: _dt.date) -> str:
     return f"{y}-W{w:02d}"
 
 
-def _last_7_logs() -> tuple[list[DailyLog], int]:
-    """The week's logs, plus how many days left no file at all.
+def _last_7_logs(end: _dt.date | None = None) -> tuple[list[DailyLog], int]:
+    """The seven days ending at `end`, plus how many left no file at all.
+
+    `end` is the day the wrap is *for*, which isn't always today — a machine
+    that was off on Sunday posts Sunday's wrap when it next boots, and it should
+    still cover Mon–Sun rather than whatever seven days happen to precede the
+    boot.
 
     A missing file is not a quiet day — it means the tally never reached disk.
     Folding those in as zeros silently understates the week, so they're counted
     separately and reported."""
-    today = _dt.date.today()
+    today = end or _dt.date.today()
     logs, missing = [], 0
     for i in range(7):
         day = (today - _dt.timedelta(days=i)).isoformat()
@@ -116,11 +121,12 @@ def _stats_text(agg: dict, missing: int = 0) -> str:
     return "\n".join(parts)
 
 
-def build_message(logs: list[DailyLog], missing: int = 0) -> tuple[str, dict]:
+def build_message(logs: list[DailyLog], missing: int = 0,
+                  end: _dt.date | None = None) -> tuple[str, dict]:
     agg = _aggregate(logs)
     intro = summarizer.recap_intro(_stats_text(agg, missing), period="week")
 
-    end = _dt.date.today()
+    end = end or _dt.date.today()
     start = end - _dt.timedelta(days=6)
     span = f"{start.strftime('%b %-d')} – {end.strftime('%b %-d')}".lower()
 
@@ -169,27 +175,61 @@ def build_message(logs: list[DailyLog], missing: int = 0) -> tuple[str, dict]:
     return "", embed
 
 
-def due() -> bool:
-    if not config.WEEKLY_ENABLED:
-        return False
-    now = _dt.datetime.now()
-    if now.weekday() != _WEEKDAYS.get(config.WEEKLY_DAY, 6):
-        return False
+def last_occurrence(now: _dt.datetime | None = None) -> _dt.datetime:
+    """The most recent moment the wrap was supposed to go out, at or before now."""
+    now = now or _dt.datetime.now()
+    target = _WEEKDAYS.get(config.WEEKLY_DAY, 6)
     try:
         hh, mm = (int(x) for x in config.WEEKLY_TIME.split(":"))
     except Exception:
         hh, mm = 20, 0
-    if (now.hour, now.minute) < (hh, mm):
+    back = (now.weekday() - target) % 7
+    when = now.replace(hour=hh, minute=mm, second=0, microsecond=0) \
+              - _dt.timedelta(days=back)
+    if when > now:                      # today is the day but the hour hasn't come
+        when -= _dt.timedelta(days=7)
+    return when
+
+
+# Set by post(), read by due(), so a failing send retries on a sane cadence
+# instead of every tick.
+_last_attempt: _dt.datetime | None = None
+_RETRY_AFTER = _dt.timedelta(minutes=15)
+
+
+def due() -> bool:
+    """Has a scheduled wrap gone unsent?
+
+    Deliberately *not* "is it Sunday evening right now" — that only ever fired
+    if the machine happened to be awake in that minute. A Windows box that's off
+    all Sunday would skip the week entirely, and a Mac asleep at the time would
+    too. Asking whether the last scheduled moment has passed unposted survives
+    any amount of downtime.
+    """
+    if not config.WEEKLY_ENABLED:
         return False
-    return _week_id(now.date()) != _last_posted_week()
+    now = _dt.datetime.now()
+    if _week_id(last_occurrence(now).date()) == _last_posted_week():
+        return False
+    if _last_attempt and now - _last_attempt < _RETRY_AFTER:
+        return False
+    return True
 
 
-def post(force: bool = False) -> bool:
-    logs, missing = _last_7_logs()
+def post(force: bool = False, end: _dt.date | None = None) -> bool:
+    global _last_attempt
+    _last_attempt = _dt.datetime.now()
+    # A scheduled catch-up reports the week that ended at its own due date, not
+    # the week ending whenever the machine came back.
+    end = end or (_dt.date.today() if force else last_occurrence().date())
+    logs, missing = _last_7_logs(end)
     if not force and not any(l.active_seconds >= config.RECAP_MIN_MINUTES * 60 for l in logs):
+        _mark_posted(_week_id(end))   # genuinely nothing to say; don't retry all week
         return False
-    _content, embed = build_message(logs, missing)
+    _content, embed = build_message(logs, missing, end)
     ok = notifier.post_embed(embed)
-    if ok or not force:
-        _mark_posted(_week_id(_dt.date.today()))
+    if ok:
+        # Only on success. Marking a failed send as posted used to lose the
+        # week to a single flaky request.
+        _mark_posted(_week_id(end))
     return ok

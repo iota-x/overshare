@@ -29,7 +29,8 @@ def _minutes(value: float) -> str:
 class ActivityPage(Page):
     title = "Activity"
     blurb = "What she finds out about, and how quickly."
-    nav = "👀  Activity"
+    nav = "Activity"
+    icon = "eye"
 
     def build(self) -> None:
         dark = self.ctx.dark

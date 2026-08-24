@@ -17,10 +17,17 @@ class Context:
     dark: bool = False
     # Write a transient line into the window's status strip.
     status: object = None
+    # Rebuild the window under a new theme (set by main.py).
+    retheme: object = None
 
     def say(self, message: str) -> None:
         if callable(self.status):
             self.status(message)
+
+    def restyle(self) -> None:
+        """Re-run the window with whatever theme is now configured."""
+        if callable(self.retheme):
+            self.retheme()
 
 
 class Page(QScrollArea):
@@ -32,7 +39,8 @@ class Page(QScrollArea):
 
     title = ""
     blurb = ""
-    nav = ""          # label in the sidebar, usually "<emoji>  <name>"
+    nav = ""          # label in the sidebar
+    icon = ""         # which vector in gui/icons.py sits next to it
 
     def __init__(self, ctx: Context):
         super().__init__()

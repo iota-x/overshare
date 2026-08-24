@@ -92,6 +92,9 @@ class WinApp:
 
         companion.start()
         threading.Thread(target=self._loop, daemon=True).start()
+        # Windows machines get shut down for the night, so the in-process day
+        # rollover never runs — see recap.catch_up.
+        threading.Thread(target=self._catch_up, daemon=True).start()
 
     # --- UI helpers ---------------------------------------------------------
     def _tooltip(self) -> str:
@@ -502,6 +505,18 @@ class WinApp:
             weekly.post()
         finally:
             self._weekly_posting = False
+
+    def _catch_up(self) -> None:
+        """Send what the schedule missed while the machine was off."""
+        try:
+            recap.catch_up()
+        except Exception:
+            pass
+        try:
+            if weekly.due():
+                weekly.post()
+        except Exception:
+            pass
 
     def _poll_config(self) -> None:
         """Adopt edits made in the settings window, without a restart.

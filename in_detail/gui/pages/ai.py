@@ -25,7 +25,8 @@ _PROVIDERS = [
 class AIPage(Page):
     title = "AI"
     blurb = "How your activity gets turned into a sentence she'd actually enjoy reading."
-    nav = "✨  AI"
+    nav = "AI"
+    icon = "sparkle"
 
     def build(self) -> None:
         dark = self.ctx.dark
