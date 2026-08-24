@@ -12,8 +12,6 @@ from __future__ import annotations
 import datetime as _dt
 import re
 
-import requests
-
 from . import channels
 from . import config
 from . import settings
