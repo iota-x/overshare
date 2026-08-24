@@ -95,10 +95,23 @@ def _activity() -> list[Check]:
 
     # The real proof: ask for a snapshot and see whether anything comes back.
     try:
-        from . import collectors
+        from . import collectors, config
         snap = collectors.collect()
         if snap.app:
             out.append(Check("Right now it can see", "good", snap.app))
+            title = snap.tab_title or snap.window_title
+            if not config.REPORT_TITLES:
+                out.append(Check("Titles", "off",
+                                 "turned off — she gets app names only",
+                                 "Activity → Window and document titles."))
+            elif title:
+                out.append(Check("Titles", "good", title[:70]))
+            else:
+                out.append(Check(
+                    "Titles", "warn", "on, but nothing readable from this window",
+                    "Some windows genuinely have no title. If it says this for "
+                    "every app, the app can't read titles at all — on macOS "
+                    "that's Accessibility."))
         else:
             out.append(Check(
                 "Right now it can see", "bad", "nothing",

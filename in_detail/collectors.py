@@ -67,6 +67,15 @@ def collect() -> Snapshot:
         snap = _backend.collect()
     except Exception:
         return Snapshot()
+    from . import config          # imported here: config imports this module
+
+    if not config.REPORT_TITLES:
+        # Applied here, with the blocklist, for the same reason: the tally and
+        # the recaps read from this function too, so a title dropped here can't
+        # reappear in a weekly wrap.
+        snap.window_title = ""
+        snap.tab_title = ""
+
     try:
         from . import privacy
         return privacy.redact(snap)
