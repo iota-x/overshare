@@ -40,7 +40,15 @@
     </div>
 
     <div class="hero-body">
-      <h1 class="statement"><span>She knows</span><span class="hit">everything.</span></h1>
+      <!-- The second line types itself through the list in `data-words`. The
+           heading carries its own label so a screen reader gets one settled
+           sentence instead of every keystroke. -->
+      <h1 class="statement" aria-label="She knows everything.">
+        <span aria-hidden="true">She knows</span>
+        <span class="hit" aria-hidden="true"
+              data-words="everything.|it's 3am.|you closed it.|you paused it."
+              ><span class="typed">everything.</span><span class="caret"></span></span>
+      </h1>
       <div class="hero-art" id="tour">
         <div class="frames">
           <img class="frame" src="screenshots/app/0-welcome.webp" alt="Welcome page" loading="eager">
@@ -172,6 +180,10 @@
     <img class="art" src="screenshots/watching.webp"
          alt="A man in a suit holding up a notepad that reads “shes always watching”, with a woman's ringed eyes watching from the shadows behind him.">
     <p><small>That's the entire product. You just installed it for her.</small></p>
+    <p class="fineprint"><small>A meme, and only a meme — the art nods at Makima
+      from <i>Chainsaw Man</i>. No affiliation with or endorsement by anyone who
+      owns her, and nothing here is a suggestion about how to treat a real
+      person.</small></p>
   </section>
 
   <!-- ------------------------------------------------------------------ -->
@@ -329,6 +341,36 @@
   // you reach it — on a page this quiet, more motion would be noise.
   addEventListener('load', function () { document.body.classList.add('lit'); });
   requestAnimationFrame(function () { document.body.classList.add('lit'); });
+
+  // The second line of the headline retypes itself. It starts on the word the
+  // markup already contains, so the sentence is complete before this runs and
+  // stays complete if the script never does.
+  (function () {
+    var hit = document.querySelector('.statement .hit[data-words]');
+    if (!hit || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var out = hit.querySelector('.typed');
+    var words = hit.dataset.words.split('|');
+    // The first word is already on screen and already whole, so the loop opens
+    // mid-cycle: deleting. Starting it forwards would step straight past the
+    // "finished" length and never turn around.
+    var at = 0, cut = words[0].length, back = true;
+
+    function tick() {
+      var word = words[at];
+      cut = Math.max(0, Math.min(word.length, cut + (back ? -1 : 1)));
+      out.textContent = word.slice(0, cut);
+
+      var wait = back ? 45 : 85;
+      if (!back && cut === word.length) { back = true; wait = 2200; }   // hold it
+      else if (back && cut === 0) {
+        back = false;
+        at = (at + 1) % words.length;
+        wait = 420;                                    // a beat before the next
+      }
+      setTimeout(tick, wait);
+    }
+    setTimeout(tick, 2600);   // let the load reveal finish before it moves
+  })();
 
   // The hero window walks its own pages, and the sidebar in the picture is
   // clickable. Auto-play stops the moment someone takes over.
