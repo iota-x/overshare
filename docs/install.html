@@ -34,7 +34,7 @@
         macOS
       </h2>
       <p class="req">11 Big Sur or later · Apple Silicon &amp; Intel</p>
-      <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest">
+      <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-macOS.dmg">
         Download the .dmg</a>
       <p class="note">Open it and drag Overshare onto Applications. <b>The first
         time, right-click the app and choose Open</b>, then confirm — a normal
@@ -52,7 +52,7 @@
         Windows
       </h2>
       <p class="req">10 or 11 · 64-bit</p>
-      <a class="dl" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest">
+      <a class="dl" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-Windows.exe">
         Download the installer</a>
       <p class="note">Run it. <b>SmartScreen may warn you — click More info, then
         Run anyway</b>, for the same reason: no paid code-signing certificate. It
@@ -142,15 +142,12 @@
       .then(function (rel) {
         var mb = function (b) { return Math.round(b / 1048576) + ' MB'; };
         (rel.assets || []).forEach(function (a) {
-          if (/\.dmg$/i.test(a.name)) {
-            var el = document.getElementById('dl-mac');
-            el.href = a.browser_download_url;
-            el.textContent = 'Download the .dmg · ' + mb(a.size);
+          // hrefs are permanent already; the API only supplies the labels.
+          if (/^Overshare-\d.*\.dmg$/i.test(a.name)) {
+            document.getElementById('dl-mac').textContent = 'Download the .dmg · ' + mb(a.size);
           }
-          if (/\.exe$/i.test(a.name)) {
-            var el2 = document.getElementById('dl-win');
-            el2.href = a.browser_download_url;
-            el2.textContent = 'Download the installer · ' + mb(a.size);
+          if (/^Overshare-Setup-\d.*\.exe$/i.test(a.name)) {
+            document.getElementById('dl-win').textContent = 'Download the installer · ' + mb(a.size);
           }
         });
         if (rel.tag_name) {
