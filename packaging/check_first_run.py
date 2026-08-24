@@ -18,8 +18,6 @@ from unittest import mock
 # so the repo root has to be added by hand or `in_detail` won't import.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-import pystray
-
 
 def check_first_run(cls, name):
     """Unconfigured must open settings; configured must not."""
@@ -59,6 +57,10 @@ def check_first_run(cls, name):
 
 def check_tray_default():
     """pystray dispatches an icon click to the item marked default — or nowhere."""
+    # Imported here, not at the top: pystray is a Windows-only requirement and
+    # isn't installed on the macOS runner.
+    import pystray
+
     from in_detail import app_win
 
     src = open(app_win.__file__, encoding="utf-8").read()
