@@ -53,6 +53,15 @@ def accessibility_ok() -> bool:
         return True
 
 
+def ask_for_permission() -> bool:
+    """Prompt for the OS permission we need, if this platform has one."""
+    try:
+        fn = getattr(_backend, "ask_for_permission", None)
+        return bool(fn()) if fn else True
+    except Exception:
+        return True
+
+
 def collect() -> Snapshot:
     """Take one read of the current activity (never raises).
 
