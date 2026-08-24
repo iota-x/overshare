@@ -46,6 +46,9 @@ if WINDOWS:
     hiddenimports += [
         "pystray._win32", "PIL.ImageGrab", "win32api", "win32gui",
         "win32process", "psutil", "uiautomation", "cv2", "tzdata",
+        # Writing the Startup-folder shortcut for the "start when I sign in"
+        # toggle. Imported inside a function, so nothing static finds it.
+        "win32com", "win32com.client", "pythoncom",
     ]
 
 # PySide6 ships far more than a settings window needs. Dropping these takes the
