@@ -104,6 +104,19 @@ class HealthPage(Page):
         self._invite_btn.clicked.connect(self._copy_invite)
         self._invite_card.add_widget(self._invite_btn)
 
+        # --- what the sender has actually been doing --------------------------
+        # The tray app is a different process; this file is the only window onto
+        # it. Showing it here beats telling someone to go and open a log.
+        self._recent_card = self.add_card(
+            "Recent activity",
+            "The last few things the app recorded, newest at the bottom.")
+        self._recent = QLabel()
+        self._recent.setObjectName("RowHelp")
+        self._recent.setWordWrap(True)
+        self._recent.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._recent_card.add_widget(self._recent)
+
         # --- where to look when it goes wrong ---------------------------------
         where = self.add_card("Files", "Where this app keeps things.")
         for label, path in (("Settings", str(config.CONFIG_PATH)),
@@ -143,6 +156,11 @@ class HealthPage(Page):
             self._invite_label.setText(
                 "Paste a bot token on the Her page and this fills itself in.")
             self._invite_btn.setEnabled(False)
+
+        lines = log.tail(10)
+        self._recent.setText(
+            "<br>".join(l.replace("&", "&amp;").replace("<", "&lt;") for l in lines)
+            or "Nothing recorded yet.")
 
         bad = [c for c in self._checks if c.state == "bad"]
         if bad:
