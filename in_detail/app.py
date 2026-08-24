@@ -494,6 +494,11 @@ class InDetailApp(rumps.App):
 
         Updating the app replaces the bundle, and macOS ties the Accessibility
         grant to the bundle — so installing a new version silently revokes it.
+
+        There is no paid Apple certificate here, so the build is ad-hoc signed
+        and its cdhash changes with every release. TCC stores that hash, which
+        means toggling the existing entry off and on re-approves the *old*
+        binary and changes nothing. The entry has to be removed and re-added.
         Nothing breaks loudly when that happens: window titles just stop
         arriving, and every message quietly gets poorer. "on Notion — JOURNAL"
         becomes "on Notion" and nobody is told why.
@@ -513,7 +518,8 @@ class InDetailApp(rumps.App):
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "
                         "actually doing. System Settings → Privacy & Security → "
-                        "Accessibility → switch Overshare off and on.")
+                        "Accessibility → select Overshare, press −, then add it "
+                        "again with +. Then quit and reopen Overshare.")
                 elif told is not None:
                     log.write("accessibility: granted again")
                     rumps.notification("overshare", "Accessibility is back",
