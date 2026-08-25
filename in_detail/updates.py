@@ -145,12 +145,117 @@ def download(rel: Release, progress=None) -> str:
 
 
 def reveal(path: str) -> None:
-    """Hand the verified file over. The installer is started by a person."""
+    """Open the download the manual way — mount the .dmg, run the installer."""
     if sys.platform == "darwin":
-        subprocess.Popen(["open", path])          # mounts the .dmg
+        subprocess.Popen(["open", path])
     elif sys.platform.startswith("win"):
         os.startfile(path)                        # noqa: S606 - runs the installer
     log.write("update: handed over to the installer", path)
+
+
+def can_install() -> bool:
+    """Can we replace this build in place, or does it have to be done by hand?"""
+    if not getattr(sys, "frozen", False):
+        return False
+    if sys.platform == "darwin":
+        bundle = _bundle()
+        return bool(bundle) and os.access(os.path.dirname(bundle), os.W_OK) \
+            and os.access(bundle, os.W_OK)
+    return sys.platform.startswith("win")
+
+
+def _bundle() -> str:
+    if sys.platform != "darwin":
+        return ""
+    from pathlib import Path
+    b = Path(sys.executable).resolve().parents[2]
+    return str(b) if b.suffix == ".app" else ""
+
+
+# The swap can't run inside the app it's replacing, so it's a script that
+# outlives it: wait for us to go, move the old bundle aside, copy the new one
+# in, put the old one back if anything failed, then reopen.
+_SWAP = r"""#!/bin/sh
+set -u
+DMG="$1"; TARGET="$2"; PID="$3"; LOG="$4"
+say() { printf '%s  swap: %s
+' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG"; }
+
+# Wait for *every* process running out of this bundle, not just the one that
+# asked. The settings window is its own process, so waiting on that pid alone
+# would swap the bundle out from under the tray app still running from it.
+n=0
+while pgrep -f "$TARGET/Contents/MacOS/" >/dev/null 2>&1 || kill -0 "$PID" 2>/dev/null; do
+  n=$((n+1)); [ "$n" -gt 200 ] && { say "app never quit — nothing changed"; exit 1; }
+  sleep 0.2
+done
+
+MP=$(mktemp -d /tmp/overshare-mnt.XXXXXX)
+hdiutil attach -nobrowse -readonly -mountpoint "$MP" "$DMG" >/dev/null 2>&1 || {
+  say "could not mount the download — nothing changed"; exit 1; }
+
+NEW="$MP/Overshare.app"
+[ -d "$NEW" ] || { say "no app inside the download — nothing changed"
+                   hdiutil detach "$MP" >/dev/null 2>&1; exit 1; }
+
+OLD="$TARGET.replacing"
+rm -rf "$OLD"
+mv "$TARGET" "$OLD" 2>/dev/null || { say "could not move the old app aside"
+                                     hdiutil detach "$MP" >/dev/null 2>&1; exit 1; }
+
+if ditto "$NEW" "$TARGET" 2>/dev/null; then
+  rm -rf "$OLD"
+  xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null
+  say "replaced"
+else
+  rm -rf "$TARGET"; mv "$OLD" "$TARGET"          # put it back exactly as it was
+  say "copy failed — the old version was restored"
+  hdiutil detach "$MP" >/dev/null 2>&1; exit 1
+fi
+
+hdiutil detach "$MP" >/dev/null 2>&1
+open "$TARGET"
+say "reopened"
+"""
+
+
+def install(path: str) -> bool:
+    """Replace this build with the verified download and reopen.
+
+    Windows hands over to the installer, which knows how to upgrade over a
+    running copy — CloseApplications shuts the app down and RestartApplications
+    starts it again. macOS has no such thing, so it gets the script above.
+
+    Returns False if it couldn't start, so the caller can fall back to opening
+    the download and letting someone do it by hand.
+    """
+    if not can_install():
+        return False
+    try:
+        if sys.platform.startswith("win"):
+            log.write("update: running the installer over this copy")
+            subprocess.Popen([path, "/SILENT", "/CLOSEAPPLICATIONS",
+                              "/RESTARTAPPLICATIONS", "/NORESTART"])
+            return True
+
+        # The tray app is a different process holding the same bundle; the
+        # settings window quitting is not enough on its own.
+        from . import uninstall
+        uninstall.stop_the_tray_app()
+
+        script = os.path.join(tempfile.mkdtemp(prefix="overshare-swap-"), "swap.sh")
+        with open(script, "w") as fh:
+            fh.write(_SWAP)
+        os.chmod(script, 0o755)
+        log.write("update: swapping the app bundle", _bundle())
+        subprocess.Popen(
+            ["/bin/sh", script, path, _bundle(), str(os.getpid()), log.path()],
+            start_new_session=True,          # outlives the app it's replacing
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception as e:
+        log.exception("update: could not start the install", e)
+        return False
 
 
 def report() -> str:

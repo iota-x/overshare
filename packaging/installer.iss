@@ -32,6 +32,12 @@ OutputDir=..\dist
 OutputBaseFilename=Overshare-Setup-{#AppVersion}
 SetupIconFile=..\assets\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
+; Upgrading over a running copy: Inno shuts the app down itself and starts it
+; again afterwards, so "update" doesn't mean "quit it first, then remember to
+; open it again". AppMutex is what lets it detect the running instance.
+CloseApplications=yes
+RestartApplications=yes
+AppMutex=Overshare.SingleInstance
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

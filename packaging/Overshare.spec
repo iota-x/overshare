@@ -48,7 +48,7 @@ if WINDOWS:
         "win32process", "psutil", "uiautomation", "cv2", "tzdata",
         # Writing the Startup-folder shortcut for the "start when I sign in"
         # toggle. Imported inside a function, so nothing static finds it.
-        "win32com", "win32com.client", "pythoncom",
+        "win32com", "win32com.client", "pythoncom", "win32event",
     ]
 
 # PySide6 ships far more than a settings window needs. Dropping these takes the

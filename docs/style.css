@@ -374,6 +374,14 @@
   .md ul { margin: 0 0 10px; padding-left: 20px; }
   .md li { margin-bottom: 5px; }
   .md b { color: var(--text); font-weight: 500; }
+  /* The one command on the install page has to be selectable and obvious. */
+  .note code {
+    display: inline-block; font-size: 12.5px; line-height: 1.5;
+    background: var(--raise); border: 1px solid var(--edge);
+    border-radius: 8px; padding: 8px 11px; margin-top: 2px;
+    color: var(--text); user-select: all; overflow-wrap: anywhere;
+  }
+
   .md code { font-size: 13px; background: var(--raise); border: 1px solid var(--edge);
              border-radius: 5px; padding: 1px 6px; }
   .empty { color: var(--mute); text-align: center; padding: 26px 0; }

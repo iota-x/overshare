@@ -44,10 +44,15 @@
       <p class="req">11 Big Sur or later · Apple Silicon &amp; Intel</p>
       <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-macOS.dmg">
         Download the .dmg</a>
-      <p class="note">Open it and drag Overshare onto Applications. <b>The first
-        time, right-click the app and choose Open</b>, then confirm — a normal
-        double-click gets refused, because the app isn't signed by a paid Apple
-        developer account. You only do that once.</p>
+      <p class="note">Open it and drag Overshare onto Applications. Then, the
+        first time only, open Terminal and run:</p>
+      <p class="note"><code>xattr -dr com.apple.quarantine /Applications/Overshare.app</code></p>
+      <p class="note">Without it macOS says <b>“Overshare is damaged and can't
+        be opened”</b>. It isn't — that's what Gatekeeper says about any app
+        signed without a paid Apple developer account once your browser has
+        marked the download as quarantined. Right-clicking and choosing Open
+        does <i>not</i> clear it on Apple Silicon, whatever else you read. The
+        command above removes that one flag and nothing else.</p>
       <p class="note">macOS will ask for <b>Accessibility</b> (window and file
         titles) and <b>Automation</b> (your browser tab and what's playing) as you
         go. After granting Accessibility, quit from the menu bar and reopen.</p>

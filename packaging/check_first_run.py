@@ -267,6 +267,25 @@ def check_update_guardrails():
     print("updates: refuses bad hosts and bad checksums, keeps verified ones")
 
 
+def check_swap_script():
+    """The in-place install must refuse from a checkout, and the macOS swap
+    script must wait for the whole bundle — the settings window is its own
+    process, so waiting on one pid would replace the app under the tray."""
+    from in_detail import updates
+
+    assert not updates.can_install(), "a source checkout offered to replace itself"
+    assert updates.install("/tmp/nothing.dmg") is False, "install() didn't refuse"
+
+    if sys.platform == "darwin":
+        s = updates._SWAP
+        assert 'pgrep -f "$TARGET/Contents/MacOS/"' in s, \
+            "the swap waits on a single pid, not on the bundle"
+        assert 'mv "$OLD" "$TARGET"' in s, \
+            "a failed copy must put the old version back"
+        assert "KeepAlive" not in s
+    print("updates: in-place install refuses in a checkout; swap waits for the bundle")
+
+
 def check_login_item():
     """The login item must go on and off, and never resurrect a quit app."""
     import tempfile
@@ -376,6 +395,7 @@ check_health_page()
 check_titles_toggle()
 check_no_duplicate_checks()
 check_update_guardrails()
+check_swap_script()
 check_login_item()
 check_uninstall()
 check_loop_failures_are_recorded()
