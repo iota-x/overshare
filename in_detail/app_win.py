@@ -612,7 +612,27 @@ class WinApp:
         self.icon.run()
 
 
+_MUTEX = None
+
+
+def _claim_mutex() -> None:
+    """Publish a named mutex so the installer can see us running.
+
+    installer.iss sets AppMutex to this name. That's what lets an upgrade shut
+    the app down and start it again by itself, instead of failing partway
+    through with files in use — which is the difference between "update" and
+    "quit it first, then remember to reopen it".
+    """
+    global _MUTEX
+    try:
+        import win32event
+        _MUTEX = win32event.CreateMutex(None, False, "Overshare.SingleInstance")
+    except Exception as e:
+        log.exception("mutex: could not publish one", e)
+
+
 def main() -> None:
+    _claim_mutex()
     WinApp().run()
 
 

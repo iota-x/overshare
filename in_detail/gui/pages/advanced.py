@@ -5,7 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMessageBox,
                                QWidget)
@@ -288,9 +288,21 @@ class AdvancedPage(Page):
                 "That download didn't verify, so it was thrown away. "
                 "Try again, or grab it from the releases page.")
             return
+
+        # Replace this copy rather than making someone drag it over the old one.
+        if updates.install(path):
+            self._up_status.setText(
+                "Verified. Overshare is closing and will reopen on the new "
+                "version." + (
+                    " macOS will want Accessibility granted again afterwards."
+                    if sys.platform == "darwin" else ""))
+            # Give the helper a moment to see us go, then go.
+            QTimer.singleShot(600, QApplication.quit)
+            return
+
         self._up_status.setText(
-            "Downloaded and checksum verified. The installer is opening — "
-            "quit Overshare before running it.")
+            "Downloaded and checksum verified. Opening it — drag Overshare "
+            "onto Applications, replacing the old one.")
         updates.reveal(path)
 
     def _set_login_item(self, on: bool) -> None:
