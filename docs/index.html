@@ -573,5 +573,12 @@
   })();
 </script>
 
+<!-- Cloudflare Web Analytics. Cookieless and no personal data, which is why it
+     needs no consent banner — a page about an app that watches people should
+     not quietly watch its own readers. Only pages carrying this tag report, so
+     the shared iota-x.github.io host stays out of it. Placed here, before the
+     closing body tag, because that is where Cloudflare's own instructions put
+     it; `type=module` defers it regardless. -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5445d89a002241e0a32bc3d2fbadbbad"}'></script>
 </body>
 </html>
