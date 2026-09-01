@@ -176,10 +176,10 @@
   .dl svg { width: 17px; height: 17px; fill: currentColor; }
   .meta { color: var(--mute); font-size: 13px; letter-spacing: .01em; }
 
-  /* --- The watcher --------------------------------------------------------
-     An original ringed-iris eye, not anyone's character art. The pupil tracks
-     the cursor for as long as you're on the page: the product watches you, so
-     the page does too. */
+  /* --- The eye ------------------------------------------------------------
+     The site mark. An original ringed-iris eye, not anyone's character art.
+     The pupil tracks the cursor for as long as you're on the page: the product
+     watches you, so the page does too. */
   .eye { display: block; overflow: visible; }
   .eye .lid   { fill: none; stroke: currentColor; stroke-width: 2.6;
                 stroke-linecap: round; stroke-linejoin: round; }
@@ -195,24 +195,6 @@
     0%, 92%, 100% { transform: scaleY(1); }
     95%           { transform: scaleY(.06); }
   }
-
-  .watcher {
-    display: flex; flex-direction: column; align-items: center; gap: 22px;
-    padding-block: var(--beat); text-align: center; color: var(--rose);
-  }
-  .watcher .art {
-    display: block; width: 100%; max-width: 1100px; height: auto;
-    border: 1px solid var(--edge); border-radius: 14px;
-    box-shadow: 0 50px 120px -50px rgba(255,111,165,.28),
-                0 40px 100px -60px rgba(0,0,0,.9);
-  }
-  /* The picture already says the line, so the caption stays a caption. */
-  .watcher p { margin: 0; }
-  .watcher small { color: var(--mute); font-size: 15px; }
-  /* Says out loud what the picture is doing there. Quieter than the caption
-     above it, because it's the legal note and not the joke. */
-  .watcher .fineprint { max-width: 62ch; }
-  .watcher .fineprint small { font-size: 12.5px; line-height: 1.55; opacity: .62; }
 
   .mark .eye { width: 22px; height: 22px; color: var(--rose); }
 

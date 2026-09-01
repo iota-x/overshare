@@ -127,7 +127,7 @@ class InDetailApp(rumps.App):
         if not collectors.accessibility_ok():
             try:
                 rumps.notification(
-                    "in-detail needs Accessibility",
+                    "Overshare needs Accessibility",
                     "System Settings → Privacy & Security → Accessibility",
                     "so it can read window titles & tabs. Then restart it.",
                 )

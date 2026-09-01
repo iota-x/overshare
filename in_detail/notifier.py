@@ -264,5 +264,5 @@ def send_update(message: str, snap, minutes: int = 0, kind: str = "change") -> b
 
 
 if __name__ == "__main__":
-    ok = send("test message from in-detail 👋")
+    ok = send("test message from Overshare 👋")
     print("sent!" if ok else "failed — check DISCORD_WEBHOOK_URL in .env")
