@@ -1,8 +1,8 @@
 """Post one card of every kind, so you can see exactly what they'll see.
 
-    python -m in_detail.selftest              # dry run: print the cards here
-    python -m in_detail.selftest --post       # actually send them to their channel
-    python -m in_detail.selftest --live       # one card for what you're doing now
+    python -m overshare.selftest              # dry run: print the cards here
+    python -m overshare.selftest --post       # actually send them to their channel
+    python -m overshare.selftest --live       # one card for what you're doing now
 
 Formatting bugs used to only show up when a real activity happened to hit the
 broken path — hours or days later, in their channel. This makes every path
@@ -113,7 +113,7 @@ def _force_utf8_console() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     _force_utf8_console()
-    ap = argparse.ArgumentParser(prog="in_detail.selftest", description=__doc__)
+    ap = argparse.ArgumentParser(prog="overshare.selftest", description=__doc__)
     ap.add_argument("--post", action="store_true",
                     help="really send the cards to the configured destination")
     ap.add_argument("--live", action="store_true",

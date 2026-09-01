@@ -5,7 +5,7 @@ sent an update, and there was no way to tell from the outside whether the
 webhook was wrong, sharing was paused, or the activity backend hadn't loaded at
 all. Every one of those looks identical from the sofa: nothing arrives.
 
-The checks live in `in_detail.checkup` so they can run without Qt — CI walks
+The checks live in `overshare.checkup` so they can run without Qt — CI walks
 them, and the tray app can log them on startup.
 """
 

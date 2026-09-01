@@ -21,7 +21,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKG = ROOT / "in_detail"
+PKG = ROOT / "overshare"
 
 # `%-` / `%#` anywhere in a strftime format.
 BAD_TIME = re.compile(r"%[-#][a-zA-Z]")

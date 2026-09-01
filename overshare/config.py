@@ -113,7 +113,7 @@ def _apply() -> None:
 
     # --- Delivery ------------------------------------------------------------
     # Cards go to every destination that's switched on *and* filled in, so more
-    # than one can run at once — see in_detail/channels/.
+    # than one can run at once — see overshare/channels/.
     g["DISCORD_ENABLED"] = _get_bool("DISCORD_ENABLED", True)
     g["TELEGRAM_ENABLED"] = _get_bool("TELEGRAM_ENABLED", True)
 

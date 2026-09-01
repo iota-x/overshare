@@ -6,8 +6,8 @@ easier on the page.
 """
 from PySide6.QtWidgets import QApplication, QLineEdit
 from PySide6.QtCore import QEventLoop, QTimer
-from in_detail.gui.main import SettingsWindow
-from in_detail.gui import theme
+from overshare.gui.main import SettingsWindow
+from overshare.gui import theme
 from PySide6.QtCore import Qt
 from PIL import Image
 

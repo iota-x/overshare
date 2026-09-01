@@ -14,12 +14,12 @@ import sys
 
 ROOT = os.path.dirname(os.path.abspath(SPECPATH))
 
-# The release workflow rewrites in_detail/version.py from the tag before it
+# The release workflow rewrites overshare/version.py from the tag before it
 # builds. Read it back rather than hardcoding, so the bundle, the plist and the
 # update check can never disagree about what this build is.
 def _version():
     ns = {}
-    exec((open(os.path.join(ROOT, "in_detail", "version.py")).read()), ns)
+    exec((open(os.path.join(ROOT, "overshare", "version.py")).read()), ns)
     return ns.get("VERSION", "0.0.0")
 
 APP_VERSION = _version()
@@ -32,9 +32,9 @@ if MACOS and os.path.exists(os.path.join(ROOT, "assets", "icon.icns")):
 
 # Things imported lazily or by name, which static analysis misses.
 hiddenimports = [
-    "in_detail.gui.main",
-    "in_detail.app",
-    "in_detail.app_win",
+    "overshare.gui.main",
+    "overshare.app",
+    "overshare.app_win",
     "discord",
     "dotenv",
 ]

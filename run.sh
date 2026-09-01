@@ -16,4 +16,4 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-exec ./.venv/bin/python -m in_detail.app
+exec ./.venv/bin/python -m overshare.app

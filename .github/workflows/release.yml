@@ -42,7 +42,7 @@ jobs:
         run: |
           import os, pathlib
           v = os.environ["OVERSHARE_VERSION"]
-          p = pathlib.Path("in_detail/version.py")
+          p = pathlib.Path("overshare/version.py")
           t = p.read_text()
           new = f'VERSION = "{v}"'
           assert 'VERSION = "0.0.0-dev"' in t, "placeholder already replaced?"
@@ -151,7 +151,7 @@ jobs:
         run: |
           import os, pathlib
           v = os.environ["OVERSHARE_VERSION"]
-          p = pathlib.Path("in_detail/version.py")
+          p = pathlib.Path("overshare/version.py")
           t = p.read_text()
           new = f'VERSION = "{v}"'
           assert 'VERSION = "0.0.0-dev"' in t, "placeholder already replaced?"

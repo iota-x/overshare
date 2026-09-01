@@ -16,23 +16,23 @@ import types
 from unittest import mock
 
 # Python puts *this* file's directory on sys.path, not the working directory,
-# so the repo root has to be added by hand or `in_detail` won't import.
+# so the repo root has to be added by hand or `overshare` won't import.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 
 def check_first_run(cls, name):
     """Unconfigured must open settings; configured must not."""
     calls = []
-    fake = types.ModuleType("in_detail.launcher")
+    fake = types.ModuleType("overshare.launcher")
     fake.open_settings = lambda on_fail=None: calls.append("opened")
     fake.is_open = lambda: False
     fake.close_settings = lambda: None
     # _first_run imports the launcher by name, so the stub has to go in
     # sys.modules — and has to come back out, or the next check gets the stub.
-    real = sys.modules.get("in_detail.launcher")
-    sys.modules["in_detail.launcher"] = fake
+    real = sys.modules.get("overshare.launcher")
+    sys.modules["overshare.launcher"] = fake
 
-    from in_detail import config
+    from overshare import config
 
     probe = cls.__new__(cls)                    # no tray/menu-bar construction
     probe._notify = lambda *a, **k: None
@@ -50,9 +50,9 @@ def check_first_run(cls, name):
         assert calls == [], f"{name}: reopened settings on a configured machine"
 
     if real is not None:
-        sys.modules["in_detail.launcher"] = real
+        sys.modules["overshare.launcher"] = real
     else:
-        del sys.modules["in_detail.launcher"]
+        del sys.modules["overshare.launcher"]
     print(f"{name}: first run opens settings, and only when unconfigured")
 
 
@@ -62,7 +62,7 @@ def check_tray_default():
     # isn't installed on the macOS runner.
     import pystray
 
-    from in_detail import app_win
+    from overshare import app_win
 
     src = open(app_win.__file__, encoding="utf-8").read()
     assert "default=True" in src, "no default tray item: clicking the icon does nothing"
@@ -78,7 +78,7 @@ def check_tray_default():
 def check_launcher_is_async():
     """open_settings must not block: rumps runs menu clicks on the main thread."""
     import time
-    from in_detail import launcher
+    from overshare import launcher
 
     got = []
     with mock.patch.object(launcher, "_command",
@@ -98,8 +98,8 @@ def check_window_comes_forward():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
-    from in_detail.gui.main import SettingsWindow, _come_to_the_front
-    from in_detail.gui import theme
+    from overshare.gui.main import SettingsWindow, _come_to_the_front
+    from overshare.gui import theme
 
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(theme.qss(True))
@@ -117,8 +117,8 @@ def check_health_page():
     import os
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
-    from in_detail.gui.main import SettingsWindow
-    from in_detail.gui import theme
+    from overshare.gui.main import SettingsWindow
+    from overshare.gui import theme
 
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(theme.qss(True))
@@ -134,7 +134,7 @@ def check_health_page():
 def check_late_token_starts_the_bot():
     """A token pasted after startup must bring the bot up without a restart."""
     import time
-    from in_detail import companion, config, settings
+    from overshare import companion, config, settings
 
     started = []
     with mock.patch.object(companion, "_run", lambda: started.append("ran")):
@@ -156,10 +156,10 @@ def check_permission_watcher():
     Updating the app replaces the bundle and macOS revokes the grant with it,
     so this fires on exactly the upgrade path everyone takes.
     """
-    from in_detail import app, collectors
+    from overshare import app, collectors
 
     notes = []
-    probe = app.InDetailApp.__new__(app.InDetailApp)
+    probe = app.OvershareApp.__new__(app.OvershareApp)
     seq = iter([False, True, True])
     ticks = [1, 2, 3]
 
@@ -180,7 +180,7 @@ def check_loop_failures_are_recorded():
     """A throwing tick must leave a real traceback, not silence."""
     import os
 
-    from in_detail import log
+    from overshare import log
 
     try:
         raise ValueError("a tick that throws")
@@ -206,7 +206,7 @@ def check_no_duplicate_checks():
     showed both "Titles — good" and "Titles — nothing readable" at once."""
     from collections import Counter
 
-    from in_detail import checkup
+    from overshare import checkup
 
     counts = Counter(c.name for c in checkup.run())
     dupes = {n: k for n, k in counts.items() if k > 1}
@@ -219,7 +219,7 @@ def check_update_guardrails():
     the security boundary. They get tested, not assumed."""
     import hashlib
 
-    from in_detail import updates
+    from overshare import updates
 
     for bad in ("http://github.com/x.dmg",          # not https
                 "https://github.com.evil.tld/x.dmg",  # lookalike host
@@ -262,7 +262,7 @@ def check_update_guardrails():
     os.remove(path)
 
     # And version comparison, where a string compare would be wrong.
-    from in_detail.version import parts
+    from overshare.version import parts
     assert parts("1.3.10") > parts("1.3.9"), "1.3.10 must be newer than 1.3.9"
     print("updates: refuses bad hosts and bad checksums, keeps verified ones")
 
@@ -271,7 +271,7 @@ def check_swap_script():
     """The in-place install must refuse from a checkout, and the macOS swap
     script must wait for the whole bundle — the settings window is its own
     process, so waiting on one pid would replace the app under the tray."""
-    from in_detail import updates
+    from overshare import updates
 
     assert not updates.can_install(), "a source checkout offered to replace itself"
     assert updates.install("/tmp/nothing.dmg") is False, "install() didn't refuse"
@@ -291,7 +291,7 @@ def check_login_item():
     import tempfile
     from pathlib import Path
 
-    from in_detail import startup
+    from overshare import startup
 
     assert not startup.available(), "a source checkout offered a login item"
 
@@ -337,7 +337,7 @@ def check_uninstall():
     import tempfile
     from pathlib import Path
 
-    from in_detail import uninstall
+    from overshare import uninstall
 
     assert not uninstall.available(), "a source checkout offered to uninstall itself"
     assert uninstall.run(also_data=False), "run() must refuse in a checkout"
@@ -361,7 +361,7 @@ def check_uninstall():
 
 def check_titles_toggle():
     """REPORT_TITLES must actually drop titles, and keep everything else."""
-    from in_detail import collectors, config
+    from overshare import collectors, config
 
     before = bool(config.REPORT_TITLES)
     try:
@@ -381,12 +381,12 @@ def check_titles_toggle():
 
 
 if sys.platform.startswith("win"):
-    from in_detail.app_win import WinApp
+    from overshare.app_win import WinApp
     check_first_run(WinApp, "windows")
     check_tray_default()
 else:
-    from in_detail.app import InDetailApp
-    check_first_run(InDetailApp, "macos")
+    from overshare.app import OvershareApp
+    check_first_run(OvershareApp, "macos")
 
 check_launcher_is_async()
 check_late_token_starts_the_bot()

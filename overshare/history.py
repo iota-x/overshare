@@ -97,7 +97,7 @@ class DailyLog:
 
 
 # Somewhere always writable, whatever the app bundle is allowed to touch.
-_PROBLEM_LOG = Path.home() / "Library" / "Logs" / "in-detail.log"
+_PROBLEM_LOG = Path.home() / "Library" / "Logs" / "overshare.log"
 
 save_error: str = ""  # last save failure, for the menu-bar health indicator
 

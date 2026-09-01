@@ -6,7 +6,7 @@
 
 <!-- Delete what doesn't apply. -->
 
-- [ ] `python -m in_detail.selftest` still renders every card
+- [ ] `python -m overshare.selftest` still renders every card
 - [ ] Opened the settings window (`python run_app.py --settings`) and the page I touched behaves
 - [ ] Ran it for real on macOS
 - [ ] Ran it for real on Windows

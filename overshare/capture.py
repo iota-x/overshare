@@ -21,7 +21,7 @@ import time
 
 # Reused across peeks so the temp dir doesn't fill up with orphans if a caller
 # ever forgets to clean one up (we still delete after upload as the happy path).
-_TMP = os.path.join(tempfile.gettempdir(), "in_detail_peek")
+_TMP = os.path.join(tempfile.gettempdir(), "overshare_peek")
 
 # A bundled .app launched from Finder/launchd inherits a minimal PATH
 # (/usr/bin:/bin:/usr/sbin:/sbin) that omits Homebrew, so shutil.which can't see

@@ -21,7 +21,7 @@ python run_app.py --settings
 Then check nothing's broken:
 
 ```bash
-python -m in_detail.selftest      # renders every card shape, sends nothing
+python -m overshare.selftest      # renders every card shape, sends nothing
 ```
 
 `selftest` leads with a health check (platform, AI provider, webhook,
@@ -37,9 +37,9 @@ loop and so do rumps (macOS) and pystray (Windows), so they can't share one —
 through the config file.
 
 ```
-run_app.py ──┬─► in_detail/app.py       menu bar (macOS, rumps)
-             ├─► in_detail/app_win.py   tray (Windows, pystray)
-             └─► in_detail/gui/         settings window (PySide6) — own process
+run_app.py ──┬─► overshare/app.py       menu bar (macOS, rumps)
+             ├─► overshare/app_win.py   tray (Windows, pystray)
+             └─► overshare/gui/         settings window (PySide6) — own process
 
 collectors.py → state.py → summarizer.py → notifier.py → Discord
    what you're    is it     write the       build the
@@ -61,7 +61,7 @@ that way — a module-level `from ... import` will silently freeze at startup.
 
 1. Add it to `_apply()` in `config.py` (or `_DEFAULTS` in `settings.py` if it's
    one of *her* live preferences rather than install config).
-2. Add a row to the matching page in `in_detail/gui/pages/`, using the helpers
+2. Add a row to the matching page in `overshare/gui/pages/`, using the helpers
    in `gui/widgets.py` — `toggle_row`, `text_row`, `slider_row`, `choice_row`,
    `time_row`. They bind to a store and save on change; don't write your own
    save button.

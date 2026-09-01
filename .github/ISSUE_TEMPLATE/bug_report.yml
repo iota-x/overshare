@@ -64,7 +64,7 @@ body:
     attributes:
       label: selftest output
       description: |
-        Run `python -m in_detail.selftest` if you have the source. It sends
+        Run `python -m overshare.selftest` if you have the source. It sends
         nothing. Paste at least the `=== health ===` block at the top.
       render: shell
 

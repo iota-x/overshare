@@ -1,6 +1,6 @@
 """Opening the settings window from the menu-bar/tray app.
 
-The GUI is a separate process (see :mod:`in_detail.gui.main` for why), so this
+The GUI is a separate process (see :mod:`overshare.gui.main` for why), so this
 is the seam between them: work out how to re-invoke ourselves with
 ``--settings``, and don't start a second one if a window is already up.
 """

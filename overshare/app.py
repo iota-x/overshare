@@ -47,7 +47,7 @@ _ACTIVE_ICON = "💌"
 _PAUSED_ICON = "😴"
 
 
-class InDetailApp(rumps.App):
+class OvershareApp(rumps.App):
     def __init__(self) -> None:
         super().__init__(_ACTIVE_ICON, quit_button=None)
         self.paused = config.START_PAUSED or bool(settings.get("paused"))
@@ -774,7 +774,7 @@ class InDetailApp(rumps.App):
 
 
 def main() -> None:
-    InDetailApp().run()
+    OvershareApp().run()
 
 
 if __name__ == "__main__":

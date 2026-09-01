@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+overshare.log
 in-detail.log
 assets/*.iconset/
 data/

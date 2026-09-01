@@ -39,7 +39,7 @@ jobs:
       - name: Byte-compile everything
         # Catches syntax errors on the platform-specific modules too, which
         # never get imported on the other OS.
-        run: python -m compileall -q in_detail run_app.py
+        run: python -m compileall -q overshare run_app.py
 
       - name: Render every card
         # The selftest exits non-zero when the config is incomplete, so give it
@@ -47,7 +47,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/000000/ci-dummy
           AI_ENABLED: "false"
-        run: python -m in_detail.selftest
+        run: python -m overshare.selftest
 
       # v1.2.0 shipped a tray app that crashed on the first line of __init__,
       # because a function-local `from . import settings` shadowed the
@@ -57,8 +57,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           python -c "
-          from in_detail.app import InDetailApp
-          app = InDetailApp()
+          from overshare.app import OvershareApp
+          app = OvershareApp()
           app.timer.stop()
           print('menu-bar app constructs, paused =', app.paused)
           "
@@ -85,8 +85,8 @@ jobs:
         run: |
           python -c "
           from PySide6.QtWidgets import QApplication
-          from in_detail.gui.main import SettingsWindow
-          from in_detail.gui import theme
+          from overshare.gui.main import SettingsWindow
+          from overshare.gui import theme
           app = QApplication([])
           for dark in (False, True):
               app.setStyleSheet(theme.qss(dark))

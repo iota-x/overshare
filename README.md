@@ -256,7 +256,7 @@ for configuring it by hand:
 
 > Groq retires models periodically. If updates suddenly go plain and templated,
 > that's the tell — the old model 404s and it silently falls back. Run
-> `python -m in_detail.selftest` to see it, and set `GROQ_MODEL` to a current
+> `python -m overshare.selftest` to see it, and set `GROQ_MODEL` to a current
 > model from [console.groq.com/docs/models](https://console.groq.com/docs/models).
 > Reasoning models are handled (the thinking is hidden, not sent to her).
 
@@ -265,9 +265,9 @@ for configuring it by hand:
 ## Checking it works
 
 ```bash
-python -m in_detail.selftest          # render one card of every kind, send nothing
-python -m in_detail.selftest --live   # a card for what you're doing right now
-python -m in_detail.selftest --post   # actually send them to her channel
+python -m overshare.selftest          # render one card of every kind, send nothing
+python -m overshare.selftest --live   # a card for what you're doing right now
+python -m overshare.selftest --post   # actually send them to her channel
 ```
 
 Dry run by default. It leads with a health check — platform, AI provider and
@@ -366,10 +366,10 @@ pages re-check as you open them and say what's actually wrong.
 | ⚠️ indicator | Bot disconnected or webhook failing — check token/webhook/internet |
 | Her DM updates don't arrive | Her Discord DMs must be open to the bot |
 | Bot shows offline | Check token, Message Content Intent, and that it's invited |
-| Messages are plain/templated | AI provider/key not set, **or the model id is stale** — run `python -m in_detail.selftest` to see the real error |
+| Messages are plain/templated | AI provider/key not set, **or the model id is stale** — run `python -m overshare.selftest` to see the real error |
 | Cards show only the app name ("Discord") | Window title wasn't readable — grant Accessibility (macOS); `selftest` reports this |
-| Daily/weekly recap looks too quiet | A day with no saved file isn't a quiet day — the card now flags "⚠️ not recorded". Check `~/Library/Logs/in-detail.log` |
-| ⚠️ indicator with everything else fine | The day's tally isn't saving; the reason is in `~/Library/Logs/in-detail.log` |
+| Daily/weekly recap looks too quiet | A day with no saved file isn't a quiet day — the card now flags "⚠️ not recorded". Check `~/Library/Logs/overshare.log` |
+| ⚠️ indicator with everything else fine | The day's tally isn't saving; the reason is in `~/Library/Logs/overshare.log` |
 
 ## Stack
 

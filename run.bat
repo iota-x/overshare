@@ -15,4 +15,4 @@ if not exist ".env" (
   exit /b 1
 )
 
-.venv\Scripts\pythonw -m in_detail.app_win
+.venv\Scripts\pythonw -m overshare.app_win
