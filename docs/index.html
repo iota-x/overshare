@@ -448,21 +448,44 @@
   })();
 
   // Download links resolve to the newest release, so tagging a version updates
-  // the page without anyone editing it.
+  // the page without anyone editing it. The line under the buttons reports the
+  // version and how many times the app has been downloaded.
+  //
+  // This used to read `got.mac = mb(a.size)`, and neither `got` nor `mb` has
+  // ever existed — so the loop threw a ReferenceError on the first asset, the
+  // empty .catch below swallowed it, and the very next line (the one that
+  // writes the version) never ran. The label has said "free · open source" and
+  // nothing else since it was written. Hence: no bare catch that hides its
+  // reason, and the count is computed before anything touches the DOM.
   (function () {
     var mac = document.getElementById('dl-mac'), win = document.getElementById('dl-win');
     var meta = document.getElementById('meta');
     if (/Windows/i.test(navigator.userAgent)) { win.classList.add('on'); mac.classList.remove('on'); }
-    fetch('https://api.github.com/repos/iota-x/overshare/releases/latest')
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (rel) {
-        (rel.assets || []).forEach(function (a) {
-          // hrefs are already permanent; the API only supplies the labels.
-          if (/^Overshare-\d.*\.dmg$/i.test(a.name)) got.mac = mb(a.size);
-          if (/^Overshare-Setup-\d.*\.exe$/i.test(a.name)) got.win = mb(a.size);
+
+    // Every release, not just the latest: the buttons point at the permanent
+    // "Overshare-macOS.dmg" style names, so per-release counts are close to
+    // zero and only the all-time total means anything.
+    fetch('https://api.github.com/repos/iota-x/overshare/releases?per_page=100')
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (releases) {
+        if (!Array.isArray(releases) || !releases.length) return;
+        var total = 0;
+        releases.forEach(function (rel) {
+          (rel.assets || []).forEach(function (a) { total += a.download_count || 0; });
         });
-        if (rel.tag_name) meta.textContent = rel.tag_name + ' · free · open source';
-      }).catch(function () {});
+        var bits = [];
+        if (releases[0].tag_name) bits.push(releases[0].tag_name);
+        // Only worth saying once it is true of somebody. A page announcing
+        // "0 downloads" is arguing against itself.
+        if (total > 0) bits.push(total.toLocaleString() + (total === 1 ? ' download' : ' downloads'));
+        bits.push('free · open source');
+        meta.textContent = bits.join(' · ');
+      })
+      .catch(function (err) {
+        // Rate limit, offline, or GitHub down. The label keeps its written
+        // fallback; the reason goes to the console instead of nowhere.
+        console.warn('release info unavailable:', err && err.message);
+      });
   })();
 
   // Screenshots open full size — they carry detail that dies at page scale.
