@@ -502,6 +502,11 @@ class OvershareApp(rumps.App):
         There is no paid Apple certificate here, so the build is ad-hoc signed
         and its cdhash changes with every release. TCC stores that hash, so the
         entry left by the previous version no longer matches the new binary.
+        Which is why the guidance says remove the entry and add it back rather
+        than toggle it: toggling re-approves the row that is already there, and
+        that row still names the old build's hash. Reported from a real 1.4.0 →
+        1.5.2 update, where the toggle didn't take and −/+ did — one machine,
+        not a proof, so the toggle is still named rather than ruled out.
         Re-granting is what fixes it, and this loop is why nothing has to be
         restarted afterwards: permission_ok() is a bare AXIsProcessTrusted(),
         read fresh every tick, so a grant given to a running app takes hold on
@@ -530,9 +535,9 @@ class OvershareApp(rumps.App):
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "
                         "actually doing. System Settings → Privacy & Security → "
-                        "Accessibility → switch Overshare off and on. If that "
-                        "doesn't take, remove the entry with − and add it back "
-                        "with +. No need to restart it — this notices by itself.")
+                        "Accessibility → select Overshare, remove it with −, "
+                        "add it back with +. Switching it off and on may not be "
+                        "enough. No need to restart it — this notices by itself.")
                 elif told is not None:
                     log.write("accessibility: granted again")
                     rumps.notification("overshare", "Accessibility is back",
