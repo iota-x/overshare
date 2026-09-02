@@ -11,6 +11,9 @@ One toggle, one mechanism per platform:
   * Windows — the same Startup-folder shortcut the installer creates, so this
     and the installer can't both fire and start the app twice.
 
+And one default, "on", now decided at the same point in the story on both:
+during setup on Windows, at first launch on macOS. See :func:`apply_default`.
+
 RunAtLoad only, never KeepAlive: quitting from the menu bar has to mean quit,
 not "restart in a second".
 """
@@ -22,7 +25,7 @@ import plistlib
 import sys
 from pathlib import Path
 
-from . import log
+from . import log, settings
 
 LABEL = "com.iota.overshare"
 _NAME = "Overshare"
@@ -120,3 +123,35 @@ def set_enabled(on: bool) -> bool:
     except Exception as e:
         log.exception("startup: could not change the login item", e)
         return False
+
+
+def apply_default() -> None:
+    """Answer "should this open at sign-in?" once, on the first run of a build.
+
+    The two platforms ask it at different moments, and only one of them was
+    asking at all. Inno asks during setup with "Start Overshare when I sign in"
+    already ticked, so a Windows machine is always-on before the app has run
+    once. The .dmg is a drag onto Applications with no setup step, so on macOS
+    nobody ever asked, the switch stayed off, and the same app that reappeared
+    after a Windows restart simply didn't come back after a Mac one.
+
+    First launch is the macOS equivalent of that ticked box, so it happens here.
+    Windows is left alone: the installer already asked, and re-applying would
+    tick a box someone deliberately unticked during setup.
+
+    Recorded in settings, so it is answered exactly once. Turning the switch off
+    has to stick — an app that reinstates itself every launch is spyware
+    behaviour, not a default.
+
+    Macs already running an older build get their one turn on the update, since
+    nothing was recorded before this existed and "never asked" is indistinguish-
+    able from "asked and declined". That's deliberate: it is the same answer a
+    fresh install gets, and the switch is one click away on the Advanced page.
+    """
+    if not available():
+        return                       # a source checkout has nothing to install
+    if settings.get("startup_default_applied"):
+        return
+    if not sys.platform.startswith("win") and not enabled():
+        set_enabled(True)
+    settings.set("startup_default_applied", True)

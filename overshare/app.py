@@ -27,6 +27,7 @@ from . import recap
 from . import settings
 from . import sites
 from . import sound
+from . import startup
 from . import weekly
 from .state import Tracker, Decision
 from .summarizer import summarize
@@ -143,6 +144,9 @@ class OvershareApp(rumps.App):
         threading.Thread(target=self._collect_loop, daemon=True).start()
         # Anything that came due while the app was closed — see recap.catch_up.
         threading.Thread(target=self._catch_up, daemon=True).start()
+        # Windows was ticked into starting at sign-in by its installer; the
+        # .dmg has no setup step, so a first launch is where macOS decides it.
+        startup.apply_default()
         # A fresh install has nothing set up and no window to set it up in.
         threading.Thread(target=self._first_run, daemon=True).start()
         threading.Thread(target=self._watch_permission, daemon=True).start()

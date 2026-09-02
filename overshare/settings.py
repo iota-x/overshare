@@ -27,6 +27,9 @@ from . import config
 # selfie_enabled/selfie_time: a once-daily automatic webcam check-in photo.
 # daily_question_enabled/daily_question_time: a once-daily "question of the day".
 # her_timezone: IANA name (e.g. "America/New_York") to show their local time.
+# startup_default_applied: whether startup.apply_default() has had its one turn
+#   at switching the login item on. Bookkeeping, not a preference — the login
+#   item itself lives in the OS, not here.
 _DEFAULTS = {
     # Master switch. Lives here rather than in memory so the menu bar and the
     # settings window always agree, and so a pause survives a restart — pausing
@@ -49,6 +52,7 @@ _DEFAULTS = {
     "daily_question_enabled": False,
     "daily_question_time": "12:00",
     "her_timezone": "",
+    "startup_default_applied": False,
 }
 _cache: dict | None = None
 

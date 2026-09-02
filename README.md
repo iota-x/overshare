@@ -149,9 +149,11 @@ camera**.
 
 ### Start it with your computer
 
-* **macOS** — System Settings → General → Login Items → **+** → Overshare
-* **Windows** — tick *"Start Overshare when I sign in"* during install, or drop a
-  shortcut in the folder that `Win+R` → `shell:startup` opens
+On by default on both, and it's one switch either way: **Settings → Advanced →
+Startup → "Start when I sign in"**. Turn it off there and it stays off.
+
+Windows asks during install (the ticked *"Start Overshare when I sign in"*);
+macOS has no install step to ask in, so it's set on the first launch instead.
 
 ---
 

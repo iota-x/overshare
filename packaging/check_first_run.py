@@ -331,6 +331,51 @@ def check_login_item():
     print("login item: goes on and off, and won't resurrect a quit app")
 
 
+def check_startup_default():
+    """A fresh install must already be set to open at sign-in — and only once.
+
+    This is the whole bug: Windows asked during setup with the box ticked, the
+    .dmg never asked, so the Mac build was the only one that didn't come back
+    after a restart. And the half that matters just as much — someone who turns
+    it off must not find it back on next launch.
+    """
+    from overshare import startup
+
+    store, asked, on = {}, [], [False]
+    fake = types.SimpleNamespace(get=store.get,
+                                 set=lambda k, v: store.__setitem__(k, v))
+
+    def record(v):
+        asked.append(v)
+        on[0] = v
+        return True
+
+    with mock.patch.object(startup, "settings", fake), \
+         mock.patch.object(startup, "available", lambda: True), \
+         mock.patch.object(startup, "enabled", lambda: on[0]), \
+         mock.patch.object(startup, "set_enabled", record):
+        startup.apply_default()
+        if sys.platform.startswith("win"):
+            assert asked == [], "re-ticked the box the installer already asked about"
+        else:
+            assert asked == [True], \
+                f"a fresh install was left not opening at sign-in ({asked})"
+
+        # They turn it off. Launching again must leave it off.
+        on[0] = False
+        asked.clear()
+        startup.apply_default()
+        assert asked == [], "switched the login item back on after it was turned off"
+
+    # And a checkout has nothing installed to start, so it must not even mark it.
+    store.clear()
+    with mock.patch.object(startup, "settings", fake), \
+         mock.patch.object(startup, "available", lambda: False):
+        startup.apply_default()
+    assert store == {}, f"a source checkout recorded a decision ({store})"
+    print("startup: on by default once on a fresh install, and off stays off")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -397,6 +442,7 @@ check_no_duplicate_checks()
 check_update_guardrails()
 check_swap_script()
 check_login_item()
+check_startup_default()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

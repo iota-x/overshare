@@ -21,7 +21,7 @@ import random
 import pystray
 from PIL import Image
 
-from . import capture, config, collectors, companion, history, log, notifier, questions, recap, settings, sites, sound, weekly, timefmt
+from . import capture, config, collectors, companion, history, log, notifier, questions, recap, settings, sites, sound, startup, weekly, timefmt
 from .state import Tracker, Decision
 from .summarizer import summarize
 
@@ -94,6 +94,10 @@ class WinApp:
         self.icon = pystray.Icon("overshare", _load_icon(), self._tooltip(), menu)
 
         companion.start()
+        # A no-op here — the installer already asked, with the box ticked. It is
+        # called anyway so the "already decided" mark is set on both platforms
+        # and neither can later mistake an old install for a fresh one.
+        startup.apply_default()
         threading.Thread(target=self._first_run, daemon=True).start()
         threading.Thread(target=self._loop, daemon=True).start()
         # Windows machines get shut down for the night, so the in-process day
