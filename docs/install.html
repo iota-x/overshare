@@ -55,14 +55,16 @@
         command above removes that one flag and nothing else.</p>
       <p class="note">macOS will ask for <b>Accessibility</b> (window and file
         titles) and <b>Automation</b> (your browser tab and what's playing) as you
-        go. After granting Accessibility, quit from the menu bar and reopen.</p>
+        go. Grant Accessibility and the running app picks it up by itself —
+        the next update already carries your titles. Nothing to restart.</p>
       <p class="note"><b>When you update to a new version</b>, macOS drops the
         Accessibility grant — the app isn't signed by a paid Apple developer
         account, so every build looks like a different app to it. Switch
-        Overshare off and on in that list, then <b>quit and reopen the app</b> —
-        the permission is only read at launch. If it still doesn't take, remove
-        the entry with <b>−</b> and add it back with <b>+</b>. Without it
-        updates still send, they just stop naming what you're actually in.</p>
+        Overshare off and on in that list. If it doesn't take, remove the entry
+        with <b>−</b> and add it back with <b>+</b>. Either way you don't
+        have to quit and reopen: the app rechecks while it runs, and says
+        <i>Accessibility is back</i> within a minute. Without it updates still
+        send, they just stop naming what you're actually in.</p>
     </div>
 
     <div class="plat up" id="win" style="--d:80ms">

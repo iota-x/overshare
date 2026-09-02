@@ -502,8 +502,11 @@ class OvershareApp(rumps.App):
         There is no paid Apple certificate here, so the build is ad-hoc signed
         and its cdhash changes with every release. TCC stores that hash, so the
         entry left by the previous version no longer matches the new binary.
-        Re-granting is what fixes it, and the app has to be restarted after —
-        the AX permission is read at launch.
+        Re-granting is what fixes it, and this loop is why nothing has to be
+        restarted afterwards: permission_ok() is a bare AXIsProcessTrusted(),
+        read fresh every tick, so a grant given to a running app takes hold on
+        its own. Collection recovers first and this notices within the minute —
+        watched happening on 1.5.2, titles back 24s before the loop said so.
         Nothing breaks loudly when that happens: window titles just stop
         arriving, and every message quietly gets poorer. "on Notion — JOURNAL"
         becomes "on Notion" and nobody is told why.
