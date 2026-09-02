@@ -229,6 +229,15 @@ jobs:
             isn't signed by a paid Apple developer account, so a normal
             double-click gets refused.
 
+            > **Updating? macOS drops the Accessibility permission every time.**
+            > Same reason — an unsigned build's fingerprint changes, so the
+            > saved permission stops matching. Switching the entry off and on
+            > does **not** work; it points at the build you replaced. Go to
+            > **System Settings → Privacy & Security → Accessibility**, select
+            > Overshare, press **−**, then **+** and add it back. Overshare
+            > reopens itself once it notices. Until then updates still send,
+            > they just stop naming the channel or file you're in.
+
             **Windows** — download and run the `Setup.exe`. SmartScreen may warn
             you; click **More info → Run anyway**. Installs for your user only,
             so there's no admin prompt.

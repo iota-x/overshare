@@ -55,18 +55,30 @@
         command above removes that one flag and nothing else.</p>
       <p class="note">macOS will ask for <b>Accessibility</b> (window and file
         titles) and <b>Automation</b> (your browser tab and what's playing) as you
-        go. Grant Accessibility and the running app picks it up by itself —
-        the next update already carries your titles. Nothing to restart.</p>
-      <p class="note"><b>When you update to a new version</b>, macOS drops the
-        Accessibility grant — the app isn't signed by a paid Apple developer
-        account, so every build looks like a different app to it. Select
-        Overshare in that list, remove it with <b>−</b>, then add it back with
-        <b>+</b>. Switching it off and on is the obvious move and it may not be
-        enough — the entry remembers the build it was granted to, not the one
-        you just installed. Either way you don't have to quit and reopen: the
-        app rechecks while it runs, and says <i>Accessibility is back</i>
-        within a minute. Without it updates still send, they just stop naming
-        what you're actually in.</p>
+        go. Grant Accessibility and Overshare picks it up within a minute and
+        reopens itself, so there is nothing for you to restart. Note that it
+        asks again after <i>every</i> update — see below for why.</p>
+      <p class="note" id="regrant"><b>Every update takes the Accessibility
+        permission away again.</b> Not a bug, not avoidable, and it will happen
+        on every single update. Overshare isn't signed by a paid Apple developer
+        account, so it is signed <i>ad-hoc</i>: a signature with no fixed
+        identity, whose fingerprint is computed from the app's own bytes and so
+        changes with every build. macOS files your permission under that
+        fingerprint. New build, new fingerprint, and the permission it saved no
+        longer matches the app asking for it.</p>
+      <p class="note"><b>Switching it off and on does not work.</b> The old
+        entry stays in the list, still switched on, still looking right. It
+        isn't — it points at the build you just replaced, so toggling it only
+        re-approves an app that no longer exists. The entry has to be replaced:</p>
+      <p class="note"><b>System Settings → Privacy &amp; Security →
+        Accessibility</b> → select <b>Overshare</b> → press <b>−</b> to remove
+        it → press <b>+</b> and add <b>Overshare</b> back from Applications.</p>
+      <p class="note">Overshare notices within a minute and <b>reopens itself</b>.
+        It has to: a permission that returns mid-run doesn't reach apps it
+        already tried to read while it was blocked, so whatever you had open at
+        the time would keep reporting nothing until it restarted. That part is
+        handled for you. Without the permission updates still send — they just
+        stop naming the channel, file or tab you're actually in.</p>
     </div>
 
     <div class="plat up" id="win" style="--d:80ms">

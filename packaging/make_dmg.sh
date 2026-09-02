@@ -48,6 +48,21 @@ macOS will ask for a few permissions as you use it:
   * Accessibility  — to read window and file titles
   * Automation     — to read your browser tab and what's playing
   * Camera/Screen  — only if you use the peek features
+
+3. EVERY TIME YOU UPDATE, macOS takes the Accessibility permission away.
+
+   This app isn't signed by a paid Apple developer account, so its signature
+   has no fixed identity — the fingerprint changes with every build, and the
+   permission macOS saved no longer matches the app asking for it.
+
+   Switching the entry off and on does NOT fix it: the old entry points at the
+   build you just replaced. You have to remove and re-add it:
+
+     System Settings -> Privacy & Security -> Accessibility
+       -> select Overshare -> press "-" -> press "+" and add it back
+
+   Overshare notices within a minute and reopens itself. Until you do it,
+   updates still send, they just stop naming what you're actually in.
 EOF
 
 rm -f "$DMG"

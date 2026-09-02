@@ -141,8 +141,37 @@ window checks the link as you type and tells you if it worked.
 * **Automation** — your browser's tab and what's playing in Spotify
 * **Camera** / **Screen Recording** — only if you use `!peek` / `!screen` / `!live`
 
-Grant Accessibility and the running app picks it up by itself, within a minute.
-There is nothing to restart.
+Grant Accessibility and Overshare picks it up within a minute and reopens itself,
+so there is nothing for you to restart.
+
+#### macOS takes Accessibility away on every update — here's why, and the fix
+
+Expect this after **every** update. It is not a bug and there is no way around it
+without a paid Apple developer account.
+
+Overshare isn't signed by one, so PyInstaller signs it *ad-hoc* — a signature with
+no fixed identity, whose fingerprint is computed from the app's own bytes and
+therefore changes with every build. macOS files your Accessibility permission
+under that fingerprint. A new build has a new fingerprint, so the permission it
+saved no longer matches the app asking for it, and macOS silently says no.
+
+**Switching the entry off and on does not fix it.** The old entry is still in the
+list and still switched on, so it looks fine — but it points at the build you just
+replaced. Toggling it re-approves an app that no longer exists. Replace the entry
+instead:
+
+> **System Settings → Privacy & Security → Accessibility** → select **Overshare**
+> → press **−** to remove it → press **+** and add **Overshare** back from your
+> Applications folder.
+
+Overshare then notices within a minute and reopens itself. It has to: a permission
+that comes back mid-run doesn't reach apps it already tried to read while blocked,
+so whatever you had open at the time would keep reporting nothing until it
+restarted. That part is automatic.
+
+Without the permission Overshare still sends updates — they just stop naming the
+channel, file or tab you're actually in ("on Discord" instead of "on Discord in
+#general").
 
 **Windows** needs none of this, with one exception: if `!peek` comes back empty,
 turn on **Settings → Privacy & security → Camera → Let desktop apps access your

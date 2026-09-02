@@ -433,6 +433,81 @@ def check_discord_channel_reaches_the_model():
     print("discord: the prompt asks for the channel before offering the fallback")
 
 
+def check_relaunch_on_regrant():
+    """Getting the permission back must reopen the app, exactly once.
+
+    A grant that returns mid-run does not reach apps this process already tried
+    to read while it was blocked. On 2026-09-03 that left Discord reporting a
+    bare "on Discord" for seven minutes after Accessibility came back, while
+    Code and Brave — first read after the grant — were fine immediately. Nobody
+    can tell those apart from the outside, so the app restarts itself.
+    """
+    import time
+    from overshare import app, collectors
+
+    calls = []
+    probe = app.OvershareApp.__new__(app.OvershareApp)
+    probe._relaunched = False
+    probe._relaunch_for_permission = lambda: calls.append("reopened")
+
+    # missing -> back -> still back: one restart, on the edge only.
+    seq = iter([False, True, True])
+    ticks = [1, 2, 3]
+    with mock.patch.object(app.rumps, "notification", lambda *a, **k: None), \
+         mock.patch.object(collectors, "accessibility_ok", lambda: next(seq)), \
+         mock.patch.object(collectors, "ask_for_permission", lambda: True), \
+         mock.patch.object(app.time, "sleep", lambda s: ticks.pop() and None):
+        try:
+            probe._watch_permission()
+        except (StopIteration, IndexError):
+            pass
+    assert calls == ["reopened"], f"expected exactly one reopen, got {calls}"
+
+    # A checkout has no bundle to reopen, and must not try.
+    real = app.OvershareApp.__new__(app.OvershareApp)
+    real._relaunched = False
+    real._relaunch_for_permission()          # sys.frozen is False here
+    assert real._relaunched is False, "a source checkout armed a relaunch"
+
+    # The helper waits for the whole bundle, like the updater's swap does —
+    # the settings window is its own process out of the same bundle.
+    assert 'pgrep -f "$TARGET/Contents/MacOS/"' in app._RELAUNCH, \
+        "the relaunch waits on one pid instead of the bundle"
+    assert 'open -a "$TARGET"' in app._RELAUNCH, \
+        "reopens the inner binary, which loses the bundle identity the grant is on"
+    print("accessibility: a returning grant reopens the app, once, and never in a checkout")
+
+
+def check_regrant_says_remove_and_readd():
+    """Every place that tells someone how to re-grant must say −/+, not toggle.
+
+    Toggling re-approves the build that was replaced, which is the one thing
+    that looks like it should work and doesn't.
+    """
+    import re
+    root = pathlib.Path(__file__).resolve().parent.parent
+    targets = [
+        root / "README.md",
+        root / "docs" / "install.html",
+        root / "overshare" / "app.py",
+        root / "overshare" / "checkup.py",
+        root / "overshare" / "gui" / "pages" / "health.py",
+        root / "packaging" / "make_dmg.sh",
+    ]
+    for f in targets:
+        text = f.read_text(encoding="utf-8")
+        if "Accessibility" not in text:
+            continue
+        assert "−" in text or '"-"' in text, f"{f.name} never mentions removing the entry"
+    # And nothing may still claim a plain toggle is the fix.
+    for f in targets:
+        text = f.read_text(encoding="utf-8").lower()
+        for claim in ("switch overshare off and on in that list",
+                      "turn on overshare, then quit"):
+            assert claim not in text, f"{f.name} still tells people to toggle"
+    print(f"regrant: {len(targets)} places say remove-and-re-add, none say toggle")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -502,6 +577,8 @@ check_login_item()
 check_startup_default()
 check_discord_variants()
 check_discord_channel_reaches_the_model()
+check_relaunch_on_regrant()
+check_regrant_says_remove_and_readd()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

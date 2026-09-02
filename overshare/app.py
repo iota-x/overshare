@@ -8,8 +8,13 @@ every few seconds and posts to Discord per the rules in state.py.
 from __future__ import annotations
 
 import datetime as _dt
+import os
+import subprocess
+import sys
+import tempfile
 import threading
 import time
+from pathlib import Path
 
 import rumps
 
@@ -34,6 +39,25 @@ from .summarizer import summarize
 
 _WORK_CATEGORIES = {"coding", "terminal"}
 
+# Waits for the bundle to be empty, then opens it again. Detached, because the
+# thing it is waiting for is the process that starts it. `open -a` rather than
+# the inner binary: Launch Services is what gives the new process the bundle's
+# identity, and the identity is what the Accessibility grant is attached to.
+_RELAUNCH = r"""#!/bin/sh
+set -u
+TARGET="$1"; LOG="$2"
+n=0
+while pgrep -f "$TARGET/Contents/MacOS/" >/dev/null 2>&1; do
+  n=$((n+1))
+  [ "$n" -gt 200 ] && {
+    printf '%s  relaunch: app never quit — not reopening\n' \
+      "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"; exit 1; }
+  sleep 0.2
+done
+open -a "$TARGET" || printf '%s  relaunch: open failed\n' \
+  "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
+"""
+
 
 def _good_morning_line() -> str:
     name = settings.get("pet_name") or config.PARTNER_NAME or "love"
@@ -49,6 +73,10 @@ _PAUSED_ICON = "😴"
 
 
 class OvershareApp(rumps.App):
+    # Set the moment a permission-restart is started, so it can only ever
+    # happen once in the life of this process.
+    _relaunched = False
+
     def __init__(self) -> None:
         super().__init__(_ACTIVE_ICON, quit_button=None)
         self.paused = config.START_PAUSED or bool(settings.get("paused"))
@@ -130,7 +158,8 @@ class OvershareApp(rumps.App):
                 rumps.notification(
                     "Overshare needs Accessibility",
                     "System Settings → Privacy & Security → Accessibility",
-                    "so it can read window titles & tabs. No restart needed.",
+                    "so it can read window titles & tabs. Already listed after "
+                    "an update? Press − then + — I'll reopen myself.",
                 )
             except Exception:
                 # Notifications need a bundled app; harmless if unavailable
@@ -534,16 +563,61 @@ class OvershareApp(rumps.App):
                     rumps.notification(
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "
-                        "actually doing. System Settings → Privacy & Security → "
-                        "Accessibility → select Overshare, remove it with −, "
-                        "add it back with +. Switching it off and on may not be "
-                        "enough. No need to restart it — this notices by itself.")
+                        "actually doing. Updating replaces the app, and macOS "
+                        "drops the grant every time. System Settings → Privacy "
+                        "& Security → Accessibility → select Overshare, press "
+                        "− to remove it, then + to add it back. Switching it "
+                        "off and on does NOT work. I'll reopen myself after.")
                 elif told is not None:
                     log.write("accessibility: granted again")
                     rumps.notification("overshare", "Accessibility is back",
-                                       "Updates have their detail again 💛")
+                                       "Reopening so every app reports again 💛")
+                    self._relaunch_for_permission()
                 told = ok
             time.sleep(60)
+
+    def _relaunch_for_permission(self) -> None:
+        """Quit and come straight back, now that the grant is real.
+
+        A returning grant does NOT reach every app. Anything this process
+        already asked about while untrusted stays broken until the process
+        itself is replaced. Watched on 2026-09-03: Accessibility came back at
+        03:50:12, Code and Brave reported their titles within seconds, and
+        Discord — which happened to be frontmost when the app launched
+        untrusted, so it was the one app already asked about — kept sending a
+        bare "on Discord" for seven minutes until a restart. Nobody can tell
+        from the outside which apps are in which state, so this does the
+        restart instead of asking for one.
+
+        Same shape as the updater's swap: a detached sh that waits for every
+        process out of this bundle to go, then opens it again. `open -a` rather
+        than the inner binary, so Launch Services gives the new process the
+        bundle's identity — which is what the grant is attached to.
+        """
+        if self._relaunched or not getattr(sys, "frozen", False):
+            return                       # a checkout has no bundle to reopen
+        bundle = Path(sys.executable).resolve().parents[2]
+        if bundle.suffix != ".app":
+            return
+        # Once per process. If the grant ever flapped, restarting on each flap
+        # would be a loop with no way out of it.
+        self._relaunched = True
+        try:
+            script = os.path.join(tempfile.gettempdir(), "overshare-relaunch.sh")
+            with open(script, "w", encoding="utf-8") as fh:
+                fh.write(_RELAUNCH)
+            os.chmod(script, 0o755)
+            log.write("accessibility: reopening so the new grant applies", str(bundle))
+            subprocess.Popen(
+                ["/bin/sh", script, str(bundle), log.path()],
+                start_new_session=True,      # has to outlive the app it reopens
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            from . import launcher
+            launcher.close_settings()        # don't leave a stray window behind
+            history.save(self.day)           # same care quit_app takes
+            rumps.quit_application()
+        except Exception as e:
+            log.exception("accessibility: could not reopen", e)
 
     def _first_run(self) -> None:
         """Show the settings window when there's nothing configured yet.

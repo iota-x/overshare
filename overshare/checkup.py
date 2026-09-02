@@ -90,7 +90,8 @@ def _activity() -> list[Check]:
             "Accessibility", "good" if ok else "bad",
             "granted" if ok else "not granted",
             "" if ok else "System Settings → Privacy & Security → Accessibility → "
-                          "turn on Overshare. It takes hold on its own, no restart.",
+                          "select Overshare, press − then + to add it back. "
+                          "Toggling it off and on does not work after an update.",
             critical=True))
 
     # The real proof: ask for a snapshot and see whether anything comes back.
