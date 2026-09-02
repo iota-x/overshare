@@ -54,11 +54,15 @@ _SYSTEM = (
     "a call, or with anyone — unless the context explicitly states it. Do not name "
     "a video, stream, game, or person that isn't given. Be specific only with "
     "details actually provided (a video title, a file, a site name). "
-    "For a chat or voice app like Discord when no further detail is given, say only "
-    "only that they're on it (e.g. 'on discord') — never invent a stream, a topic, "
-    "or who they're with. When details are thin, stay general ('on my mac', 'on "
-    "discord') rather than guessing. If background music is listed you may weave it "
-    "in. When in doubt, under-describe — say less, never more than the facts."
+    "For a chat or voice app like Discord: when the context gives a 'discord "
+    "channel/dm', SAY IT — the channel is the interesting part, so 'in #general' "
+    "beats 'on discord', and name the server too when one is given. Those are "
+    "facts you were handed, not guesses. Only when no channel is given do you fall "
+    "back to saying just that they're on it (e.g. 'on discord'). Either way never "
+    "invent a stream, a topic, or who they're with. When details are thin, stay "
+    "general ('on my mac') rather than guessing. If background music is listed you "
+    "may weave it in. When in doubt, under-describe — say less, never more than "
+    "the facts."
 )
 
 _TONES = {

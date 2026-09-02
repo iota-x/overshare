@@ -376,6 +376,63 @@ def check_startup_default():
     print("startup: on by default once on a fresh install, and off stays off")
 
 
+def check_discord_variants():
+    """Every Discord build is Discord, and the channel survives the title.
+
+    PTB was missing from the bundle map, so it scored as "other": a grey generic
+    card, and the raw window title handed to the summarizer, which echoed it
+    back as "on Discord PTB — General | Gooner hideout - Discord" rather than
+    naming the channel. Someone on PTB got no channel at all.
+    """
+    if sys.platform != "darwin":
+        print("discord: bundle map is macOS-only, skipped")
+        return
+
+    from overshare import _mac, notifier
+
+    for bundle in ("com.hnc.Discord", "com.hnc.DiscordPTB",
+                   "com.hnc.DiscordCanary", "com.hnc.DiscordDevelopment"):
+        got = _mac._CATEGORY_BY_BUNDLE.get(bundle)
+        assert got == "discord", f"{bundle} categorised as {got!r}, not discord"
+
+    # The rank of build must not change what is read out of the title.
+    forms = {
+        "#general | My Server - Discord":       ("#general", "My Server"),
+        "#general | My Server - Discord PTB":   ("#general", "My Server"),
+        "#general | My Server - Discord Canary": ("#general", "My Server"),
+        "(3) #general | My Server":             ("#general", "My Server"),
+        "@friend - Discord":                    ("@friend", ""),
+        "(1466) Discord | @sam":                ("@sam", ""),
+        "Discord":                              ("", ""),      # home / friends
+        "Discord PTB":                          ("", ""),
+    }
+    for title, want in forms.items():
+        got = notifier._discord_channel(title)
+        assert got == want, f"{title!r} -> {got}, wanted {want}"
+    print(f"discord: 4 builds map to discord, {len(forms)} title forms parse")
+
+
+def check_discord_channel_reaches_the_model():
+    """The channel is useless if the summarizer is told to ignore it.
+
+    The prompt used to offer "on discord" as the example output twice and never
+    said to use the channel, so every Discord update read "on Discord" even with
+    the channel sitting in the context. No model call here — this asserts the
+    context block carries the parsed pieces, and that the prompt asks for them.
+    """
+    from overshare import summarizer
+
+    assert "discord channel/dm" in summarizer._SYSTEM or \
+           "channel/dm" in summarizer._SYSTEM, \
+        "the prompt never mentions the channel it is given"
+    lowered = summarizer._SYSTEM.lower()
+    say_it = lowered.index("say it")
+    fallback = lowered.index("only when no channel is given")
+    assert say_it < fallback, \
+        "the fallback is stated before the instruction to name the channel"
+    print("discord: the prompt asks for the channel before offering the fallback")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -443,6 +500,8 @@ check_update_guardrails()
 check_swap_script()
 check_login_item()
 check_startup_default()
+check_discord_variants()
+check_discord_channel_reaches_the_model()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

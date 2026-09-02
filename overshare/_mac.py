@@ -40,7 +40,17 @@ _CATEGORY_BY_BUNDLE = {
     "com.apple.dt.Xcode": "coding",
     "com.googlecode.iterm2": "terminal",
     "com.apple.Terminal": "terminal",
+    # Every Discord release channel, not just stable — they are separate apps
+    # with separate bundle ids, and someone on PTB is on Discord as far as this
+    # is concerned. With PTB missing it fell through to "other": a grey card
+    # with the generic 🖥️, and the raw window title handed to the summarizer,
+    # which echoed it back verbatim as "on Discord PTB — General | Gooner
+    # hideout - Discord" instead of naming the channel. The browser sets above
+    # already cover their beta/canary builds for the same reason.
     "com.hnc.Discord": "discord",
+    "com.hnc.DiscordPTB": "discord",
+    "com.hnc.DiscordCanary": "discord",
+    "com.hnc.DiscordDevelopment": "discord",
     "com.tinyspeck.slackmacgap": "chat",
     "com.spotify.client": "music",
     "com.apple.Music": "music",

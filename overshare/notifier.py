@@ -69,12 +69,16 @@ def _discord_channel(title: str) -> tuple[str, str]:
     form '(1466) Discord | @friend' where the app name sits on the *left* and
     the conversation on the right. Returns (channel, server)."""
     t = re.sub(r"^\(\d+\)\s*", "", title or "")          # drop unread count
-    t = re.sub(r"\s*[-–—]\s*Discord\s*$", "", t).strip()  # drop trailing app name
-    if not t or t.lower() == "discord":
+    # PTB and Canary happen to title their windows "… - Discord" like stable
+    # does, but don't bank on it: a build that appends its own name would leave
+    # "Discord Canary" sitting in the server slot.
+    _APP = r"Discord(?:\s+(?:PTB|Canary|Development))?"
+    t = re.sub(rf"\s*[-–—]\s*{_APP}\s*$", "", t, flags=re.I).strip()
+    if not t or re.fullmatch(_APP, t, flags=re.I):
         return "", ""                                     # home / friends list
     if "|" in t:
         left, right = (part.strip() for part in t.split("|", 1))
-        if left.lower() == "discord":
+        if re.fullmatch(_APP, left, flags=re.I):
             # '(1466) Discord | @sam' — the conversation is the interesting half.
             return right, ""
         return left, right
