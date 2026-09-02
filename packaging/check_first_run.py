@@ -442,7 +442,12 @@ def check_relaunch_on_regrant():
     Code and Brave — first read after the grant — were fine immediately. Nobody
     can tell those apart from the outside, so the app restarts itself.
     """
-    import time
+    # overshare.app imports rumps, which is a macOS-only requirement — the same
+    # reason check_permission_watcher is skipped on the Windows runner.
+    if sys.platform != "darwin":
+        print("accessibility: relaunch is macOS-only, skipped")
+        return
+
     from overshare import app, collectors
 
     calls = []
