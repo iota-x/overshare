@@ -206,4 +206,4 @@ class HealthPage(Page):
             "open",
             "x-apple.systempreferences:com.apple.preference.security"
             "?Privacy_Accessibility"])
-        self.ctx.say("re-grant Overshare, then quit and reopen it")
+        self.ctx.say("re-grant Overshare — it takes hold on its own, no restart")

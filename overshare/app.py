@@ -130,7 +130,7 @@ class OvershareApp(rumps.App):
                 rumps.notification(
                     "Overshare needs Accessibility",
                     "System Settings → Privacy & Security → Accessibility",
-                    "so it can read window titles & tabs. Then restart it.",
+                    "so it can read window titles & tabs. No restart needed.",
                 )
             except Exception:
                 # Notifications need a bundled app; harmless if unavailable
@@ -530,9 +530,9 @@ class OvershareApp(rumps.App):
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "
                         "actually doing. System Settings → Privacy & Security → "
-                        "Accessibility → switch Overshare off and on, then quit "
-                        "and reopen it. If that doesn't take, remove the entry "
-                        "with − and add it back with +.")
+                        "Accessibility → switch Overshare off and on. If that "
+                        "doesn't take, remove the entry with − and add it back "
+                        "with +. No need to restart it — this notices by itself.")
                 elif told is not None:
                     log.write("accessibility: granted again")
                     rumps.notification("overshare", "Accessibility is back",

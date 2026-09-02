@@ -141,7 +141,8 @@ window checks the link as you type and tells you if it worked.
 * **Automation** — your browser's tab and what's playing in Spotify
 * **Camera** / **Screen Recording** — only if you use `!peek` / `!screen` / `!live`
 
-After granting Accessibility, quit Overshare from the menu bar and reopen it.
+Grant Accessibility and the running app picks it up by itself, within a minute.
+There is nothing to restart.
 
 **Windows** needs none of this, with one exception: if `!peek` comes back empty,
 turn on **Settings → Privacy & security → Camera → Let desktop apps access your
