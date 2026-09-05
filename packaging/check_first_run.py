@@ -513,6 +513,53 @@ def check_regrant_says_remove_and_readd():
     print(f"regrant: {len(targets)} places say remove-and-re-add, none say toggle")
 
 
+def check_dwell():
+    """Lingering on one thing fires once, only for things with a link, and obeys
+    the toggle. It's the whole 'still on this post' feature — cheap to get wrong
+    silently (fire every tick, or nag on the editor), so it's pinned here."""
+    from unittest import mock
+    from overshare import config, state
+    from overshare.collectors import Snapshot
+
+    clock = [1000.0]
+    with mock.patch.object(state.time, "monotonic", lambda: clock[0]):
+        post = Snapshot(app="Brave", bundle_id="com.brave.Browser",
+                        category="browsing", tab_title="a post",
+                        url="https://x.com/a/status/1")
+        editor = Snapshot(app="Code", bundle_id="com.microsoft.VSCode",
+                          category="coding", window_title="app.py")
+
+        with mock.patch.object(config, "DWELL_ENABLED", True), \
+             mock.patch.object(config, "DWELL_SECONDS", 180.0):
+            t = state.Tracker()
+            kinds = []
+            for _ in range(90):
+                clock[0] += 3
+                d = t.evaluate(post)
+                if d.should_send:
+                    kinds.append(d.kind)
+            dwell = [k for k in kinds if k == "dwell"]
+            assert len(dwell) == 1, f"dwell should fire once, got {dwell} in {kinds}"
+
+            # A URL-less activity must never dwell — you live in your editor.
+            t2 = state.Tracker()
+            for _ in range(90):
+                clock[0] += 3
+                d = t2.evaluate(editor)
+                assert d.kind != "dwell", "the editor should never trigger a dwell"
+
+        # Toggle off = never fires.
+        with mock.patch.object(config, "DWELL_ENABLED", False), \
+             mock.patch.object(config, "DWELL_SECONDS", 180.0):
+            t3 = state.Tracker()
+            for _ in range(90):
+                clock[0] += 3
+                d = t3.evaluate(post)
+                assert d.kind != "dwell", "dwell fired with the toggle off"
+
+    print("dwell: fires once on a linked page, never on the editor, off when disabled")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -584,6 +631,7 @@ check_discord_variants()
 check_discord_channel_reaches_the_model()
 check_relaunch_on_regrant()
 check_regrant_says_remove_and_readd()
+check_dwell()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

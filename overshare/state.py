@@ -27,6 +27,17 @@ class Decision:
     snapshot: Snapshot | None = None
 
 
+def _lingerable(snap: Snapshot) -> bool:
+    """Is this the kind of thing it makes sense to say someone lingered ON?
+
+    A specific piece of content you sit with — a post, an article, a reel, a
+    video — always has a URL, and that URL is also the link worth sending. An
+    app with no URL (your editor, a terminal) is where you *live*, not something
+    you linger on, so dwelling there would just nag.
+    """
+    return bool(snap.url)
+
+
 class Tracker:
     def __init__(self) -> None:
         now = time.monotonic()
@@ -37,6 +48,9 @@ class Tracker:
         self.away_announced: bool = False
         self.away_since: float = 0.0
         self.last_snapshot: Snapshot | None = None
+        # The activity we've already sent a "still lingering" nudge for, so
+        # it fires once per post/page, not on every tick past the threshold.
+        self.dwelt_sig: str = ""
 
     def evaluate(self, snap: Snapshot) -> Decision:
         now = time.monotonic()
@@ -89,6 +103,24 @@ class Tracker:
             self.last_sig = sig
             self.last_sent_at = now
             return Decision(True, "change", minutes, snap)
+
+        # Lingering on one specific thing (a post, a page, a reel) for a while
+        # is worth saying on its own — warmer and more specific than the plain
+        # heartbeat. Gated to activities with a URL so it never fires "still in
+        # your editor", and to once per thing via dwelt_sig.
+        dwell_due = (
+            config.DWELL_ENABLED
+            and not changed                     # same thing we last announced
+            and sig == self.last_sig
+            and sig != self.dwelt_sig           # not already dwelt on this one
+            and _lingerable(snap)
+            and (now - self.pending_since) >= config.DWELL_SECONDS
+            and gap_ok
+        )
+        if dwell_due:
+            self.dwelt_sig = sig
+            self.last_sent_at = now
+            return Decision(True, "dwell", minutes, snap)
 
         if heartbeat_due:
             self.last_sig = sig

@@ -62,7 +62,10 @@ _SYSTEM = (
     "invent a stream, a topic, or who they're with. When details are thin, stay "
     "general ('on my mac') rather than guessing. If background music is listed you "
     "may weave it in. When in doubt, under-describe — say less, never more than "
-    "the facts."
+    "the facts. "
+    "If the context marks this as lingering on the SAME thing for a while (a "
+    "dwell), you may say so warmly — 'still deep in this', 'been on this a "
+    "while' — using only the detail given, never inventing why they're lingering."
 )
 
 _TONES = {
@@ -121,7 +124,10 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
         lines.append(f"background music playing: {snap.music}")
     if minutes >= 1:
         lines.append(f"time on this so far: ~{minutes} min")
-    if kind == "heartbeat":
+    if kind == "dwell":
+        lines.append("note: they've been on this SAME thing a while — lingering on it, "
+                     "not just still around. say so warmly, with the detail given.")
+    elif kind == "heartbeat":
         lines.append("note: still doing this — a gentle 'still at it' check-in")
     elif kind == "back":
         lines.append("note: just came back to the desk after being away")
@@ -159,7 +165,12 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
     else:
         base = f"on {where}"
 
-    if kind == "heartbeat" and minutes >= 1:
+    if kind == "dwell":
+        # Lingering on one thing — warmer and more specific than the heartbeat:
+        # "still on this exact post", not "still around".
+        # `base` already opens with "on …"/"coding in …", so just prefix "still".
+        base = f"still {base}" + (f" — {minutes} min in 👀" if minutes >= 1 else " 👀")
+    elif kind == "heartbeat" and minutes >= 1:
         base = f"still {base} (~{minutes} min)"
     if snap.music:
         base = f"{base} 🎧 {snap.music}"

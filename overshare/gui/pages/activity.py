@@ -68,6 +68,14 @@ class ActivityPage(Page):
         what.add_row(row)
 
         row, _ = toggle_row(
+            CFG, "DWELL_ENABLED", "Say when I linger on something",
+            "When you stay on the same post, page or reel a while, they get a "
+            "gentle “still on this…” with the link — cross-platform, and it "
+            "only fires for something with a link, never “still in your editor”.",
+            dark=dark)
+        what.add_row(row)
+
+        row, _ = toggle_row(
             CFG, "READ_BROWSER_URL", "Read the browser address bar",
             "Windows only. It's what unlocks per-site cards, links and video "
             "thumbnails there — but it's slow, so it can be turned off."

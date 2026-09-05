@@ -207,6 +207,13 @@ def _apply() -> None:
     g["HEARTBEAT"] = _get_float("HEARTBEAT", 300.0)
     # Consider you "away" after this much no keyboard/mouse activity.
     g["IDLE_THRESHOLD"] = _get_float("IDLE_THRESHOLD", 300.0)
+    # Dwell: when you stay on the *same* post/page/reel this long, send a "still
+    # lingering on this" nudge with the link — a stronger signal than the plain
+    # heartbeat, and only for something worth lingering on (a thing with a URL),
+    # never "still in your editor". Fires once per thing. Kept under HEARTBEAT so
+    # it lands first; a longer value means only real lingering trips it.
+    g["DWELL_ENABLED"] = _get_bool("DWELL_ENABLED", True)
+    g["DWELL_SECONDS"] = _get_float("DWELL_SECONDS", 180.0)
 
     # --- Daily recap ---------------------------------------------------------
     g["RECAP_ENABLED"] = _get_bool("RECAP_ENABLED", True)
