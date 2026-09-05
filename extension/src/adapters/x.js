@@ -24,6 +24,7 @@
     follow: '[data-testid$="-follow"]',
     image: '[data-testid="tweetPhoto"] img',
     timeLink: 'a[href*="/status/"] time',
+    caret: '[data-testid="caret"]',   // the "•••" menu button on a tweet
   };
 
   // Pull the post's text/author/url/image out of the article a control sits in.
@@ -63,14 +64,23 @@
       base.once(key, 2500, () => base.emit(SITE, action, ctx));
     });
 
-    // "Not interested in this post" — a menu item that appears after the caret.
+    // "Not interested" is a menu item rendered in a popup detached from the
+    // tweet, so by the time it's clicked the post is out of reach. Capture the
+    // post when its "•••" menu is OPENED, and carry that through to the click.
+    let menuCtx = null;
+    base.onClick((el) => {
+      const caret = el.closest(SEL.caret);
+      if (caret) menuCtx = context(caret);
+    });
     base.onClick((el) => {
       const item = el.closest('[role="menuitem"]');
       if (!item) return;
       const label = (item.innerText || "").toLowerCase();
       if (!label.includes("not interested")) return;
-      base.once(`ni:${Date.now()}`, 2500, () =>
-        base.emit(SITE, "not_interested", { noun: "a post" }));
+      const ctx = menuCtx || { noun: "a post" };
+      menuCtx = null;
+      base.once(`ni:${ctx.url || Date.now()}`, 2500, () =>
+        base.emit(SITE, "not_interested", ctx));
     });
 
     // Dwell — only on a single tweet's page (…/status/123), the thing you sit
