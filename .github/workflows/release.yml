@@ -211,15 +211,27 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
+      - uses: actions/checkout@v4        # for the extension/ folder
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      # The browser extension ships as a plain zip — it loads unpacked, so this
+      # is just the folder, named for the release and also with a stable name
+      # the website can link straight at.
+      - name: Package the browser extension
+        run: |
+          cd extension
+          zip -r "../Overshare-extension-${GITHUB_REF_NAME#v}.zip" . -x '*/.DS_Store'
+          cp "../Overshare-extension-${GITHUB_REF_NAME#v}.zip" ../Overshare-extension.zip
 
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/macos-dmg/*.dmg
             artifacts/windows-installer/*.exe
+            Overshare-extension*.zip
           generate_release_notes: true
           body: |
             ## Install
@@ -243,3 +255,20 @@ jobs:
             so there's no admin prompt.
 
             Then click the 💌 in your menu bar (or tray) → **Settings…**
+
+            ---
+
+            ### Browser extension (optional)
+
+            The desktop app sees what app and page you're on. The extension adds
+            what happens **inside** a page — a like, a Not Interested, a reel, an
+            add-to-cart — for X, Instagram, YouTube, Reddit, TikTok, Spotify,
+            Netflix, Amazon and LinkedIn. It posts to the same channel.
+
+            1. Download **`Overshare-extension.zip`** below and unzip it.
+            2. Open `chrome://extensions` (Chrome, Brave, Edge, Arc, Opera).
+            3. Turn on **Developer mode**, click **Load unpacked**, pick the
+               unzipped folder.
+            4. Click the extension → **Options** → paste the same Discord webhook
+               → switch on the sites and actions you want. Everything is off
+               until you turn it on.

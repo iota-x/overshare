@@ -187,6 +187,41 @@ macOS has no install step to ask in, so it's set on the first launch instead.
 
 ---
 
+## Browser extension (optional)
+
+The desktop app sees *what app and page* you're on. It can't see **inside** a
+page — a like, a Not Interested, a reel, an add-to-cart. Those live in the
+page's DOM, so a small browser extension reads them and posts to the **same
+Discord channel**, as cards in the same style.
+
+Covers **X, Instagram, YouTube, Reddit, TikTok, Spotify, Netflix, Amazon and
+LinkedIn** — likes, Not Interested, reels, upvotes, what you're watching, add to
+cart, and lingering on any of them. Everything is off until you switch it on,
+at three levels: a master switch, per site, and per action.
+
+It isn't on any store — it loads unpacked:
+
+1. From the **[latest release](https://github.com/iota-x/overshare/releases/latest)**,
+   download **`Overshare-extension.zip`** and unzip it.
+2. Open `chrome://extensions` — works in Chrome, Brave, Edge, Arc and Opera, on
+   both macOS and Windows.
+3. Turn on **Developer mode** (top-right), click **Load unpacked**, and pick the
+   unzipped folder (the one with `manifest.json` in it).
+4. Click the extension → **Options** → paste the same Discord webhook, hit **Send
+   test card** to confirm it reaches the channel, then switch on the sites and
+   actions you want.
+
+It reads only *public actions* — a like, a vote, what you're watching — never the
+contents of your messages, never DM screens, and it skips incognito windows
+unless you allow it. To update later, download the new zip, replace the folder,
+and hit the reload ↻ on the extension in `chrome://extensions`.
+
+> These sites rewrite their pages often, and the extension keys on their markup,
+> so a site's redesign can quiet its part until it's updated — it goes silent
+> rather than sending anything wrong.
+
+---
+
 ## Running from source
 
 You only need this to hack on it — the installers above are self-contained.
