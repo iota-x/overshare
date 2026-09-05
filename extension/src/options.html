@@ -8,49 +8,49 @@
 </head>
 <body>
   <main>
-    <h1>Overshare <span class="dim">— browser</span></h1>
-    <p class="lead">
-      Shares the in-page things the desktop app can't see. Everything is off
-      until you switch it on — a fresh install sends nothing.
-    </p>
-
-    <section class="card">
-      <label class="row master">
-        <span>
-          <b>Sharing on</b>
-          <small>The one switch. Off = nothing leaves the browser, whatever else is ticked.</small>
-        </span>
-        <input type="checkbox" id="enabled" />
-      </label>
-
-      <label class="row stack">
-        <span><b>Discord webhook URL</b>
-          <small>The same channel your desktop app posts to. Stored only in this browser.</small>
-        </span>
-        <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/…" />
-      </label>
-      <div class="row btns">
-        <button id="test">Send a test card</button>
-        <span id="teststatus" class="dim"></span>
+    <header class="masthead">
+      <span class="lamp" id="lamp" aria-hidden="true"></span>
+      <div class="word">
+        <h1>OVERSHARE</h1>
+        <p class="tag">the quiet line to your channel</p>
       </div>
+    </header>
+
+    <!-- Signature: the master switch is going "on air". -->
+    <label class="onair" id="onair">
+      <span class="onair-state">
+        <b id="stateword">off air</b>
+        <small id="statesub">nothing is going out</small>
+      </span>
+      <input type="checkbox" id="enabled" />
+    </label>
+
+    <section class="block">
+      <p class="eyebrow">your channel</p>
+      <input type="url" id="webhook" placeholder="discord webhook url" spellcheck="false" />
+      <div class="testline">
+        <button id="test">Test the line</button>
+        <span id="teststatus"></span>
+      </div>
+      <p class="note">The same place your desktop app posts. Kept on this computer only.</p>
     </section>
 
-    <section id="sites"></section>
+    <section class="block">
+      <p class="eyebrow">what goes out</p>
+      <div id="sites"></div>
+    </section>
 
-    <section class="card">
-      <label class="row">
-        <span><b>Also capture in incognito windows</b>
-          <small>Off by default. Private windows stay private unless you say otherwise.</small>
+    <section class="block">
+      <label class="line">
+        <span class="line-label">private windows
+          <small>left alone unless you allow it</small>
         </span>
         <input type="checkbox" id="captureIncognito" />
       </label>
-      <p class="dim tiny">
-        DM and message screens are never captured. This reads only public
-        actions — a like, a vote, what you're watching — never message contents.
-      </p>
+      <p class="note">Messages and DMs are never read — only public taps like a like, a vote, or what you're watching.</p>
     </section>
 
-    <p id="saved" class="saved">saved</p>
+    <p id="saved" class="saved" role="status">saved</p>
   </main>
   <script type="module" src="options.js"></script>
 </body>

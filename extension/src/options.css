@@ -1,77 +1,186 @@
-:root {
-  --bg: #0f0d14;
-  --card: #181521;
-  --line: #2a2536;
-  --text: #ece9f2;
-  --dim: #9a91ad;
-  --accent: #b794f6;
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-}
-main { max-width: 560px; margin: 0 auto; padding: 28px 20px 60px; }
-h1 { font-size: 1.5rem; margin: 0 0 2px; }
-.dim { color: var(--dim); }
-.tiny { font-size: 0.8rem; }
-.lead { color: var(--dim); margin: 0 0 20px; }
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 6px 16px;
-  margin: 0 0 16px;
-}
-.row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line);
-}
-.card > .row:last-child, .actions .row:last-child { border-bottom: 0; }
-.row.stack { flex-direction: column; align-items: stretch; }
-.row span { display: flex; flex-direction: column; }
-.row small { color: var(--dim); font-size: 0.8rem; margin-top: 2px; }
-.master b { color: var(--accent); }
-input[type="url"] {
-  margin-top: 8px; width: 100%; padding: 9px 11px;
-  background: #0d0b12; border: 1px solid var(--line); border-radius: 9px;
-  color: var(--text); font: inherit;
-}
-input[type="url"]:focus { outline: none; border-color: var(--accent); }
-.btns { justify-content: flex-start; gap: 10px; }
-button {
-  background: var(--accent); color: #1a1030; border: 0;
-  padding: 8px 14px; border-radius: 9px; font: inherit; font-weight: 600;
-  cursor: pointer;
-}
-button:hover { filter: brightness(1.07); }
+/*
+ * "The console." This isn't a settings screen, it's a small transmitter between
+ * two people: the master switch goes on air, each site is a bank of switches
+ * that decide what gets sent down the line. Warm, analog, deliberate — the
+ * opposite of a generic dark panel.
+ *
+ * One characterful move (monospace switch labels + a live "ON AIR" lamp),
+ * everything else kept quiet.
+ */
 
-/* iOS-style checkboxes */
+:root {
+  --ink: #17110f;          /* warm near-black, like a dim room */
+  --console: #211814;
+  --console-2: #2a1f19;
+  --edge: #4a3428;         /* warm hairline edges */
+  --line: #3a2a22;
+  --cream: #f3e9df;        /* warm off-white — never a cold white */
+  --dim: #b39c8f;
+  --faint: #7c6659;
+  --brass: #d8b071;        /* utility labels, the console's warmth */
+  --live: #ff6a4d;         /* on air — a warm ember, not an alarm red */
+  --live-glow: rgba(255, 106, 77, 0.45);
+  --mono: "SF Mono", ui-monospace, "Menlo", "Cascadia Mono", "Consolas", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  width: 390px;                 /* stops the popup collapsing into a column */
+  margin: 0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2a1c15 0%, var(--ink) 55%) fixed;
+  color: var(--cream);
+  font: 13.5px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+main { padding: 18px 17px 34px; }
+
+/* ── Masthead ─────────────────────────────────────────────── */
+.masthead { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.word h1 {
+  margin: 0; font-family: var(--mono); font-size: 0.98rem; font-weight: 700;
+  letter-spacing: 0.22em; color: var(--cream);
+}
+.word .tag { margin: 2px 0 0; color: var(--faint); font-size: 0.78rem; font-style: italic; }
+
+/* the little lamp in the masthead mirrors the on-air state */
+.lamp {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #3a2a22; border: 1px solid #4a3428; flex: none;
+  transition: background 0.25s, box-shadow 0.25s;
+}
+body.live .lamp {
+  background: var(--live);
+  box-shadow: 0 0 0 3px var(--live-glow), 0 0 12px 2px var(--live-glow);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--live-glow), 0 0 16px 4px var(--live-glow); } }
+
+/* ── The ON AIR plate (the signature) ─────────────────────── */
+.onair {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 15px 17px; margin: 0 0 18px;
+  border: 1px solid var(--edge); border-radius: 4px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(0,0,0,0.06) 3px 4px),
+    linear-gradient(180deg, var(--console-2), var(--console));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px -12px #000;
+  cursor: pointer; position: relative;
+}
+.onair-state b {
+  display: block; font-family: var(--mono); font-weight: 700;
+  font-size: 1.05rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--faint); transition: color 0.25s, text-shadow 0.25s;
+}
+.onair-state small { display: block; margin-top: 3px; color: var(--faint); font-size: 0.78rem; }
+body.live .onair { border-color: var(--live); }
+body.live .onair-state b { color: var(--live); text-shadow: 0 0 18px var(--live-glow); }
+body.live .onair-state small { color: var(--dim); }
+
+/* ── Blocks & eyebrows ────────────────────────────────────── */
+.block { margin: 0 0 20px; }
+.eyebrow {
+  margin: 0 0 9px; font-family: var(--mono); font-size: 0.68rem;
+  text-transform: uppercase; letter-spacing: 0.2em; color: var(--brass);
+}
+.note { margin: 9px 2px 0; color: var(--faint); font-size: 0.76rem; line-height: 1.45; }
+
+/* ── Webhook ──────────────────────────────────────────────── */
+input[type="url"] {
+  width: 100%; padding: 10px 12px; font: 0.82rem var(--mono);
+  background: #120c0a; border: 1px solid var(--line); border-radius: 4px;
+  color: var(--cream);
+}
+input[type="url"]:focus { outline: none; border-color: var(--brass); }
+input[type="url"]::placeholder { color: var(--faint); }
+.testline { display: flex; align-items: center; gap: 11px; margin-top: 10px; }
+button {
+  font: 700 0.78rem var(--mono); letter-spacing: 0.04em;
+  background: none; color: var(--brass);
+  border: 1px solid var(--edge); border-radius: 4px;
+  padding: 8px 13px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+button:hover { background: var(--brass); color: var(--ink); }
+button:active { transform: translateY(0.5px); }
+#teststatus { color: var(--dim); font-size: 0.78rem; }
+
+/* ── Rows (site heads, plain lines) ───────────────────────── */
+.line, .site-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--line);
+}
+.line-label { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.line-label small { color: var(--faint); font-size: 0.76rem; }
+
+/* ── Site switch banks ────────────────────────────────────── */
+.bank { border-bottom: 1px solid var(--line); }
+.bank:last-child { border-bottom: 0; }
+.site-head { border-bottom: 0; padding: 13px 0 11px; }
+.site-name { font-family: var(--mono); font-size: 0.86rem; letter-spacing: 0.08em; color: var(--cream); }
+.switches {
+  overflow: hidden; max-height: 400px; opacity: 1;
+  transition: max-height 0.24s ease, opacity 0.18s ease;
+  padding-bottom: 8px;
+}
+.bank.off .switches { max-height: 0; opacity: 0; padding-bottom: 0; }
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0 7px 15px;
+}
+.switch-row .name {
+  font-family: var(--mono); font-size: 0.8rem; color: var(--dim);
+  display: flex; align-items: center; gap: 8px;
+}
+.switch-row .name .em { font-size: 0.9rem; }
+.bank.off .site-name { color: var(--faint); }
+
+/* ── Toggles ──────────────────────────────────────────────── */
+/* A physical-feeling switch: an engraved track, a warm brass knob. */
 input[type="checkbox"] {
   appearance: none; -webkit-appearance: none;
-  width: 42px; height: 25px; border-radius: 13px;
-  background: var(--line); position: relative; cursor: pointer;
-  flex: none; transition: background 0.15s;
+  width: 42px; height: 24px; border-radius: 4px; flex: none; cursor: pointer;
+  background: #120c0a; border: 1px solid var(--line);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  position: relative; transition: border-color 0.15s, background 0.15s;
 }
 input[type="checkbox"]::after {
-  content: ""; position: absolute; top: 3px; left: 3px;
-  width: 19px; height: 19px; border-radius: 50%; background: #fff;
-  transition: transform 0.15s;
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 17px; height: 18px; border-radius: 3px;
+  background: linear-gradient(180deg, #6a5341, #4a3728);
+  transition: transform 0.16s, background 0.16s;
 }
-input[type="checkbox"]:checked { background: var(--accent); }
-input[type="checkbox"]:checked::after { transform: translateX(17px); }
+input[type="checkbox"]:checked {
+  background: #2a1a12; border-color: var(--brass);
+}
+input[type="checkbox"]:checked::after {
+  transform: translateX(19px);
+  background: linear-gradient(180deg, #f0c584, var(--brass));
+}
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-.site-head b { font-size: 1.05rem; }
-.actions { padding-left: 4px; }
-.actions .action span { color: var(--text); }
-.site.off .actions { opacity: 0.4; pointer-events: none; }
+/* the master toggle glows live when on */
+#enabled { width: 46px; height: 26px; }
+#enabled::after { width: 19px; height: 20px; }
+#enabled:checked { background: #3a1710; border-color: var(--live); }
+#enabled:checked::after { transform: translateX(21px); background: linear-gradient(180deg, #ffb199, var(--live)); }
 
+.switch-row input[type="checkbox"] { width: 38px; height: 21px; }
+.switch-row input[type="checkbox"]::after { width: 15px; height: 15px; }
+.switch-row input[type="checkbox"]:checked::after { transform: translateX(17px); }
+
+/* ── Saved toast ──────────────────────────────────────────── */
 .saved {
-  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-  background: var(--accent); color: #1a1030; padding: 7px 16px;
-  border-radius: 20px; font-weight: 600; opacity: 0;
-  transition: opacity 0.2s; pointer-events: none;
+  position: fixed; bottom: 14px; left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: var(--brass); color: var(--ink);
+  font: 700 0.76rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 6px 15px; border-radius: 3px; opacity: 0;
+  transition: opacity 0.2s, transform 0.2s; pointer-events: none;
 }
-.saved.show { opacity: 1; }
+.saved.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  body.live .lamp { animation: none; }
+  * { transition: none !important; }
+}

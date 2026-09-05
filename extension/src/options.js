@@ -34,30 +34,31 @@ function buildSites() {
   const root = $("sites");
   root.innerHTML = "";
   for (const [id, site] of Object.entries(SITES)) {
-    const card = document.createElement("section");
-    card.className = "card site";
+    const bank = document.createElement("div");
+    bank.className = "bank";
 
     const head = document.createElement("label");
-    head.className = "row site-head";
-    head.innerHTML = `<span><b>${site.label}</b></span>`;
+    head.className = "site-head";
+    head.innerHTML = `<span class="site-name">${site.label}</span>`;
     const siteToggle = document.createElement("input");
     siteToggle.type = "checkbox";
     siteToggle.checked = !!cfg.sites[id].on;
     siteToggle.addEventListener("change", () => {
       cfg.sites[id].on = siteToggle.checked;
-      card.classList.toggle("off", !siteToggle.checked);
+      bank.classList.toggle("off", !siteToggle.checked);
       persist();
     });
     head.appendChild(siteToggle);
-    card.appendChild(head);
+    bank.appendChild(head);
 
-    const actions = document.createElement("div");
-    actions.className = "actions";
+    const switches = document.createElement("div");
+    switches.className = "switches";
     for (const a of actionsFor(id)) {
-      const meta = ACTIONS[a] || { verb: a, emoji: "•" };
-      const line = document.createElement("label");
-      line.className = "row action";
-      line.innerHTML = `<span>${meta.emoji} ${labelFor(a, meta)}</span>`;
+      const meta = ACTIONS[a] || { verb: a, emoji: "•", label: a };
+      const row = document.createElement("label");
+      row.className = "switch-row";
+      row.innerHTML =
+        `<span class="name"><span class="em">${meta.emoji}</span>${meta.label || a}</span>`;
       const box = document.createElement("input");
       box.type = "checkbox";
       box.checked = !!cfg.sites[id].actions[a];
@@ -65,26 +66,30 @@ function buildSites() {
         cfg.sites[id].actions[a] = box.checked;
         persist();
       });
-      line.appendChild(box);
-      actions.appendChild(line);
+      row.appendChild(box);
+      switches.appendChild(row);
     }
-    card.appendChild(actions);
-    card.classList.toggle("off", !cfg.sites[id].on);
-    root.appendChild(card);
+    bank.appendChild(switches);
+    bank.classList.toggle("off", !cfg.sites[id].on);
+    root.appendChild(bank);
   }
-}
-
-function labelFor(action, meta) {
-  // Clean wording lives on the action itself in the registry.
-  return meta.label || action;
 }
 
 async function main() {
   cfg = await load();
 
+  const reflectAir = (on) => {
+    document.body.classList.toggle("live", on);
+    $("stateword").textContent = on ? "on air" : "off air";
+    $("statesub").textContent = on
+      ? "sharing what you switch on below"
+      : "nothing is going out";
+  };
   $("enabled").checked = cfg.enabled;
+  reflectAir(cfg.enabled);
   $("enabled").addEventListener("change", (e) => {
     cfg.enabled = e.target.checked;
+    reflectAir(cfg.enabled);
     persist();
   });
 

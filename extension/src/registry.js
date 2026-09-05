@@ -17,17 +17,17 @@
 
 // Every action the extension understands, with the wording the partner sees.
 export const ACTIONS = {
-  dwell:         { verb: "lingering on",   emoji: "👀", label: "lingering on it a while" },
-  like:          { verb: "liked",          emoji: "❤️", label: "when I like something" },
-  unlike:        { verb: "unliked",        emoji: "🤍", label: "when I unlike something" },
-  not_interested:{ verb: "hid",            emoji: "🙈", label: "when I mark Not Interested" },
-  repost:        { verb: "reposted",       emoji: "🔁", label: "when I repost" },
-  reply:         { verb: "replied to",     emoji: "💬", label: "when I reply" },
-  upvote:        { verb: "upvoted",        emoji: "⬆️", label: "when I upvote" },
-  downvote:      { verb: "downvoted",      emoji: "⬇️", label: "when I downvote" },
-  watch:         { verb: "watching",       emoji: "▶️", label: "what I'm watching" },
-  save:          { verb: "saved",          emoji: "🔖", label: "when I save something" },
-  follow:        { verb: "followed",       emoji: "➕", label: "when I follow someone" },
+  dwell:         { verb: "lingering on",   emoji: "👀", label: "lingering" },
+  like:          { verb: "liked",          emoji: "❤️", label: "likes" },
+  unlike:        { verb: "unliked",        emoji: "🤍", label: "unlikes" },
+  not_interested:{ verb: "hid",            emoji: "🙈", label: "not interested" },
+  repost:        { verb: "reposted",       emoji: "🔁", label: "reposts" },
+  reply:         { verb: "replied to",     emoji: "💬", label: "replies" },
+  upvote:        { verb: "upvoted",        emoji: "⬆️", label: "upvotes" },
+  downvote:      { verb: "downvoted",      emoji: "⬇️", label: "downvotes" },
+  watch:         { verb: "watching",       emoji: "▶️", label: "what i'm watching" },
+  save:          { verb: "saved",          emoji: "🔖", label: "saves" },
+  follow:        { verb: "followed",       emoji: "➕", label: "follows" },
 };
 
 // Sites, in the order the options page lists them. `hosts` are hostname
