@@ -44,6 +44,14 @@ and Safari need small manifest changes — not done yet.
 | Instagram | like, unlike, save, follow, lingering on a post or **reel** |
 | YouTube | **watching** a video/short, like, unlike, lingering |
 | Reddit | upvote, downvote, save, lingering on a post |
+| TikTok | like, unlike, follow, save, lingering on a video |
+| Spotify | save a track, lingering on music |
+| Netflix | what you're watching, lingering on a title |
+| Amazon | add to cart, save, lingering on a product |
+| LinkedIn | like, unlike, lingering on a post |
+
+The four below TikTok haven't had a real event through them yet, so their
+selectors may need a first-run tune — the same pass X and Instagram got.
 
 ## Adding a site
 

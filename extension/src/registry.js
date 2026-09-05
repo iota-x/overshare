@@ -28,6 +28,7 @@ export const ACTIONS = {
   watch:         { verb: "watching",       emoji: "▶️", label: "what i'm watching" },
   save:          { verb: "saved",          emoji: "🔖", label: "saves" },
   follow:        { verb: "followed",       emoji: "➕", label: "follows" },
+  cart:          { verb: "added to cart",  emoji: "🛒", label: "adds to cart" },
 };
 
 // Sites, in the order the options page lists them. `hosts` are hostname
@@ -57,6 +58,36 @@ export const SITES = {
     hosts: ["reddit.com"],
     adapter: "reddit",
     actions: ["upvote", "downvote", "save"],
+  },
+  tiktok: {
+    label: "TikTok",
+    hosts: ["tiktok.com"],
+    adapter: "tiktok",
+    actions: ["like", "unlike", "follow", "save"],
+  },
+  spotify: {
+    label: "Spotify",
+    hosts: ["open.spotify.com"],
+    adapter: "spotify",
+    actions: ["save"],
+  },
+  netflix: {
+    label: "Netflix",
+    hosts: ["netflix.com"],
+    adapter: "netflix",
+    actions: [],
+  },
+  amazon: {
+    label: "Amazon",
+    hosts: ["amazon.com", "amazon.in", "amazon.co.uk"],
+    adapter: "amazon",
+    actions: ["cart", "save"],
+  },
+  linkedin: {
+    label: "LinkedIn",
+    hosts: ["linkedin.com"],
+    adapter: "linkedin",
+    actions: ["like", "unlike"],
   },
 };
 

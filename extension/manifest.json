@@ -1,40 +1,142 @@
 {
   "manifest_version": 3,
-  "name": "Overshare — browser",
+  "name": "Overshare \u2014 browser",
   "version": "0.1.0",
-  "description": "Shares the in-page things the desktop app can't see — a like, a Not Interested, a reel, lingering on a post — to your Discord. Everything is off until you turn it on.",
-  "permissions": ["storage"],
+  "description": "Shares the in-page things the desktop app can't see \u2014 a like, a Not Interested, a reel, lingering on a post \u2014 to your Discord. Everything is off until you turn it on.",
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "*://*.x.com/*",
     "*://*.twitter.com/*",
     "*://*.instagram.com/*",
     "*://*.youtube.com/*",
     "*://*.reddit.com/*",
+    "*://*.tiktok.com/*",
+    "*://open.spotify.com/*",
+    "*://*.netflix.com/*",
+    "*://*.amazon.com/*",
+    "*://*.amazon.in/*",
+    "*://*.amazon.co.uk/*",
+    "*://*.linkedin.com/*",
     "https://discord.com/api/webhooks/*"
   ],
-  "background": { "service_worker": "src/background.js", "type": "module" },
-  "options_ui": { "page": "src/options.html", "open_in_tab": true },
-  "action": { "default_title": "Overshare — browser", "default_popup": "src/options.html" },
-  "icons": { "128": "icons/icon-128.png" },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Overshare \u2014 browser",
+    "default_popup": "src/options.html"
+  },
+  "icons": {
+    "128": "icons/icon-128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["*://*.x.com/*", "*://*.twitter.com/*"],
-      "js": ["src/adapters/base.js", "src/adapters/x.js", "src/content.js"],
+      "matches": [
+        "*://*.x.com/*",
+        "*://*.twitter.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/x.js",
+        "src/content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.instagram.com/*"],
-      "js": ["src/adapters/base.js", "src/adapters/instagram.js", "src/content.js"],
+      "matches": [
+        "*://*.instagram.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/instagram.js",
+        "src/content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.youtube.com/*"],
-      "js": ["src/adapters/base.js", "src/adapters/youtube.js", "src/content.js"],
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/youtube.js",
+        "src/content.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.reddit.com/*"],
-      "js": ["src/adapters/base.js", "src/adapters/reddit.js", "src/content.js"],
+      "matches": [
+        "*://*.reddit.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/reddit.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.tiktok.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/tiktok.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://open.spotify.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/spotify.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.netflix.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/netflix.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.amazon.com/*",
+        "*://*.amazon.in/*",
+        "*://*.amazon.co.uk/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/amazon.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "src/adapters/base.js",
+        "src/adapters/linkedin.js",
+        "src/content.js"
+      ],
       "run_at": "document_idle"
     }
   ]
