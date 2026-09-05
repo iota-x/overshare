@@ -12,7 +12,7 @@
 (function () {
   const NS = (window.__overshare = window.__overshare || {});
   const SITE = "x";
-  const DEBUG = true;   // logs to the X page console; flip off once selectors are trusted
+  const DEBUG = false;  // set true to log extracted context to the X page console
 
   // Everything site-specific, in one spot.
   const SEL = {
