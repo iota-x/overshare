@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Overshare — browser",
+  "version": "0.1.0",
+  "description": "Shares the in-page things the desktop app can't see — a like, a Not Interested, a reel, lingering on a post — to your Discord. Everything is off until you turn it on.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://*.x.com/*",
+    "*://*.twitter.com/*",
+    "*://*.instagram.com/*",
+    "*://*.youtube.com/*",
+    "*://*.reddit.com/*",
+    "https://discord.com/api/webhooks/*"
+  ],
+  "background": { "service_worker": "src/background.js", "type": "module" },
+  "options_ui": { "page": "src/options.html", "open_in_tab": true },
+  "action": { "default_title": "Overshare — browser", "default_popup": "src/options.html" },
+  "icons": { "128": "icons/icon-128.png" },
+  "content_scripts": [
+    {
+      "matches": ["*://*.x.com/*", "*://*.twitter.com/*"],
+      "js": ["src/adapters/base.js", "src/adapters/x.js", "src/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["src/adapters/base.js", "src/adapters/instagram.js", "src/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["src/adapters/base.js", "src/adapters/youtube.js", "src/content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.reddit.com/*"],
+      "js": ["src/adapters/base.js", "src/adapters/reddit.js", "src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
