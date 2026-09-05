@@ -613,6 +613,47 @@ def check_dwell():
     print("dwell: fires once on a linked page, never on the editor, off when disabled")
 
 
+def check_focus_detail():
+    """Native-app focus detail is opt-in, weaves only into native lines, and is
+    dropped whenever titles are. It reads a field's label, never its contents —
+    the plumbing that keeps that true is what's pinned here (the AX read itself
+    needs a real Mac)."""
+    from overshare import config, summarizer, collectors, privacy
+    from overshare.collectors import Snapshot
+
+    assert config.FOCUS_DETAIL_ENABLED is False, "focus detail must default OFF"
+
+    slack = Snapshot(app="Slack", bundle_id="com.tinyspeck.slackmacgap", category="chat",
+                     window_title="general", focus="the Message field")
+    assert "in the Message field" in summarizer._template(slack, 0, "change")
+
+    browser = Snapshot(app="Brave", bundle_id="com.brave.Browser", category="browsing",
+                       tab_title="X", url="https://x.com", focus="a text field")
+    assert "field" not in summarizer._template(browser, 0, "change"), \
+        "a browser's focus must not weave in — its detail is the tab"
+
+    with mock.patch.object(config, "REPORT_TITLES", False):
+        class B:
+            def collect(self):
+                return Snapshot(app="Slack", bundle_id="com.tinyspeck.slackmacgap",
+                                window_title="x", focus="the Message field")
+        with mock.patch.object(collectors, "_backend", B()):
+            assert collectors.collect().focus == "", "titles-off must clear focus"
+
+    with mock.patch.object(config, "PRIVACY_ENABLED", True), \
+         mock.patch.object(config, "PRIVACY_APPS", "slack"):
+        red = privacy.redact(Snapshot(app="Slack", bundle_id="com.tinyspeck.slackmacgap",
+                                      focus="the Message field"))
+        assert red.focus == "", "a private app must drop focus"
+
+    # focus must never be part of the signature — a focus change alone must not
+    # look like a new activity worth a card.
+    a = Snapshot(app="Slack", bundle_id="x", window_title="w")
+    b = Snapshot(app="Slack", bundle_id="x", window_title="w", focus="the Search field")
+    assert a.signature() == b.signature(), "focus leaked into signature()"
+    print("focus: opt-in, native-only, dropped with titles/privacy, out of signature")
+
+
 def check_uninstall():
     """Offered only by an installed build, and never against a checkout."""
     import os
@@ -686,6 +727,7 @@ check_relaunch_on_regrant()
 check_regrant_says_remove_and_readd()
 check_dwell()
 check_dwell_tiers_and_rabbit_hole()
+check_focus_detail()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

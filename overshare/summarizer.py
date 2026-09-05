@@ -124,6 +124,8 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
             lines.append(f"site: {site.name} (you're {site.verb} it)")
     if snap.music:
         lines.append(f"background music playing: {snap.music}")
+    if snap.focus:
+        lines.append(f"focused on: {snap.focus} (the field they're in, not its contents)")
     if minutes >= 1:
         lines.append(f"time on this so far: ~{minutes} min")
     if kind == "dwell":
@@ -222,6 +224,10 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
         return f"{line} 🎧 {snap.music}" if snap.music else line
     if kind == "heartbeat" and minutes >= 1:
         base = f"still {base} (~{minutes} min)"
+    # Native-app focus detail (opt-in): "on Slack, in the Message field". Only
+    # for non-browser apps — a browser's detail is its tab, already in base.
+    if snap.focus and snap.category not in ("browsing", "discord"):
+        base = f"{base}, in {snap.focus}"
     if snap.music:
         base = f"{base} 🎧 {snap.music}"
     return base

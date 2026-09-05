@@ -22,6 +22,11 @@ class Snapshot:
     music: str = ""           # what's playing in the background
     music_url: str = ""       # shareable track link (so they can listen along)
     idle_seconds: float = 0.0
+    # A short, safe label for what you're focused on in a native app — the
+    # field's role/label ("the Message field"), never its typed contents. Off
+    # unless FOCUS_DETAIL_ENABLED. Deliberately not part of signature(): a focus
+    # change must not trigger a new card, only enrich one already going out.
+    focus: str = ""
     extras: dict = field(default_factory=dict)
 
     def signature(self) -> str:
@@ -84,6 +89,7 @@ def collect() -> Snapshot:
         # reappear in a weekly wrap.
         snap.window_title = ""
         snap.tab_title = ""
+        snap.focus = ""
 
     try:
         from . import privacy

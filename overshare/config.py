@@ -212,6 +212,10 @@ def _apply() -> None:
     # heartbeat, and only for something worth lingering on (a thing with a URL),
     # never "still in your editor". Fires once per thing. Kept under HEARTBEAT so
     # it lands first; a longer value means only real lingering trips it.
+    # Native-app focus detail: "writing in the Message field on Slack". Reads the
+    # focused control's role and label via Accessibility — never its contents.
+    # Off by default because it reads more of the screen than window titles do.
+    g["FOCUS_DETAIL_ENABLED"] = _get_bool("FOCUS_DETAIL_ENABLED", False)
     g["DWELL_ENABLED"] = _get_bool("DWELL_ENABLED", True)
     g["DWELL_SECONDS"] = _get_float("DWELL_SECONDS", 180.0)
     # Second tier: still on the SAME thing this long reads as properly deep in it,

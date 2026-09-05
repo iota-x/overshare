@@ -68,6 +68,14 @@ class ActivityPage(Page):
         what.add_row(row)
 
         row, _ = toggle_row(
+            CFG, "FOCUS_DETAIL_ENABLED", "Read what field I'm typing in",
+            "macOS only. Adds “in the Message field” for native apps — the "
+            "field's name, never what you actually type. Off by default; it "
+            "reads a little more of the screen than titles do.",
+            dark=dark)
+        what.add_row(row)
+
+        row, _ = toggle_row(
             CFG, "DWELL_ENABLED", "Say when I linger on something",
             "When you stay on the same post, page or reel a while, they get a "
             "gentle “still on this…” with the link — cross-platform, and it "

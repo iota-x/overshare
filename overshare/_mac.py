@@ -25,6 +25,14 @@ _AX_FOCUSED_WINDOW = "AXFocusedWindow"
 _AX_MAIN_WINDOW = "AXMainWindow"
 _AX_WINDOWS = "AXWindows"
 _AX_TITLE = "AXTitle"
+_AX_FOCUSED_ELEMENT = "AXFocusedUIElement"
+_AX_ROLE = "AXRole"
+_AX_DESCRIPTION = "AXDescription"
+_AX_PLACEHOLDER = "AXPlaceholderValue"
+
+# Roles that mean "you're editing text here". Only these get a focus label, so
+# a focus never surfaces from a button, a list, or a canvas.
+_EDITING_ROLES = {"AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"}
 
 _CHROMIUM_BROWSERS = {
     "com.google.Chrome", "com.google.Chrome.canary", "com.brave.Browser",
@@ -95,6 +103,46 @@ def _ax_title(element) -> str:
     except Exception:
         return ""
     return str(title).strip() if err == 0 and title else ""
+
+
+def _ax_str(element, attr: str) -> str:
+    try:
+        err, val = AXUIElementCopyAttributeValue(element, attr, None)
+    except Exception:
+        return ""
+    return str(val).strip() if err == 0 and val else ""
+
+
+def _focused_field(pid: int) -> str:
+    """A short, SAFE label for the text field you're focused on — never its text.
+
+    Reads the focused element's role and its *label* (description or placeholder,
+    e.g. "Message", "Search"), which are the field's identity, not what you typed.
+    It never reads AXValue — the contents. Returns "" for anything that isn't a
+    text-editing control, or when there's no sensible label.
+
+    The point is native-app detail titles can't give: "writing in the Message
+    field on Slack", "typing a note". It is off unless FOCUS_DETAIL_ENABLED.
+    """
+    try:
+        ax_app = AXUIElementCreateApplication(pid)
+        err, el = AXUIElementCopyAttributeValue(ax_app, _AX_FOCUSED_ELEMENT, None)
+        if err != 0 or el is None:
+            return ""
+        role = _ax_str(el, _AX_ROLE)
+        if role not in _EDITING_ROLES:
+            return ""
+        # Label only — description or placeholder. Never AXValue. A label that is
+        # long or multi-line is probably content leaking through, so drop it and
+        # fall back to a generic phrase.
+        label = _ax_str(el, _AX_DESCRIPTION) or _ax_str(el, _AX_PLACEHOLDER)
+        if label and (len(label) > 40 or "\n" in label):
+            label = ""
+        if label:
+            return f"the {label} field"
+        return "a text field"
+    except Exception:
+        return ""
 
 
 def _cg_window_title(pid: int) -> str:
@@ -238,6 +286,14 @@ def collect() -> Snapshot:
         snap.window_title = _frontmost_window_title(int(app.processIdentifier()))
     except Exception:
         pass
+    # Native-app focus detail (opt-in). Skipped for browsers — they carry a URL
+    # already, and their content lives in a web view AX can't read anyway.
+    if config.FOCUS_DETAIL_ENABLED and snap.bundle_id not in _CHROMIUM_BROWSERS \
+            and snap.bundle_id not in _SAFARI_BROWSERS:
+        try:
+            snap.focus = _focused_field(int(app.processIdentifier()))
+        except Exception:
+            pass
     if snap.bundle_id in _CHROMIUM_BROWSERS:
         snap.category = "browsing"
         snap.tab_title, snap.url = _chromium_tab(snap.app)
