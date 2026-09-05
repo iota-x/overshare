@@ -111,6 +111,18 @@ def build_message(log: DailyLog) -> tuple[str, dict]:
     if log.tracks:
         fields.append({"name": "🎧 soundtrack", "value": _lines(_top(log.tracks, 3)), "inline": False})
 
+    # What they got lost in — the deepest lingers, and any scroll-holes.
+    if log.lingers:
+        top = sorted(log.lingers.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        got_lost = "\n".join(f"**{subj[:48]}** · {mins} min" for subj, mins in top if mins >= 1)
+        if got_lost:
+            if log.rabbit_holes:
+                got_lost += f"\n-# and {log.rabbit_holes} little rabbit-hole(s) 🕳️"
+            fields.append({"name": "👀 got lost in", "value": got_lost, "inline": False})
+    elif log.rabbit_holes:
+        fields.append({"name": "👀 got lost in",
+                       "value": f"{log.rabbit_holes} rabbit-hole(s) today 🕳️", "inline": False})
+
     embed = {
         "title": f"📊 my day — {pretty_date}",
         "description": intro,

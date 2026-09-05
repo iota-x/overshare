@@ -56,6 +56,9 @@ class DailyLog:
     first_active: str = ""
     last_active: str = ""
     recap_posted: bool = False
+    # Things they got lost in today: subject -> the deepest linger (minutes).
+    lingers: dict = field(default_factory=dict)
+    rabbit_holes: int = 0          # times they fell into a scroll-hole
 
     # --- love-o-meter: how much they reached out today -----------------------
     pokes: int = 0                  # !poke / !miss / !callme / !break / !food
@@ -91,6 +94,14 @@ class DailyLog:
         if not self.first_active:
             self.first_active = _now_iso()
         self.last_active = _now_iso()
+
+    def note_dwell(self, subject: str, minutes: int) -> None:
+        """Remember the deepest linger on a given thing, for the recap."""
+        if not subject:
+            return
+        key = subject[:80]
+        if minutes >= self.lingers.get(key, 0):
+            self.lingers[key] = minutes
 
     def active_minutes(self) -> float:
         return self.active_seconds / 60.0

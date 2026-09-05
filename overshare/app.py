@@ -35,7 +35,7 @@ from . import sound
 from . import startup
 from . import weekly
 from .state import Tracker, Decision
-from .summarizer import summarize
+from .summarizer import summarize, dwell_subject as summarize_subject
 
 _WORK_CATEGORIES = {"coding", "terminal"}
 
@@ -831,6 +831,13 @@ class OvershareApp(rumps.App):
             threading.Thread(target=self._post_weekly, daemon=True).start()
 
         self._maybe_all_yours(snap, decision)
+
+        # Fold lingers / rabbit-holes into the day, so the recap can tell the
+        # story of what they got lost in, not just where the hours went.
+        if decision.kind in ("dwell", "dwell_deep"):
+            self.day.note_dwell(summarize_subject(snap), decision.minutes)
+        elif decision.kind == "rabbit_hole":
+            self.day.rabbit_holes += 1
 
         if decision.should_send:
             self._dispatch(decision)

@@ -148,6 +148,11 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     return "\n".join(lines)
 
 
+def dwell_subject(snap: Snapshot) -> str:
+    """Public: just the thing they're lingering on, for the day's tally."""
+    return _dwell_subject(snap)[0]
+
+
 def _dwell_subject(snap: Snapshot) -> tuple[str, str | None]:
     """What they're lingering on, and how one 'does' it (watching/reading/…)."""
     channel, server = _conversation(snap)
