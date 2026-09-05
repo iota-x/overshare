@@ -513,6 +513,59 @@ def check_regrant_says_remove_and_readd():
     print(f"regrant: {len(targets)} places say remove-and-re-add, none say toggle")
 
 
+def check_dwell_tiers_and_rabbit_hole():
+    """The deepened dwell: a second tier on the same thing, and a separate
+    rabbit-hole signal for churning through many pages. Both are cheap to get
+    subtly wrong (fire twice, or fire on lingering), so they're pinned here."""
+    from unittest import mock
+    from overshare import config, state
+    from overshare.collectors import Snapshot
+
+    clock = [1000.0]
+    with mock.patch.object(state.time, "monotonic", lambda: clock[0]), \
+         mock.patch.object(config, "DWELL_ENABLED", True), \
+         mock.patch.object(config, "DWELL_SECONDS", 180.0), \
+         mock.patch.object(config, "DWELL_DEEP_SECONDS", 720.0), \
+         mock.patch.object(config, "RABBIT_ENABLED", True), \
+         mock.patch.object(config, "RABBIT_WINDOW", 300.0), \
+         mock.patch.object(config, "RABBIT_COUNT", 8), \
+         mock.patch.object(config, "RABBIT_COOLDOWN", 1200.0):
+
+        post = Snapshot(app="Brave", bundle_id="com.brave.Browser", category="browsing",
+                        tab_title="a post", url="https://x.com/a/status/1")
+        t = state.Tracker()
+        kinds = []
+        for _ in range(300):
+            clock[0] += 3
+            d = t.evaluate(post)
+            if d.should_send:
+                kinds.append(d.kind)
+        assert kinds.count("dwell") == 1, f"want 1 dwell, got {kinds}"
+        assert kinds.count("dwell_deep") == 1, f"want 1 dwell_deep, got {kinds}"
+        assert kinds.index("dwell") < kinds.index("dwell_deep"), "deep before shallow"
+
+        t2 = state.Tracker()
+        holes = 0
+        for i in range(12):
+            clock[0] += 6
+            p2 = Snapshot(app="Brave", bundle_id="com.brave.Browser", category="browsing",
+                          tab_title=f"post {i}", url=f"https://x.com/a/status/{i}")
+            t2.evaluate(p2)
+            clock[0] += 3
+            d = t2.evaluate(p2)
+            if d.should_send and d.kind == "rabbit_hole":
+                holes += 1
+        assert holes == 1, f"rabbit hole should fire once, got {holes}"
+
+        t3 = state.Tracker()
+        for _ in range(120):
+            clock[0] += 3
+            d = t3.evaluate(post)
+            assert d.kind != "rabbit_hole", "lingering wrongly read as a rabbit hole"
+
+    print("dwell: tiers fire once each in order; rabbit hole on churn, not on lingering")
+
+
 def check_dwell():
     """Lingering on one thing fires once, only for things with a link, and obeys
     the toggle. It's the whole 'still on this post' feature — cheap to get wrong
@@ -632,6 +685,7 @@ check_discord_channel_reaches_the_model()
 check_relaunch_on_regrant()
 check_regrant_says_remove_and_readd()
 check_dwell()
+check_dwell_tiers_and_rabbit_hole()
 check_uninstall()
 check_loop_failures_are_recorded()
 if not sys.platform.startswith("win"):

@@ -65,7 +65,9 @@ _SYSTEM = (
     "the facts. "
     "If the context marks this as lingering on the SAME thing for a while (a "
     "dwell), you may say so warmly — 'still deep in this', 'been on this a "
-    "while' — using only the detail given, never inventing why they're lingering."
+    "while' — using only the detail given, never inventing why they're lingering. "
+    "A 'rabbit hole' note means they've been hopping through many pages fast; "
+    "tease that gently ('down a rabbit hole', 'doomscrolling a bit')."
 )
 
 _TONES = {
@@ -127,6 +129,12 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     if kind == "dwell":
         lines.append("note: they've been on this SAME thing a while — lingering on it, "
                      "not just still around. say so warmly, with the detail given.")
+    elif kind == "dwell_deep":
+        lines.append("note: they're now REALLY deep in this same thing (a good while). "
+                     "a knowing, affectionate 'still at this, huh' — use the detail given.")
+    elif kind == "rabbit_hole":
+        lines.append("note: they've been hopping through lots of different pages fast — "
+                     "scrolling / down a rabbit hole, not reading one thing. tease gently.")
     elif kind == "heartbeat":
         lines.append("note: still doing this — a gentle 'still at it' check-in")
     elif kind == "back":
@@ -138,6 +146,42 @@ def _context_block(snap: Snapshot, minutes: int, kind: str) -> str:
     elif kind == "all_yours":
         lines.append("note: just finished work for the day — tell them you're all theirs now, affectionately")
     return "\n".join(lines)
+
+
+def _dwell_subject(snap: Snapshot) -> tuple[str, str | None]:
+    """What they're lingering on, and how one 'does' it (watching/reading/…)."""
+    channel, server = _conversation(snap)
+    if channel:
+        return (channel + (f" ({server})" if server else ""), None)
+    site = sites.lookup(snap.url) or sites.lookup_title(snap.tab_title or snap.window_title)
+    detail = snap.tab_title or snap.window_title
+    subject = detail or (site.name if site else snap.app)
+    return (subject, site.verb if site else None)
+
+
+def _dwell_line(snap: Snapshot, minutes: int, deep: bool) -> str:
+    """A 'still at this' line, warmer the longer it's been and shaped by the kind
+    of thing (a video is watched, an article read, a shop eyed)."""
+    subject, verb = _dwell_subject(snap)
+    mins = f" — {minutes} min in" if minutes >= 1 else ""
+    if not deep:
+        if verb == "watching":  return f"still watching {subject}{mins} 👀"
+        if verb == "reading":   return f"still reading {subject}{mins}"
+        if verb == "shopping":  return f"still eyeing {subject} 👀"
+        return f"still on {subject}{mins} 👀"
+    if verb == "watching":  return f"properly into {subject} now{mins} 👀"
+    if verb == "reading":   return f"really deep in this read{mins}"
+    if verb == "shopping":  return f"still eyeing this{mins}, someone's tempted 👀"
+    return f"{minutes} min deep in {subject} now 👀" if minutes >= 1 else f"deep in {subject} now 👀"
+
+
+def _rabbit_line(snap: Snapshot) -> str:
+    site = sites.lookup(snap.url) or sites.lookup_title(snap.tab_title or snap.window_title)
+    if site and site.verb == "scrolling":
+        return f"doomscrolling {site.name} a bit 🌀"
+    if site:
+        return f"down a {site.name} rabbit hole 🕳️"
+    return "down a bit of a rabbit hole 🕳️"
 
 
 def _template(snap: Snapshot, minutes: int, kind: str) -> str:
@@ -165,12 +209,13 @@ def _template(snap: Snapshot, minutes: int, kind: str) -> str:
     else:
         base = f"on {where}"
 
-    if kind == "dwell":
-        # Lingering on one thing — warmer and more specific than the heartbeat:
-        # "still on this exact post", not "still around".
-        # `base` already opens with "on …"/"coding in …", so just prefix "still".
-        base = f"still {base}" + (f" — {minutes} min in 👀" if minutes >= 1 else " 👀")
-    elif kind == "heartbeat" and minutes >= 1:
+    if kind in ("dwell", "dwell_deep"):
+        line = _dwell_line(snap, minutes, deep=(kind == "dwell_deep"))
+        return f"{line} 🎧 {snap.music}" if snap.music else line
+    if kind == "rabbit_hole":
+        line = _rabbit_line(snap)
+        return f"{line} 🎧 {snap.music}" if snap.music else line
+    if kind == "heartbeat" and minutes >= 1:
         base = f"still {base} (~{minutes} min)"
     if snap.music:
         base = f"{base} 🎧 {snap.music}"

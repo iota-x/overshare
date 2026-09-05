@@ -214,6 +214,16 @@ def _apply() -> None:
     # it lands first; a longer value means only real lingering trips it.
     g["DWELL_ENABLED"] = _get_bool("DWELL_ENABLED", True)
     g["DWELL_SECONDS"] = _get_float("DWELL_SECONDS", 180.0)
+    # Second tier: still on the SAME thing this long reads as properly deep in it,
+    # and gets a stronger line than the first nudge.
+    g["DWELL_DEEP_SECONDS"] = _get_float("DWELL_DEEP_SECONDS", 720.0)
+    # Rabbit hole: lots of different pages in a short window is its own thing —
+    # scrolling, not lingering. Fires once, then rests for a good while so it
+    # can't nag. Counts distinct browsing changes within the window.
+    g["RABBIT_ENABLED"] = _get_bool("RABBIT_ENABLED", True)
+    g["RABBIT_WINDOW"] = _get_float("RABBIT_WINDOW", 300.0)
+    g["RABBIT_COUNT"] = int(_get_float("RABBIT_COUNT", 8))
+    g["RABBIT_COOLDOWN"] = _get_float("RABBIT_COOLDOWN", 1200.0)
 
     # --- Daily recap ---------------------------------------------------------
     g["RECAP_ENABLED"] = _get_bool("RECAP_ENABLED", True)

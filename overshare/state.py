@@ -38,6 +38,13 @@ def _lingerable(snap: Snapshot) -> bool:
     return bool(snap.url)
 
 
+def _scrollable(snap: Snapshot) -> bool:
+    """A feed you scroll, where lots of quick changes mean a rabbit hole rather
+    than deliberate reading. Any browsing counts; a code editor or a document
+    never does."""
+    return snap.category == "browsing"
+
+
 class Tracker:
     def __init__(self) -> None:
         now = time.monotonic()
@@ -48,9 +55,15 @@ class Tracker:
         self.away_announced: bool = False
         self.away_since: float = 0.0
         self.last_snapshot: Snapshot | None = None
-        # The activity we've already sent a "still lingering" nudge for, so
-        # it fires once per post/page, not on every tick past the threshold.
-        self.dwelt_sig: str = ""
+        # Dwell escalates in tiers on the SAME thing: the item we're timing,
+        # and the deepest tier already announced for it (0 none, 1 lingering,
+        # 2 properly deep). Reset when the item changes.
+        self.dwell_sig: str = ""
+        self.dwell_level: int = 0
+        # Rabbit hole: timestamps of recent browsing *changes*. Many in a short
+        # window is scrolling, not lingering. `_last_rabbit` throttles it.
+        self._churn: list[float] = []
+        self._last_rabbit: float = 0.0
 
     def evaluate(self, snap: Snapshot) -> Decision:
         now = time.monotonic()
@@ -102,25 +115,39 @@ class Tracker:
         if changed and stable and gap_ok:
             self.last_sig = sig
             self.last_sent_at = now
+            self.dwell_sig = sig            # a fresh thing to (maybe) linger on
+            self.dwell_level = 0
+            # Rabbit hole: count distinct browsing changes in a rolling window.
+            # Sitting on one thing produces no changes, so lingering never trips
+            # this — only churn does.
+            if config.RABBIT_ENABLED and _scrollable(snap):
+                self._churn = [t for t in self._churn if now - t <= config.RABBIT_WINDOW]
+                self._churn.append(now)
+                if (len(self._churn) >= config.RABBIT_COUNT
+                        and now - self._last_rabbit >= config.RABBIT_COOLDOWN):
+                    self._last_rabbit = now
+                    self._churn = []
+                    return Decision(True, "rabbit_hole", minutes, snap)
+            else:
+                self._churn = []            # left the feed — the count resets
             return Decision(True, "change", minutes, snap)
 
-        # Lingering on one specific thing (a post, a page, a reel) for a while
-        # is worth saying on its own — warmer and more specific than the plain
-        # heartbeat. Gated to activities with a URL so it never fires "still in
-        # your editor", and to once per thing via dwelt_sig.
-        dwell_due = (
-            config.DWELL_ENABLED
-            and not changed                     # same thing we last announced
-            and sig == self.last_sig
-            and sig != self.dwelt_sig           # not already dwelt on this one
-            and _lingerable(snap)
-            and (now - self.pending_since) >= config.DWELL_SECONDS
-            and gap_ok
-        )
-        if dwell_due:
-            self.dwelt_sig = sig
-            self.last_sent_at = now
-            return Decision(True, "dwell", minutes, snap)
+        # Lingering on one specific thing (a post, a page, a reel), in tiers:
+        # a first "still on this" at DWELL_SECONDS, a stronger "properly deep in
+        # this" at DWELL_DEEP_SECONDS. Gated to things with a URL so it never
+        # nags on your editor, and each tier fires at most once per thing.
+        if (config.DWELL_ENABLED and not changed and sig == self.last_sig
+                and _lingerable(snap) and gap_ok):
+            if sig != self.dwell_sig:
+                self.dwell_sig = sig
+                self.dwell_level = 0
+            elapsed = now - self.pending_since
+            target = 2 if elapsed >= config.DWELL_DEEP_SECONDS else (
+                1 if elapsed >= config.DWELL_SECONDS else 0)
+            if target > self.dwell_level:
+                self.dwell_level = target
+                self.last_sent_at = now
+                return Decision(True, "dwell_deep" if target == 2 else "dwell", minutes, snap)
 
         if heartbeat_due:
             self.last_sig = sig
