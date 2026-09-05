@@ -411,3 +411,86 @@
 .oss b { display: block; font-size: 16.5px; margin-bottom: 3px; }
 .oss span { color: var(--mute); font-size: 15px; }
 .oss .dl { flex: none; }
+
+  /* --- Extension band: the loud, unmissable download ---------------------- */
+  .ext-band {
+    display: flex; align-items: center; gap: clamp(16px, 2.4vw, 26px);
+    text-decoration: none; color: var(--text);
+    margin: 0 0 var(--beat); padding: clamp(20px, 2.6vw, 28px) clamp(22px, 3vw, 34px);
+    border: 1px solid rgba(255,111,165,.4); border-radius: 18px;
+    background:
+      radial-gradient(120% 180% at 0% 0%, rgba(255,111,165,.14), transparent 60%),
+      linear-gradient(180deg, rgba(255,111,165,.06), transparent);
+    transition: border-color .25s, transform .25s, background .25s;
+  }
+  .ext-band:hover { border-color: var(--rose); transform: translateY(-2px); }
+  .ext-icon {
+    flex: none; width: 46px; height: 46px; display: grid; place-items: center;
+    border-radius: 13px; background: rgba(255,111,165,.14); color: var(--rose);
+  }
+  .ext-icon svg { width: 26px; height: 26px; }
+  .ext-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .ext-copy b { font-size: clamp(16px, 1.7vw, 19px); font-weight: 600; }
+  .ext-opt { color: var(--mute); font-weight: 400; font-size: .8em; }
+  .ext-copy span { color: var(--mute); font-size: 14px; line-height: 1.45; }
+  .ext-btn {
+    flex: none; margin-left: auto; white-space: nowrap;
+    background: var(--rose); color: #23101A; font-weight: 700; font-size: 15px;
+    padding: 13px 22px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: background .25s;
+  }
+  .ext-band:hover .ext-btn { background: #FF87B6; }
+  #ext-size { color: rgba(35,16,26,.6); font-weight: 600; }
+  @media (max-width: 720px) {
+    .ext-band { flex-wrap: wrap; }
+    .ext-btn { margin-left: 0; width: 100%; justify-content: center; }
+  }
+
+  /* --- "Why?" disclosures: keep the long explanations out of the way ------ */
+  details.why {
+    border: 1px solid var(--edge); border-radius: 12px;
+    padding: 0 16px; margin: 6px 0 0; background: rgba(255,255,255,.015);
+  }
+  details.why > summary {
+    cursor: pointer; list-style: none; padding: 13px 0; font-size: 14px;
+    font-weight: 600; color: var(--mute); display: flex; align-items: center; gap: 8px;
+  }
+  details.why > summary::-webkit-details-marker { display: none; }
+  details.why > summary::before {
+    content: "＋"; color: var(--rose); font-weight: 700; transition: transform .2s;
+  }
+  details.why[open] > summary::before { content: "－"; }
+  details.why[open] > summary { border-bottom: 1px solid var(--edge); }
+  details.why .why-body { padding: 6px 0 16px; }
+  details.why .why-body p { margin: 10px 0 0; }
+
+  /* --- Copyable command ---------------------------------------------------- */
+  .cmd {
+    display: flex; align-items: center; gap: 10px;
+    background: #0F0B12; border: 1px solid var(--edge); border-radius: 10px;
+    padding: 11px 13px; margin: 4px 0 0;
+  }
+  .cmd code { font-size: 13px; color: var(--text); overflow-x: auto; white-space: nowrap; flex: 1; }
+  .cmd button {
+    flex: none; cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--rose); background: rgba(255,111,165,.12);
+    border: 1px solid rgba(255,111,165,.3); border-radius: 7px; padding: 6px 11px;
+    transition: background .2s;
+  }
+  .cmd button:hover { background: rgba(255,111,165,.22); }
+
+  /* --- Numbered steps: scannable, not a wall ------------------------------ */
+  ol.steps { list-style: none; counter-reset: s; margin: 4px 0 0; padding: 0;
+             display: flex; flex-direction: column; gap: 14px; }
+  ol.steps > li {
+    counter-increment: s; position: relative; padding-left: 40px;
+    font-size: 15px; line-height: 1.5; color: var(--mute);
+  }
+  ol.steps > li b { color: var(--text); font-weight: 600; }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: -1px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,111,165,.14); color: var(--rose);
+    font-size: 13px; font-weight: 700; display: grid; place-items: center;
+  }

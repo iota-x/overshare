@@ -44,41 +44,28 @@
       <p class="req">11 Big Sur or later · Apple Silicon &amp; Intel</p>
       <a class="dl on" id="dl-mac" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-macOS.dmg">
         Download the .dmg</a>
-      <p class="note">Open it and drag Overshare onto Applications. Then, the
-        first time only, open Terminal and run:</p>
-      <p class="note"><code>xattr -dr com.apple.quarantine /Applications/Overshare.app</code></p>
-      <p class="note">Without it macOS says <b>“Overshare is damaged and can't
-        be opened”</b>. It isn't — that's what Gatekeeper says about any app
-        signed without a paid Apple developer account once your browser has
-        marked the download as quarantined. Right-clicking and choosing Open
-        does <i>not</i> clear it on Apple Silicon, whatever else you read. The
-        command above removes that one flag and nothing else.</p>
-      <p class="note">macOS will ask for <b>Accessibility</b> (window and file
-        titles) and <b>Automation</b> (your browser tab and what's playing) as you
-        go. Grant Accessibility and Overshare picks it up within a minute and
-        reopens itself, so there is nothing for you to restart. Note that it
-        asks again after <i>every</i> update — see below for why.</p>
-      <p class="note" id="regrant"><b>Every update takes the Accessibility
-        permission away again.</b> Not a bug, not avoidable, and it will happen
-        on every single update. Overshare isn't signed by a paid Apple developer
-        account, so it is signed <i>ad-hoc</i>: a signature with no fixed
-        identity, whose fingerprint is computed from the app's own bytes and so
-        changes with every build. macOS files your permission under that
-        fingerprint. New build, new fingerprint, and the permission it saved no
-        longer matches the app asking for it.</p>
-      <p class="note"><b>Switching it off and on does not work.</b> The old
-        entry stays in the list, still switched on, still looking right. It
-        isn't — it points at the build you just replaced, so toggling it only
-        re-approves an app that no longer exists. The entry has to be replaced:</p>
-      <p class="note"><b>System Settings → Privacy &amp; Security →
-        Accessibility</b> → select <b>Overshare</b> → press <b>−</b> to remove
-        it → press <b>+</b> and add <b>Overshare</b> back from Applications.</p>
-      <p class="note">Overshare notices within a minute and <b>reopens itself</b>.
-        It has to: a permission that returns mid-run doesn't reach apps it
-        already tried to read while it was blocked, so whatever you had open at
-        the time would keep reporting nothing until it restarted. That part is
-        handled for you. Without the permission updates still send — they just
-        stop naming the channel, file or tab you're actually in.</p>
+      <ol class="steps">
+        <li><b>Drag Overshare onto Applications.</b></li>
+        <li><b>Run this once</b> in Terminal, so macOS doesn't call it "damaged":
+          <span class="cmd"><code id="xattr">xattr -dr com.apple.quarantine /Applications/Overshare.app</code><button data-copy="#xattr">Copy</button></span>
+        </li>
+        <li><b>Say yes to Accessibility</b> when it asks. It picks it up on its
+          own — nothing to restart.</li>
+      </ol>
+      <details class="why" id="regrant">
+        <summary>Why does it ask for Accessibility again after each update?</summary>
+        <div class="why-body">
+          <p>Overshare isn't signed by a paid Apple account, so macOS gives every
+             new build a new fingerprint and files your permission under the old
+             one — it stops matching. This happens on <b>every</b> update.</p>
+          <p><b>Flipping the switch off and on won't fix it</b> (it re-approves the
+             old build). Replace the entry instead: <b>System Settings → Privacy
+             &amp; Security → Accessibility</b> → select <b>Overshare</b> → press
+             <b>−</b>, then <b>+</b> and add it back from Applications.</p>
+          <p>Overshare notices within a minute and <b>reopens itself</b> — that
+             part's automatic.</p>
+        </div>
+      </details>
     </div>
 
     <div class="plat up" id="win" style="--d:80ms">
@@ -90,14 +77,27 @@
       <p class="req">10 or 11 · 64-bit</p>
       <a class="dl" id="dl-win" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-Windows.exe">
         Download the installer</a>
-      <p class="note">Run it. <b>SmartScreen may warn you — click More info, then
-        Run anyway</b>, for the same reason: no paid code-signing certificate. It
-        installs for your user only, so there's no admin prompt.</p>
-      <p class="note">No permissions to grant, with one exception: if
-        <b>!peek</b> comes back empty, turn on Settings → Privacy &amp; security →
-        Camera → <b>Let desktop apps access your camera</b>.</p>
+      <ol class="steps">
+        <li><b>Run the installer.</b> If SmartScreen warns you, click <b>More
+          info → Run anyway</b> (no paid signing certificate). Per-user, so no
+          admin prompt.</li>
+        <li><b>Nothing to grant.</b> One exception: if <b>!peek</b> comes back
+          empty, turn on Settings → Privacy &amp; security → Camera →
+          <b>Let desktop apps access your camera</b>.</li>
+      </ol>
     </div>
   </section>
+
+  <a class="ext-band up" href="https://github.com/iota-x/overshare/releases/latest/download/Overshare-extension.zip" id="dl-ext">
+    <span class="ext-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M11 3a3 3 0 0 1 3 3v1h3a2 2 0 0 1 2 2v3h-1a2.5 2.5 0 1 0 0 5h1v3a2 2 0 0 1-2 2h-3v-1a2.5 2.5 0 1 0-5 0v1H6a2 2 0 0 1-2-2v-3H3a2.5 2.5 0 1 0 0-5H4V9a2 2 0 0 1 2-2h3V6a3 3 0 0 1 2-3Z" fill="currentColor"/></svg>
+    </span>
+    <span class="ext-copy">
+      <b>Add the browser extension too <span class="ext-opt">— optional</span></b>
+      <span>Catches the in-page stuff the app can't — a like, a Not&nbsp;Interested, a reel — on X, Instagram, YouTube, TikTok and more.</span>
+    </span>
+    <span class="ext-btn">Download the .zip<span id="ext-size"></span></span>
+  </a>
 
   <section class="beat" style="padding-top:0">
     <div class="split">
@@ -224,6 +224,10 @@
           if (/^Overshare-Setup-\d.*\.exe$/i.test(a.name)) {
             document.getElementById('dl-win').textContent = 'Download the installer · ' + mb(a.size);
           }
+          if (/^Overshare-extension\.zip$/i.test(a.name)) {
+            var es = document.getElementById('ext-size');
+            if (es) es.textContent = ' · ' + Math.round(a.size / 1024) + ' KB';
+          }
         });
         if (rel.tag_name) {
           document.getElementById('ver').textContent =
@@ -231,6 +235,20 @@
         }
       }).catch(function () {});
   })();
+
+  // Copy buttons on command blocks.
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var el = document.querySelector(btn.getAttribute('data-copy'));
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+        var was = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        setTimeout(function () { btn.textContent = was; }, 1400);
+      }).catch(function () {});
+    });
+  });
 </script>
 
 <!-- Cloudflare Web Analytics. Cookieless and no personal data, which is why it
