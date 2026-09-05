@@ -12,6 +12,7 @@
 (function () {
   const NS = (window.__overshare = window.__overshare || {});
   const SITE = "x";
+  const DEBUG = true;   // logs to the X page console; flip off once selectors are trusted
 
   // Everything site-specific, in one spot.
   const SEL = {
@@ -28,22 +29,25 @@
   };
 
   // Pull the post's text/author/url/image out of the article a control sits in.
+  // Returns null when the element isn't inside a recognisable tweet, so callers
+  // can tell "no post here" from "a post with thin detail".
   function context(fromEl) {
-    const art = fromEl.closest(SEL.tweet);
-    if (!art) return {};
+    const art = fromEl.closest(SEL.tweet) || fromEl.closest('article[role="article"]');
+    if (!art) return null;
     const text = art.querySelector(SEL.text)?.innerText?.trim();
     const img = art.querySelector(SEL.image)?.src;
-    const timeLink = art.querySelector(SEL.timeLink)?.closest("a")?.href;
-    // The first user link in the header is the author handle.
+    // The status link is the tweet's permalink. Prefer the timestamp's link,
+    // but fall back to any /status/ link in the article (quote tweets, layouts
+    // with no <time>). Skip analytics/photo sub-paths.
+    let url =
+      art.querySelector(SEL.timeLink)?.closest("a")?.href ||
+      [...art.querySelectorAll('a[href*="/status/"]')]
+        .map((a) => a.href)
+        .find((h) => /\/status\/\d+(?:$|[?#])/.test(h)) ||
+      location.href;
     const author = art.querySelector('[data-testid="User-Name"] a[href^="/"]')
       ?.getAttribute("href")?.replace(/^\//, "@");
-    return {
-      noun: "a post",
-      text,
-      url: timeLink || location.href,
-      image: img,
-      author,
-    };
+    return { noun: "a post", text, url, image: img, author };
   }
 
   function init(base) {
@@ -59,7 +63,8 @@
       else if ((anchor = hit(SEL.follow))) action = "follow";
       if (!action) return;
 
-      const ctx = context(anchor);
+      const ctx = context(anchor) || { noun: "a post", url: location.href };
+      if (DEBUG) console.debug("[overshare] x:", action, ctx);
       const key = `${action}:${ctx.url || Math.random()}`;
       base.once(key, 2500, () => base.emit(SITE, action, ctx));
     });
@@ -69,8 +74,11 @@
     // post when its "•••" menu is OPENED, and carry that through to the click.
     let menuCtx = null;
     base.onClick((el) => {
-      const caret = el.closest(SEL.caret);
-      if (caret) menuCtx = context(caret);
+      // Any click inside a tweet — the "•••" button included — refreshes the
+      // remembered post. Menu items live outside the article, so clicking one
+      // returns null here and leaves the last real post in place.
+      const ctx = context(el);
+      if (ctx) { menuCtx = ctx; if (DEBUG) console.debug("[overshare] x: remembered", ctx); }
     });
     base.onClick((el) => {
       const item = el.closest('[role="menuitem"]');
@@ -78,7 +86,7 @@
       const label = (item.innerText || "").toLowerCase();
       if (!label.includes("not interested")) return;
       const ctx = menuCtx || { noun: "a post" };
-      menuCtx = null;
+      if (DEBUG) console.debug("[overshare] x: not_interested using", ctx);
       base.once(`ni:${ctx.url || Date.now()}`, 2500, () =>
         base.emit(SITE, "not_interested", ctx));
     });
