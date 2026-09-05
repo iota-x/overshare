@@ -44,7 +44,7 @@
       [...art.querySelectorAll('a[href*="/status/"]')]
         .map((a) => a.href)
         .find((h) => /\/status\/\d+(?:$|[?#])/.test(h)) ||
-      location.href;
+      undefined;   // no permalink found — better no link than a link to the feed
     const author = art.querySelector('[data-testid="User-Name"] a[href^="/"]')
       ?.getAttribute("href")?.replace(/^\//, "@");
     return { noun: "a post", text, url, image: img, author };

@@ -38,15 +38,33 @@ function card(event) {
   // "❤️ liked a post on X"  — the headline. The detail (post text) is the body.
   const headline = `${act.emoji} ${act.verb} ${event.noun || "something"} on ${siteName}`;
 
+  const url = /^https?:\/\//.test(event.url || "") ? event.url : null;
+
   const embed = {
     author: { name: headline },
     color: COLOR,
     footer: { text: "in detail · browser" },
     timestamp: new Date().toISOString(),
   };
-  if (event.text) embed.description = String(event.text).slice(0, 400);
-  if (event.url) embed.url = event.url;
-  if (event.title) embed.title = String(event.title).slice(0, 250);
+
+  // Discord only makes the TITLE clickable (via embed.url) — the description
+  // never links. So the title has to carry the link. A site that names the item
+  // (a video, a Reddit thread) uses that as the title; for a post that only has
+  // body text, the text itself becomes the clickable title; an image-only post
+  // falls back to a plain "open on X". This way there's always a link to tap.
+  const text = event.text ? String(event.text) : "";
+  if (event.title) {
+    embed.title = String(event.title).slice(0, 250);
+    if (text) embed.description = text.slice(0, 400);
+  } else if (text) {
+    embed.title = text.slice(0, 250);        // the post text, clickable
+  } else if (url) {
+    embed.title = `open on ${siteName}`;
+  }
+  if (url) {
+    embed.url = url;                          // makes the title a link
+    if (embed.author) embed.author.url = url; // and the headline, too
+  }
   if (event.image && /^https?:\/\//.test(event.image)) {
     embed.thumbnail = { url: event.image };
   }
