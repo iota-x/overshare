@@ -494,3 +494,17 @@
     background: rgba(255,111,165,.14); color: var(--rose);
     font-size: 13px; font-weight: 700; display: grid; place-items: center;
   }
+
+  /* --- Extension link in the hero grab block ------------------------------ */
+  .ext-link {
+    display: inline-flex; align-items: center; gap: 9px; margin-top: 16px;
+    text-decoration: none; color: var(--mute); font-size: 14px;
+    padding: 9px 15px 9px 11px; border-radius: 999px;
+    border: 1px dashed rgba(255,111,165,.4); background: rgba(255,111,165,.05);
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .ext-link b { color: var(--text); font-weight: 600; }
+  .ext-link:hover { color: var(--text); border-color: var(--rose); background: rgba(255,111,165,.1); }
+  .ext-plus { color: var(--rose); font-weight: 700; }
+  .ext-arrow { color: var(--rose); transition: transform .2s; display: inline-block; }
+  .ext-link:hover .ext-arrow { transform: translateX(3px); }
