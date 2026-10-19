@@ -162,6 +162,10 @@ def _apply() -> None:
     g["GM_TIME"] = _get_str("GM_TIME", "08:30")   # HH:MM local
     g["PARTNER_NAME"] = _get_str("PARTNER_NAME", was="HER_NAME")   # good-morning line
 
+    # What the messages call this computer ("on my mac", "on my laptop"). Defaults
+    # to "mac" on macOS and "laptop" everywhere else; set DEVICE_NAME to override.
+    g["DEVICE_NAME"] = _get_str("DEVICE_NAME", "mac" if sys.platform == "darwin" else "laptop")
+
     # --- Peek (camera / screen on demand) ------------------------------------
     # Let them grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
     # live-ish view (`!live`). Set false to disable all of it.

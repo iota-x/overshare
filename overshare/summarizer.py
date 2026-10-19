@@ -18,7 +18,7 @@ from .collectors import Snapshot
 _MOMENTS = {
     "morning": [
         "just woke up, good morning love ☀️",
-        "morning! just got on my mac 🌅",
+        "morning! just got on my {device} 🌅",
         "up and at it — morning babe ☀️",
         "just started my day, thinking of you 💛",
     ],
@@ -60,7 +60,7 @@ _SYSTEM = (
     "facts you were handed, not guesses. Only when no channel is given do you fall "
     "back to saying just that they're on it (e.g. 'on discord'). Either way never "
     "invent a stream, a topic, or who they're with. When details are thin, stay "
-    "general ('on my mac') rather than guessing. If background music is listed you "
+    "general ('on my {device}') rather than guessing. If background music is listed you "
     "may weave it in. When in doubt, under-describe — say less, never more than "
     "the facts. "
     "If the context marks this as lingering on the SAME thing for a while (a "
@@ -81,7 +81,8 @@ _TONES = {
 def _system() -> str:
     from . import settings
     extra = _TONES.get(settings.get("tone"), "")
-    return _SYSTEM + ((" " + extra) if extra else "")
+    base = _SYSTEM.replace("{device}", config.DEVICE_NAME)
+    return base + ((" " + extra) if extra else "")
 
 
 def _conversation(snap: Snapshot) -> tuple[str, str]:
@@ -194,7 +195,7 @@ def _rabbit_line(snap: Snapshot) -> str:
 def _template(snap: Snapshot, minutes: int, kind: str) -> str:
     """Plain fallback message — no AI needed."""
     if kind in _MOMENTS:
-        return random.choice(_MOMENTS[kind])
+        return random.choice(_MOMENTS[kind]).replace("{device}", config.DEVICE_NAME)
     if kind == "back":
         return "back at my desk 👋"
 
