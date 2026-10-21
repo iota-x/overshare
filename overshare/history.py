@@ -53,6 +53,7 @@ class DailyLog:
     youtube: dict = field(default_factory=dict)   # video title -> seconds
     sites: dict = field(default_factory=dict)     # domain -> seconds
     tracks: dict = field(default_factory=dict)    # "song — artist (app)" -> seconds
+    projects: dict = field(default_factory=dict)  # PROJECT_TAGS tag -> seconds
     first_active: str = ""
     last_active: str = ""
     recap_posted: bool = False
@@ -90,6 +91,12 @@ class DailyLog:
 
         if snap.music:
             _add(self.tracks, snap.music, seconds)
+
+        if config.PROJECT_TAGS:
+            where = f"{snap.window_title} {snap.tab_title} {snap.url}".lower()
+            for tag, words in config.PROJECT_TAGS.items():
+                if any(w in where for w in words):
+                    _add(self.projects, tag, seconds)
 
         if not self.first_active:
             self.first_active = _now_iso()

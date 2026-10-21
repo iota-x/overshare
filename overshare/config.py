@@ -96,6 +96,24 @@ def _get_int(name: str, default: int) -> int:
     return int(_get_float(name, default))
 
 
+def _get_tags(name: str) -> dict:
+    """{tag: [keyword, ...]} from a dict in the overlay or a "tag=a,b;tag2=c" string."""
+    val = _overlay.get(name)
+    if val is None:
+        val = os.environ.get(name, "")
+    if isinstance(val, str):
+        pairs = (p.partition("=") for p in val.split(";") if "=" in p)
+        val = {t.strip(): k.split(",") for t, _, k in pairs}
+    if not isinstance(val, dict):
+        return {}
+    out = {}
+    for tag, words in val.items():
+        words = [w.strip().lower() for w in (words if isinstance(words, list) else [words]) if str(w).strip()]
+        if str(tag).strip() and words:
+            out[str(tag).strip()] = words
+    return out
+
+
 def _get_bool(name: str, default: bool) -> bool:
     val = _overlay.get(name)
     if isinstance(val, bool):
@@ -165,6 +183,12 @@ def _apply() -> None:
     # What the messages call this computer ("on my mac", "on my laptop"). Defaults
     # to "mac" on macOS and "laptop" everywhere else; set DEVICE_NAME to override.
     g["DEVICE_NAME"] = _get_str("DEVICE_NAME", "mac" if sys.platform == "darwin" else "laptop")
+
+    # Projects to keep a running tally of, for your own tracking (never sent
+    # anywhere): {"gsoc": ["care_fe", "rocket.chat"]} in config.json, or
+    # PROJECT_TAGS="gsoc=care_fe,rocket.chat;dsa=leetcode" in .env. A tick counts
+    # toward a project when its window title, tab title or URL contains a keyword.
+    g["PROJECT_TAGS"] = _get_tags("PROJECT_TAGS")
 
     # --- Peek (camera / screen on demand) ------------------------------------
     # Let them grab a webcam photo (`!peek`), a screenshot (`!screen`), or a
