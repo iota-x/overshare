@@ -10,10 +10,10 @@ does, so the rules are narrow and not negotiable:
   * nothing is ever launched on its own. The download is verified and then
     handed to whoever pressed the button.
 
-That last one is deliberate. The build is ad-hoc signed, so macOS can't tell
-one version from another — an updater that silently swapped the binary would
-be trusting the network with code execution, and on macOS it would also revoke
-Accessibility every time without anyone watching (see app._watch_permission).
+That last one is deliberate. The build is signed with a self-made certificate,
+not one macOS trusts, so nothing outside this file vouches for a download — an
+updater that silently swapped the binary would be trusting the network with
+code execution (see packaging/sign_mac.sh for what the certificate is for).
 """
 
 from __future__ import annotations

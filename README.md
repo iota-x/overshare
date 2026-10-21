@@ -144,25 +144,27 @@ window checks the link as you type and tells you if it worked.
 Grant Accessibility and Overshare picks it up within a minute and reopens itself,
 so there is nothing for you to restart.
 
-#### macOS takes Accessibility away on every update — here's why, and the fix
+#### Updating from 1.6.2 or earlier: re-add the permissions once
 
-Expect this after **every** update. It is not a bug and there is no way around it
-without a paid Apple developer account.
+Up to 1.6.2, PyInstaller signed Overshare *ad-hoc* — a signature with no fixed
+identity, whose fingerprint is computed from the app's own bytes and therefore
+changed with every build. macOS files Accessibility and Screen Recording under
+that fingerprint, so every update silently lost both.
 
-Overshare isn't signed by one, so PyInstaller signs it *ad-hoc* — a signature with
-no fixed identity, whose fingerprint is computed from the app's own bytes and
-therefore changes with every build. macOS files your Accessibility permission
-under that fingerprint. A new build has a new fingerprint, so the permission it
-saved no longer matches the app asking for it, and macOS silently says no.
+From 1.6.3, every build is signed with the same self-made certificate
+(`packaging/sign_mac.sh`). macOS now files the permissions under that
+certificate, so they survive updates. It isn't an Apple certificate, so it
+changes nothing about the first-launch warning.
 
-**Switching the entry off and on does not fix it.** The old entry is still in the
-list and still switched on, so it looks fine — but it points at the build you just
-replaced. Toggling it re-approves an app that no longer exists. Replace the entry
-instead:
+The move off an ad-hoc build is the last time you redo them. **Switching the
+entry off and on does not fix it** — the old entry still points at the build you
+replaced. Replace it instead:
 
 > **System Settings → Privacy & Security → Accessibility** → select **Overshare**
 > → press **−** to remove it → press **+** and add **Overshare** back from your
-> Applications folder.
+> Applications folder. Same again under **Screen & System Audio Recording** if
+> you use `!screen` / `!live screen`, then quit and reopen Overshare — macOS only
+> applies Screen Recording to an app that starts after the grant.
 
 Overshare then notices within a minute and reopens itself. It has to: a permission
 that comes back mid-run doesn't reach apps it already tried to read while blocked,
@@ -288,10 +290,13 @@ One spec covers both platforms. The Windows installer needs
 
 ### Signing
 
-Both installers ship **unsigned** — that's what causes the first-launch warnings
-above. `release.yml` already has the codesign and notarization steps; they stay
-skipped until the `APPLE_*` secrets exist. The comments there spell out what's
-needed if you ever want to turn it on.
+Neither installer is signed by a certificate the OS trusts — that's what causes
+the first-launch warnings above. The macOS app is signed with Overshare's own
+self-made certificate (the `OVERSHARE_CERT_P12` / `OVERSHARE_CERT_PASSWORD`
+secrets, used by `packaging/sign_mac.sh`) purely so permissions survive updates;
+keep the same certificate for every release, or that benefit is lost. Developer
+ID signing and notarization stay skipped until the `APPLE_*` secrets exist. The
+comments in `release.yml` spell out what's needed if you ever want them.
 
 > **Windows notes:** it reads the active window title (which for browsers already
 > includes the page title, e.g. *"FIFA - YouTube"*) and reads background Spotify

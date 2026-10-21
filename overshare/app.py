@@ -528,9 +528,12 @@ class OvershareApp(rumps.App):
         Updating the app replaces the bundle, and macOS ties the Accessibility
         grant to the bundle — so installing a new version silently revokes it.
 
-        There is no paid Apple certificate here, so the build is ad-hoc signed
-        and its cdhash changes with every release. TCC stores that hash, so the
-        entry left by the previous version no longer matches the new binary.
+        Up to 1.6.2 the build was ad-hoc signed and its cdhash changed with
+        every release. TCC stores that hash, so the entry left by the previous
+        version no longer matched the new binary. From 1.6.3 builds are signed
+        with one self-made certificate (packaging/sign_mac.sh), which TCC
+        matches across releases — so this now mostly fires once, on the move
+        off an ad-hoc build, or when the grant was never given.
         Which is why the guidance says remove the entry and add it back rather
         than toggle it: toggling re-approves the row that is already there, and
         that row still names the old build's hash. Reported from a real 1.4.0 →
@@ -563,11 +566,10 @@ class OvershareApp(rumps.App):
                     rumps.notification(
                         "overshare", "Missing Accessibility",
                         "Updates will say “on Notion” instead of what you're "
-                        "actually doing. Updating replaces the app, and macOS "
-                        "drops the grant every time. System Settings → Privacy "
-                        "& Security → Accessibility → select Overshare, press "
-                        "− to remove it, then + to add it back. Switching it "
-                        "off and on does NOT work. I'll reopen myself after.")
+                        "actually doing. System Settings → Privacy & Security "
+                        "→ Accessibility → select Overshare, press − to remove "
+                        "it, then + to add it back. Switching it off and on "
+                        "does NOT work. I'll reopen myself after.")
                 elif told is not None:
                     log.write("accessibility: granted again")
                     rumps.notification("overshare", "Accessibility is back",

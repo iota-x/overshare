@@ -15,6 +15,9 @@ jobs:
   macos:
     name: macOS .dmg
     runs-on: macos-14        # Apple Silicon
+    env:
+      # A step's `if` can't see secrets, so say here whether the cert exists.
+      HAS_OVERSHARE_CERT: ${{ secrets.OVERSHARE_CERT_P12 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,6 +60,17 @@ jobs:
 
       - name: Build the app
         run: pyinstaller packaging/Overshare.spec --noconfirm
+
+      # Overshare's own self-made certificate (packaging/sign_mac.sh says why):
+      # not trusted by Gatekeeper, but stable, so macOS keeps Accessibility and
+      # Screen Recording across updates instead of dropping them every release.
+      # Skipped when the Developer ID step below takes over.
+      - name: Sign with Overshare's certificate
+        if: env.HAS_OVERSHARE_CERT == 'true' && env.APPLE_ID == ''
+        env:
+          OVERSHARE_CERT_P12: ${{ secrets.OVERSHARE_CERT_P12 }}
+          OVERSHARE_CERT_PASSWORD: ${{ secrets.OVERSHARE_CERT_PASSWORD }}
+        run: ./packaging/sign_mac.sh dist/Overshare.app
 
       # --- Signing (dormant until the secrets exist) -----------------------
       # Without them the build still succeeds and ships an unsigned .dmg, which
@@ -241,14 +255,16 @@ jobs:
             isn't signed by a paid Apple developer account, so a normal
             double-click gets refused.
 
-            > **Updating? macOS drops the Accessibility permission every time.**
-            > Same reason — an unsigned build's fingerprint changes, so the
-            > saved permission stops matching. Switching the entry off and on
-            > does **not** work; it points at the build you replaced. Go to
-            > **System Settings → Privacy & Security → Accessibility**, select
-            > Overshare, press **−**, then **+** and add it back. Overshare
-            > reopens itself once it notices. Until then updates still send,
-            > they just stop naming the channel or file you're in.
+            > **Updating from 1.6.2 or earlier? Re-add the permissions once.**
+            > Older builds were signed ad-hoc, with a fingerprint that changed
+            > every release, so macOS dropped Accessibility and Screen
+            > Recording on each update. From 1.6.3 every build carries the same
+            > signature and the permissions stay. For this one move: **System
+            > Settings → Privacy & Security → Accessibility** (and **Screen &
+            > System Audio Recording** if you use `!screen`), select Overshare,
+            > press **−**, then **+** and add it back. Switching the entry off
+            > and on does **not** work. Screen Recording only takes effect
+            > after quitting and reopening Overshare.
 
             **Windows** — download and run the `Setup.exe`. SmartScreen may warn
             you; click **More info → Run anyway**. Installs for your user only,
